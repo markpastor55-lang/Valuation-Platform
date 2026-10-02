@@ -204,39 +204,26 @@ batch (safe because of `opId`); asset changes made through sync do not update th
 `location.*` field values or their history; photo `parentId` is not checked against `jobId`
 `[REVIEW: SECURITY]`; only assets and photos sync today.
 
+Example: device 2 registers the same image (same `contentHash`, new `entityId`) that device 1
+has already synced, and device 1 replays its own operation `device1-op-0002` in the same batch.
+The device 2 operation:
+
 ```json
 {
-  "deviceId": "device-1",
-  "operations": [
-    {
-      "opId": "device1-op-0002",
-      "jobId": "b72fd194-4774-460b-a9e4-42672da8fe91",
-      "entityType": "photo",
-      "entityId": "33333333-3333-4333-8333-333333333333",
-      "kind": "create",
-      "baseVersion": null,
-      "changes": { "caption": "Facade", "sequence": 1, "capturedAt": "2026-10-01T23:05:00Z" },
-      "clientTimestamp": "2026-10-01T23:05:00Z",
-      "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "parentId": "22222222-2222-4222-8222-222222222222"
-    },
-    {
-      "opId": "device2-op-0001",
-      "jobId": "b72fd194-4774-460b-a9e4-42672da8fe91",
-      "entityType": "photo",
-      "entityId": "44444444-4444-4444-8444-444444444444",
-      "kind": "create",
-      "baseVersion": null,
-      "changes": { "caption": "Facade", "sequence": 1, "capturedAt": "2026-10-01T23:05:00Z" },
-      "clientTimestamp": "2026-10-01T23:05:00Z",
-      "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "parentId": "22222222-2222-4222-8222-222222222222"
-    }
-  ]
+  "opId": "device2-op-0001",
+  "jobId": "b72fd194-4774-460b-a9e4-42672da8fe91",
+  "entityType": "photo",
+  "entityId": "44444444-4444-4444-8444-444444444444",
+  "kind": "create",
+  "baseVersion": null,
+  "changes": { "caption": "Facade", "sequence": 1, "capturedAt": "2026-10-01T23:05:00Z" },
+  "clientTimestamp": "2026-10-01T23:05:00Z",
+  "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "parentId": "22222222-2222-4222-8222-222222222222"
 }
 ```
 
-Response after a replay (the first operation had already been applied):
+Response:
 
 ```json
 {
@@ -328,7 +315,8 @@ Arrays marked "abbreviated" are shortened and the issue request spells out the d
 }
 ```
 
-`200` response (`missingRequired` abbreviated from 40 entries; `transitions` abbreviated from 8):
+`200` response (abbreviated: `sections` from 20 entries, `missingRequired` from 40, `transitions`
+from 8):
 
 ```json
 {
@@ -362,28 +350,7 @@ Arrays marked "abbreviated" are shortened and the issue request spells out the d
     }
   ],
   "requirements": {
-    "sections": [
-      "instructions",
-      "scope",
-      "basis",
-      "location",
-      "planning",
-      "land",
-      "improvements",
-      "areas",
-      "occupancy",
-      "market",
-      "hbu",
-      "sales_evidence",
-      "valuation_approach",
-      "reconciliation",
-      "risk",
-      "assumptions",
-      "certification",
-      "photos",
-      "appendices",
-      "audit_metadata"
-    ],
+    "sections": ["instructions", "scope", "basis", "sales_evidence", "areas", "certification"],
     "warnings": [],
     "selectionIssues": [],
     "specialistReviews": ["API_STANDARDS"],
