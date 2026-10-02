@@ -12,7 +12,7 @@ import type { AppContext } from '../context.js';
 import type { Db } from '../db/db.js';
 import { HttpError } from '../http/errors.js';
 import type { Router } from '../http/route.js';
-import { authorizeJob, touchJob, type JobRow } from '../repo/jobs.js';
+import { assertAssetInJob, authorizeJob, touchJob, type JobRow } from '../repo/jobs.js';
 import { audit, jobStream } from '../services/audit.js';
 import { InstantSchema, JsonValue, Uuid } from './schemas.js';
 
@@ -33,6 +33,21 @@ const OperationSchema = z.object({
 });
 
 const ASSET_FIELDS = new Set(['label', 'address', 'latitude', 'longitude']);
+/**
+ * Photo metadata a device may sync. Privacy status, flags, redaction and content identity are
+ * changed only through the privacy endpoint and never by sync.
+ */
+const PHOTO_FIELDS = new Set([
+  'caption',
+  'roomOrArea',
+  'sequence',
+  'capturedAt',
+  'gps',
+  'quality',
+  'qualityOverrideReason',
+  'includeInReport',
+  'dHash',
+]);
 
 async function loadEntity(
   db: Db,
@@ -210,10 +225,15 @@ export function registerSyncRoutes(r: Router): void {
     handler: async ({ ctx, principal, body }) => {
       const results: { opId: string; outcome: SyncDecision['outcome']; detail?: unknown }[] = [];
       for (const raw of body.operations) {
-        if (raw.entityType === 'asset') {
-          for (const k of Object.keys(raw.changes))
-            if (!ASSET_FIELDS.has(k))
-              throw new HttpError(422, 'UNKNOWN_FIELD', `asset field ${k} cannot be synced`);
+        const allowed = raw.entityType === 'asset' ? ASSET_FIELDS : PHOTO_FIELDS;
+        for (const k of Object.keys(raw.changes)) {
+          if (!allowed.has(k)) {
+            throw new HttpError(
+              422,
+              'UNKNOWN_FIELD',
+              `${raw.entityType} field ${k} cannot be synced`,
+            );
+          }
         }
         const decision = await ctx.db.transaction(async (tx) => {
           const { job } = await authorizeJob(
@@ -224,16 +244,20 @@ export function registerSyncRoutes(r: Router): void {
             raw.jobId,
             { forUpdate: true },
           );
-          const applied = await tx.query('SELECT 1 FROM sync_operation WHERE op_id = $1', [
-            raw.opId,
-          ]);
+          // Photos must belong to an asset of the job in the request (no cross-job attachment).
+          if (raw.entityType === 'photo' && raw.parentId)
+            await assertAssetInJob(tx, job.id, raw.parentId);
+          const applied = await tx.query(
+            'SELECT 1 FROM sync_operation WHERE org_id = $1 AND device_id = $2 AND op_id = $3',
+            [job.org_id, body.deviceId, raw.opId],
+          );
           const current = await loadEntity(tx, raw);
           const dup =
             raw.contentHash && raw.parentId
               ? (
                   await tx.query<{ id: string }>(
-                    'SELECT id FROM photo WHERE asset_id = $1 AND sha256 = $2 AND NOT deleted',
-                    [raw.parentId, raw.contentHash],
+                    'SELECT id FROM photo WHERE job_id = $1 AND asset_id = $2 AND sha256 = $3 AND NOT deleted',
+                    [job.id, raw.parentId, raw.contentHash],
                   )
                 ).rows[0]
               : undefined;

@@ -389,22 +389,34 @@ async function openApi(): Promise<string> {
 }
 
 async function endpointTable(spec: string): Promise<string> {
-  const doc = JSON.parse(spec) as {
-    paths: Record<
-      string,
-      Record<string, { summary: string; tags: string[]; 'x-permission'?: string }>
-    >;
+  type Op = {
+    summary: string;
+    tags: string[];
+    'x-permission'?: string;
+    'x-actors'?: string[];
+    security?: unknown[];
   };
+  const doc = JSON.parse(spec) as { paths: Record<string, Record<string, Op>> };
   const rows: string[][] = [];
   for (const [path, ops] of Object.entries(doc.paths)) {
-    for (const [method, op] of Object.entries(ops))
+    for (const [method, op] of Object.entries(ops)) {
+      const access = op['x-permission']
+        ? `\`${op['x-permission']}\``
+        : op.security?.length === 0
+          ? 'public'
+          : 'authenticated';
+      const actors =
+        op['x-actors'] && op['x-actors'].join(',') !== 'human'
+          ? ` — ${op['x-actors'].join(', ')} actors only`
+          : '';
       rows.push([
         op.tags.join(', '),
         method.toUpperCase(),
         `\`${path}\``,
-        op['x-permission'] ? `\`${op['x-permission']}\`` : 'public',
+        access + actors,
         op.summary,
       ]);
+    }
   }
   rows.sort(
     (a, b) => (a[0] ?? '').localeCompare(b[0] ?? '') || (a[2] ?? '').localeCompare(b[2] ?? ''),

@@ -12,7 +12,7 @@ import {
 } from '@vp/domain';
 import { z } from 'zod';
 import type { Db } from '../db/db.js';
-import { HttpError, notFound } from '../http/errors.js';
+import { denied, HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
 import { authorizeJob, authorizeOrThrow } from '../repo/jobs.js';
 import { audit, jobStream, loadStream, orgStream } from '../services/audit.js';
@@ -410,8 +410,10 @@ export function registerAdminRoutes(r: Router): void {
         { type: 'org', id: principal.orgId },
       );
       if (!principal.roles.includes('ADMINISTRATOR'))
-        throw new HttpError(
-          403,
+        throw denied(
+          principal,
+          'audit.read',
+          { type: 'org', id: principal.orgId },
           'ADMIN_ONLY',
           'the security stream is restricted to administrators',
         );

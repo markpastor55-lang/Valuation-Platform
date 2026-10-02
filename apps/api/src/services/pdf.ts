@@ -56,9 +56,13 @@ interface Fonts {
 }
 
 /** Replaces characters the standard (WinAnsi) fonts cannot encode. */
-function makeSanitiser(font: PDFFont): (s: string) => string {
+export function makeSanitiser(font: PDFFont): (s: string) => string {
   const cache = new Map<string, string>();
   const replacements: Record<string, string> = {
+    Σ: 'sum of ',
+    '−': '-',
+    '≈': '~',
+    '≠': '!=',
     '≥': '>=',
     '≤': '<=',
     '×': 'x',

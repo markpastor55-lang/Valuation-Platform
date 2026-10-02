@@ -1,4 +1,6 @@
 import {
+  COMPONENT_TYPES,
+  DEDUCTION_TYPES,
   DEFAULT_CONVENTIONS,
   approveMeasurement,
   assertEditable,
@@ -23,11 +25,12 @@ import {
 } from '@vp/domain';
 import { z } from 'zod';
 import type { Db } from '../db/db.js';
-import { HttpError, notFound } from '../http/errors.js';
+import { denied, HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
 import {
   assertAssetInJob,
   assertPhotoInJob,
+  assertSourcePlanInJob,
   authorizeJob,
   touchJob,
   type JobRow,
@@ -186,16 +189,47 @@ export function registerInspectionRoutes(r: Router): void {
                   dpi: body.calibration.dpi,
                 });
         }
-        const boundaries: Boundary[] | undefined = body.boundaries?.map(
-          (b) =>
-            compact({
-              ...b,
-              id: b.id ?? ctx.newId(),
-              reviewStatus: 'accepted' as const,
-              measuredBy: principal.userId,
-              measuredAt: now,
-            }) as Boundary,
-        );
+        if (body.sourcePlanId) await assertSourcePlanInJob(tx, job.id, body.sourcePlanId);
+        for (const b of body.boundaries ?? []) {
+          const allowed: readonly string[] =
+            b.role === 'component' ? COMPONENT_TYPES : DEDUCTION_TYPES;
+          if (!allowed.includes(b.componentType)) {
+            throw new HttpError(
+              422,
+              'INVALID_COMPONENT_TYPE',
+              `${b.componentType} is not a valid ${b.role} type`,
+            );
+          }
+        }
+        // Boundaries a person draws are accepted; an unchanged boundary keeps its original measurer.
+        const boundaries: Boundary[] | undefined = body.boundaries?.map((b) => {
+          const prior = b.id ? previous?.boundaries.find((x) => x.id === b.id) : undefined;
+          const unchanged =
+            prior !== undefined &&
+            JSON.stringify([
+              prior.points,
+              prior.closed,
+              prior.level,
+              prior.role,
+              prior.componentType,
+              prior.dimensionSource,
+            ]) ===
+              JSON.stringify([
+                b.points,
+                b.closed,
+                b.level,
+                b.role,
+                b.componentType,
+                b.dimensionSource,
+              ]);
+          return compact({
+            ...b,
+            id: b.id ?? ctx.newId(),
+            reviewStatus: 'accepted' as const,
+            measuredBy: unchanged ? prior.measuredBy : principal.userId,
+            measuredAt: unchanged ? prior.measuredAt : now,
+          }) as Boundary;
+        });
         let version: SketchVersion;
         if (previous) {
           version = nextSketchVersion(
@@ -315,7 +349,13 @@ export function registerInspectionRoutes(r: Router): void {
         );
         assertEditable(job.status);
         if (principal.kind !== 'human')
-          throw new HttpError(403, 'HUMAN_REQUIRED', 'scale is confirmed by a person');
+          throw denied(
+            principal,
+            'measurement.approve',
+            { type: 'job', id: params.jobId },
+            'HUMAN_REQUIRED',
+            'scale is confirmed by a person',
+          );
         const { rows } = await tx.query<{ data: SketchVersion }>(
           'SELECT data FROM sketch_version WHERE id = $1 AND job_id = $2',
           [params.versionId, job.id],
@@ -575,6 +615,7 @@ export function registerInspectionRoutes(r: Router): void {
     summary: 'AI service submits a suggestion (pending until a person decides)',
     tags: ['ai'],
     permission: 'inspection.capture (AI service accounts only)',
+    actors: ['ai'],
     params: JobParams,
     body: z.object({
       assetId: Uuid,
@@ -589,13 +630,20 @@ export function registerInspectionRoutes(r: Router): void {
     handler: async ({ ctx, principal, params, body }) =>
       ctx.db.transaction(async (tx) => {
         if (principal.kind !== 'ai')
-          throw new HttpError(403, 'AI_SERVICE_ONLY', 'only the AI service submits suggestions');
+          throw denied(
+            principal,
+            'inspection.capture',
+            { type: 'job', id: params.jobId },
+            'AI_SERVICE_ONLY',
+            'only the AI service submits suggestions',
+          );
         const { job } = await authorizeJob(ctx, tx, principal, 'inspection.capture', params.jobId, {
           forUpdate: true,
         });
         assertEditable(job.status);
         await assertAssetInJob(tx, job.id, body.assetId);
         if (body.photoId) await assertPhotoInJob(tx, job.id, body.photoId);
+        if (body.sourcePlanId) await assertSourcePlanInJob(tx, job.id, body.sourcePlanId);
         const suggestion = createAiSuggestion(
           compact({
             ...body,

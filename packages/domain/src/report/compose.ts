@@ -231,6 +231,8 @@ function resolvePlaceholders(text: string, data: ReportData): string {
     if (path in fixed) return fixed[path] as string;
     if (path.startsWith('field.')) {
       const id = path.slice(6);
+      // Only fields switched on by the current requirements may appear (retained data never leaks).
+      if (!data.requirements.fields.some((f) => f.fieldId === id)) return '[not applicable]';
       const v = data.values.job[id];
       return hasValue(v) ? formatValue(FIELD_BY_ID.get(id), v, data) : '[not provided]';
     }

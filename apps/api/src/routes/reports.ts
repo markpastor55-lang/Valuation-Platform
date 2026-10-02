@@ -11,7 +11,7 @@ import {
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
 import type { Db } from '../db/db.js';
-import { HttpError, notFound } from '../http/errors.js';
+import { denied, HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
 import { authorizeJob, authorizeOrThrow, getJob, jobResource } from '../repo/jobs.js';
 import {
@@ -89,13 +89,16 @@ const emailFor = (
   attachments,
 });
 
+/** Atomic per-organisation, per-year invoice numbering (safe under concurrent issues). */
 async function nextInvoiceNumber(tx: Db, orgId: string, issueDate: string): Promise<string> {
-  const year = issueDate.slice(0, 4);
-  const { rows } = await tx.query<{ n: number }>(
-    'SELECT count(*)::int AS n FROM invoice WHERE org_id = $1 AND number LIKE $2',
-    [orgId, `INV-${year}-%`],
+  const year = Number(issueDate.slice(0, 4));
+  const { rows } = await tx.query<{ last_number: number }>(
+    `INSERT INTO invoice_counter (org_id, year, last_number) VALUES ($1, $2, 1)
+     ON CONFLICT (org_id, year) DO UPDATE SET last_number = invoice_counter.last_number + 1
+     RETURNING last_number`,
+    [orgId, year],
   );
-  return `INV-${year}-${String((rows[0]?.n ?? 0) + 1).padStart(5, '0')}`;
+  return `INV-${year}-${String(rows[0]?.last_number ?? 1).padStart(5, '0')}`;
 }
 
 async function sendQueued(
@@ -216,8 +219,8 @@ export function registerReportRoutes(r: Router): void {
         const parties = { supplierAbn, clientAbn: partyRows.rows[0]?.client_abn?.trim() ?? null };
 
         const approved = await tx.query<{ email: string }>(
-          'SELECT lower(email) AS email FROM approved_recipient WHERE client_id = $1 AND revoked_at IS NULL',
-          [job.client_id],
+          'SELECT lower(email) AS email FROM approved_recipient WHERE org_id = $2 AND client_id = $1 AND revoked_at IS NULL',
+          [job.client_id, job.org_id],
         );
         const allowed = new Set(approved.rows.map((r) => r.email));
         const unapproved = body.recipients.filter((e) => !allowed.has(e.toLowerCase()));
@@ -576,7 +579,9 @@ export function registerReportRoutes(r: Router): void {
     permission: 'job.read',
     params: z.object({ reportId: Uuid }),
     handler: async ({ ctx, principal, params }) => {
-      const { report } = await reportAccess(ctx, principal, params.reportId);
+      const { report, job } = await reportAccess(ctx, principal, params.reportId);
+      // Reproduction is an internal verification (CPU-heavy, exposes delivery records): job readers only.
+      await authorizeJob(ctx, ctx.db, principal, 'job.read', job.id);
       const { rows } = await ctx.db.query<{
         snapshot: IssueSnapshot;
         snapshot_hash: string;
@@ -617,8 +622,16 @@ export function registerReportRoutes(r: Router): void {
       });
       const pdfSha = sha256Hex(pdf);
       const invoiceSha = sha256Hex(invoicePdf);
+      // A renderer change produces different bytes; superseded renderer versions must be retained
+      // to reproduce older reports (see docs/spec/09).
+      const renderer = {
+        snapshot: s.renderer,
+        current: RENDERER_VERSION,
+        match: s.renderer === RENDERER_VERSION,
+      };
       const result = {
         snapshotIntact,
+        renderer,
         pdf: { stored: row.pdf_sha256, reproduced: pdfSha, match: pdfSha === row.pdf_sha256 },
         invoice: {
           stored: inv.rows[0]?.pdf_sha256 ?? null,
@@ -631,6 +644,7 @@ export function registerReportRoutes(r: Router): void {
         ...result,
         reproducible:
           snapshotIntact &&
+          renderer.match &&
           result.pdf.match &&
           result.invoice.match &&
           emails.every((e) => e.match),
@@ -644,6 +658,7 @@ export function registerReportRoutes(r: Router): void {
     summary: 'Email provider delivery-status callback (system actor)',
     tags: ['reports'],
     permission: 'email.send (system)',
+    actors: ['system'],
     params: z.object({ id: Uuid }),
     body: z.object({
       status: z.enum(['delivered', 'bounced', 'failed']),
@@ -651,8 +666,10 @@ export function registerReportRoutes(r: Router): void {
     }),
     handler: async ({ ctx, principal, params, body }) => {
       if (principal.kind !== 'system')
-        throw new HttpError(
-          403,
+        throw denied(
+          principal,
+          'email.send',
+          { type: 'email_delivery', id: params.id },
           'SYSTEM_ONLY',
           'delivery callbacks come from the email integration',
         );

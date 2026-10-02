@@ -12,7 +12,11 @@ describe('migrations', () => {
     const db = await PgliteDb.create();
     try {
       const first = await migrate(db);
-      expect(first.applied).toEqual(['0001_core_schema', '0002_immutability']);
+      expect(first.applied).toEqual([
+        '0001_core_schema',
+        '0002_immutability',
+        '0003_counters_and_sync_scope',
+      ]);
       expect((await migrate(db)).applied).toEqual([]);
       const tampered = (await loadMigrations()).map((m) =>
         m.version === 1 ? { ...m, checksum: 'edited' } : m,

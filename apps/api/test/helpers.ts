@@ -242,3 +242,13 @@ export const rect = (x: number, y: number, w: number, h: number) => [
   { x: x + w, y: y + h },
   { x, y: y + h },
 ];
+
+/** Test shortcut: marks a job submitted with the snapshot hash a real submission would record. */
+export async function submitDirectly(t: TestApp, jobId: string): Promise<void> {
+  const { loadAggregate, snapshotHashOf } = await import('../src/services/aggregate.js');
+  const hash = snapshotHashOf(await loadAggregate(t.db, jobId));
+  await t.db.query(
+    "UPDATE job SET status = 'submitted', submitted_snapshot_hash = $2 WHERE id = $1",
+    [jobId, hash],
+  );
+}

@@ -576,6 +576,31 @@ export function hasValue(value: unknown): boolean {
   return true;
 }
 
+/**
+ * Sections holding the valuer's professional judgement (evidence selection, approaches, rates,
+ * reconciliation, conclusions). Writing these fields requires `valuation.edit`, which only valuers
+ * hold; inspectors capture descriptive facts only.
+ */
+export const VALUER_JUDGEMENT_SECTIONS: ReadonlySet<SectionId> = new Set<SectionId>([
+  'market',
+  'hbu',
+  'sales_evidence',
+  'rental_evidence',
+  'valuation_approach',
+  'income_approach',
+  'cost_approach',
+  'rental_determination',
+  'insurance',
+  'fair_value',
+  'reconciliation',
+  'portfolio_summary',
+  'risk',
+  'specialised',
+]);
+
+export const isValuerJudgementField = (def: FieldDef): boolean =>
+  VALUER_JUDGEMENT_SECTIONS.has(def.section);
+
 const isLocalDateString = (v: unknown): boolean =>
   typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 

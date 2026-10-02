@@ -1,5 +1,6 @@
 import {
   DEFAULT_CONVENTIONS,
+  FIELD_BY_ID,
   DEFAULT_VALIDATION_CONFIG,
   JURISDICTION_TIME_ZONES,
   computeAreaSchedule,
@@ -313,7 +314,7 @@ export function contentSnapshot(agg: JobAggregate): Record<string, unknown> {
       ruleSet: `${agg.ruleSet.id}@${agg.ruleSet.version}`,
       templateVersionId: j.template_version_id,
       responsibleValuerId: j.responsible_valuer_id,
-      reviewerId: j.reviewer_id,
+      // The reviewer is a workflow assignment (it changes when QA starts), not certified content.
       feeCents: j.fee_cents,
     },
     assets: agg.assets.map((a) => ({
@@ -447,6 +448,31 @@ export function workflowContextOf(
   };
 }
 
+/**
+ * Names of the people the report refers to (assignees, user-reference fields, measurers, certifier)
+ * — not the whole organisation, which would otherwise be copied into every issue snapshot.
+ */
+function referencedUserNames(agg: JobAggregate): Record<string, string> {
+  const ids = new Set<string>();
+  for (const id of [
+    agg.job.responsible_valuer_id,
+    agg.job.reviewer_id,
+    agg.certification?.valuer.userId,
+  ]) {
+    if (id) ids.add(id);
+  }
+  for (const f of agg.fields) {
+    if (FIELD_BY_ID.get(f.field_id)?.type === 'user_ref' && typeof f.value === 'string')
+      ids.add(f.value);
+  }
+  for (const v of agg.reportingSketches) for (const b of v.boundaries) ids.add(b.measuredBy);
+  return Object.fromEntries(
+    [...ids]
+      .filter((id) => agg.userNames[id] !== undefined)
+      .map((id) => [id, agg.userNames[id] as string]),
+  );
+}
+
 /** Report data for drafts and issue. Only report-eligible photos are included. */
 export function reportDataOf(
   agg: JobAggregate,
@@ -512,7 +538,7 @@ export function reportDataOf(
     })),
     photos,
     ...(agg.certification ? { certification: agg.certification } : {}),
-    userNames: agg.userNames,
+    userNames: referencedUserNames(agg),
     ...(snapshotHash ? { snapshotHash } : {}),
   };
 }

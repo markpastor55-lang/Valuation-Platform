@@ -99,7 +99,7 @@ export async function recordDenial(ctx: AppContext, err: AuthorizationDenied): P
       action: 'auth.denied',
       entityType: d.entityType,
       entityId: d.entityId,
-      metadata: { permission: d.permission, code: err.code },
+      metadata: { permission: d.permission, code: err.recordedCode },
     }),
   );
 }
@@ -113,9 +113,22 @@ export function authorizeOrThrow(
 ): Promise<void> {
   const decision = authorize(principal, permission, resource);
   if (decision.allowed) return Promise.resolve();
-  // Hide the existence of jobs in other organisations or behind information barriers.
-  if (decision.code === 'WRONG_ORGANISATION' || decision.code === 'RESTRICTED_PORTFOLIO')
-    return Promise.reject(notFound(entity.type));
+  const subject = {
+    userId: principal.userId,
+    orgId: principal.orgId,
+    kind: principal.kind,
+    roles: principal.roles,
+    permission,
+    entityType: entity.type,
+    entityId: entity.id,
+  };
+  // Hide the existence of jobs in other organisations or behind information barriers, but still
+  // record the attempt in the security stream.
+  if (decision.code === 'WRONG_ORGANISATION' || decision.code === 'RESTRICTED_PORTFOLIO') {
+    return Promise.reject(
+      new AuthorizationDenied(subject, 'NOT_FOUND', `${entity.type} not found`, decision.code, 404),
+    );
+  }
   return Promise.reject(
     new AuthorizationDenied(
       {
@@ -143,7 +156,6 @@ export async function authorizeJob(
   opts: { forUpdate?: boolean } = {},
 ): Promise<{ job: JobRow; resource: ResourceScope }> {
   const job = await getJob(db, jobId, opts.forUpdate ?? false);
-  if (job.org_id !== principal.orgId) throw notFound('job');
   const resource = await jobResource(db, job);
   await authorizeOrThrow(ctx, principal, permission, resource, { type: 'job', id: jobId });
   return { job, resource };
@@ -172,4 +184,49 @@ export async function assertPhotoInJob(db: Db, jobId: string, photoId: string): 
     [photoId, jobId],
   );
   if (!rows.length) throw new HttpError(422, 'UNKNOWN_PHOTO', 'photo does not belong to this job');
+}
+
+/**
+ * Checks that a referenced user belongs to the organisation and holds one of the roles needed for
+ * the assignment (e.g. a responsible valuer must hold VALUER).
+ */
+export async function assertOrgUser(
+  db: Db,
+  orgId: string,
+  userId: string,
+  roles: readonly string[],
+  label: string,
+): Promise<void> {
+  const { rows } = await db.query<{ role: string }>(
+    "SELECT r.role FROM app_user u JOIN user_role r ON r.user_id = u.id WHERE u.id = $1 AND u.org_id = $2 AND u.status = 'active'",
+    [userId, orgId],
+  );
+  if (!rows.length)
+    throw new HttpError(422, 'UNKNOWN_USER', `${label} is not an active user of this organisation`);
+  if (!rows.some((r) => roles.includes(r.role))) {
+    throw new HttpError(422, 'ROLE_REQUIRED', `${label} must hold one of: ${roles.join(', ')}`);
+  }
+}
+
+export async function assertOrgClient(db: Db, orgId: string, clientId: string): Promise<void> {
+  const { rows } = await db.query('SELECT 1 FROM client WHERE id = $1 AND org_id = $2', [
+    clientId,
+    orgId,
+  ]);
+  if (!rows.length)
+    throw new HttpError(422, 'UNKNOWN_CLIENT', 'client does not belong to this organisation');
+}
+
+/** A source plan is a photographed plan or an uploaded document belonging to the job. */
+export async function assertSourcePlanInJob(db: Db, jobId: string, planId: string): Promise<void> {
+  const { rows } = await db.query(
+    'SELECT 1 FROM photo WHERE id = $1 AND job_id = $2 AND NOT deleted UNION ALL SELECT 1 FROM document WHERE id = $1 AND job_id = $2',
+    [planId, jobId],
+  );
+  if (!rows.length)
+    throw new HttpError(
+      422,
+      'UNKNOWN_SOURCE_PLAN',
+      'source plan must be a photo or document of this job',
+    );
 }

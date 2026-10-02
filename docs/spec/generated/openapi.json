@@ -74,6 +74,7 @@
       "get": {
         "summary": "Selection vocabulary (jurisdictions, purposes, property types, scopes)",
         "tags": ["reference"],
+        "x-actors": ["human"],
         "responses": {
           "200": {
             "description": "Success",
@@ -111,6 +112,7 @@
       "get": {
         "summary": "Field catalogue",
         "tags": ["reference"],
+        "x-actors": ["human"],
         "responses": {
           "200": {
             "description": "Success",
@@ -149,6 +151,7 @@
         "summary": "Create a job with one or many assets",
         "tags": ["jobs"],
         "x-permission": "job.create",
+        "x-actors": ["human"],
         "requestBody": {
           "required": true,
           "content": {
@@ -325,6 +328,7 @@
         "summary": "List jobs visible to the user",
         "tags": ["jobs"],
         "x-permission": "job.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "status",
@@ -373,6 +377,7 @@
         "summary": "Job detail with requirements and available transitions",
         "tags": ["jobs"],
         "x-permission": "job.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -423,6 +428,7 @@
         "summary": "Change purpose, property type, scope, jurisdiction or mode (data is retained)",
         "tags": ["jobs"],
         "x-permission": "job.update",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -531,6 +537,7 @@
         "summary": "Allocate responsible valuer, reviewer and inspectors",
         "tags": ["jobs"],
         "x-permission": "job.allocate",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -612,6 +619,7 @@
         "summary": "Resolved requirements, traced to rules, with missing fields",
         "tags": ["jobs"],
         "x-permission": "job.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -662,6 +670,7 @@
         "summary": "Capture field values with provenance (batch)",
         "tags": ["jobs"],
         "x-permission": "job.update | asset.edit",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -796,6 +805,7 @@
         "summary": "Add an asset to a portfolio job",
         "tags": ["jobs"],
         "x-permission": "asset.edit",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -896,6 +906,7 @@
         "summary": "Assets visible to the user as GeoJSON (permission-aware)",
         "tags": ["map"],
         "x-permission": "job.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -946,6 +957,7 @@
         "summary": "Add a sale comparable; land, building and adjusted rates are calculated and traced",
         "tags": ["evidence"],
         "x-permission": "evidence.edit",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -1161,6 +1173,7 @@
         "summary": "Add a rental comparable",
         "tags": ["evidence"],
         "x-permission": "evidence.edit",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -1358,6 +1371,7 @@
         "summary": "Run a registered formula with traced inputs and units",
         "tags": ["calculations"],
         "x-permission": "calculation.run",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -1457,6 +1471,7 @@
         "summary": "Override a calculated value (reason required; original retained)",
         "tags": ["calculations"],
         "x-permission": "calculation.override",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -1536,6 +1551,7 @@
         "summary": "Add a dated national, state or local market commentary module",
         "tags": ["evidence"],
         "x-permission": "evidence.edit",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -1654,6 +1670,7 @@
         "summary": "Raise or update a risk flag (escalation triggers)",
         "tags": ["evidence"],
         "x-permission": "inspection.capture",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -1760,6 +1777,7 @@
         "summary": "Create a sketch or a new sketch version; returns the area schedule",
         "tags": ["areas"],
         "x-permission": "sketch.edit",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2026,6 +2044,7 @@
         "summary": "Valuer confirms the plan scale (creates a new version)",
         "tags": ["areas"],
         "x-permission": "measurement.approve",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2104,6 +2123,7 @@
         "summary": "Valuer approves the area schedule of a sketch version",
         "tags": ["areas"],
         "x-permission": "measurement.approve",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2164,6 +2184,7 @@
         "summary": "Register a captured photo (de-duplicated by content hash per asset)",
         "tags": ["inspection"],
         "x-permission": "photo.capture",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2299,6 +2320,7 @@
         "summary": "Flag sensitive content, record redaction or consent, or exclude a photo",
         "tags": ["inspection"],
         "x-permission": "photo.redact",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2436,6 +2458,7 @@
         "summary": "AI service submits a suggestion (pending until a person decides)",
         "tags": ["ai"],
         "x-permission": "inspection.capture (AI service accounts only)",
+        "x-actors": ["ai"],
         "parameters": [
           {
             "name": "jobId",
@@ -2550,6 +2573,7 @@
         "summary": "Accept, edit or reject an AI suggestion (the only path to a fact)",
         "tags": ["ai"],
         "x-permission": "ai.decide",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2635,6 +2659,7 @@
         "summary": "Run the validation rules catalogue for a stage",
         "tags": ["validation"],
         "x-permission": "job.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2703,6 +2728,7 @@
         "summary": "Acknowledge a warning with a reason (blocking findings cannot be acknowledged)",
         "tags": ["validation"],
         "x-permission": "validation.acknowledge",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2776,6 +2802,7 @@
         "summary": "Accept the engagement (conflict check, allocation and documents required)",
         "tags": ["workflow"],
         "x-permission": "engagement.accept",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2842,6 +2869,7 @@
         "summary": "Cancel a job (reason required)",
         "tags": ["workflow"],
         "x-permission": "job.cancel",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2910,6 +2938,7 @@
         "summary": "Open an amendment of an issued report (new version; issued copy is kept)",
         "tags": ["workflow"],
         "x-permission": "job.update",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -2978,6 +3007,7 @@
         "summary": "Responsible valuer signs the certification for the current content (MFA, human only)",
         "tags": ["workflow"],
         "x-permission": "certification.sign",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3148,6 +3178,7 @@
         "summary": "Submit for QA: requires clean validation and a current certification; locks content",
         "tags": ["workflow"],
         "x-permission": "certification.sign",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3198,6 +3229,7 @@
         "summary": "Authorise a documented self-approval exception (another person, MFA)",
         "tags": ["qa"],
         "x-permission": "qa.self_approval_exception",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3266,6 +3298,7 @@
         "summary": "Reviewer starts QA on the submitted snapshot",
         "tags": ["qa"],
         "x-permission": "qa.review",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3316,6 +3349,7 @@
         "summary": "Answer a QA checklist item",
         "tags": ["qa"],
         "x-permission": "qa.review",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3398,6 +3432,7 @@
         "summary": "Raise a QA finding with severity",
         "tags": ["qa"],
         "x-permission": "qa.review",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3485,6 +3520,7 @@
         "summary": "Valuer responds to a finding",
         "tags": ["qa"],
         "x-permission": "job.update",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3564,6 +3600,7 @@
         "summary": "Reviewer records the disposition of a finding",
         "tags": ["qa"],
         "x-permission": "qa.review",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3647,6 +3684,7 @@
         "summary": "Return the job to the valuer (unlocks content)",
         "tags": ["qa"],
         "x-permission": "qa.review",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3713,6 +3751,7 @@
         "summary": "Approve after an independent review (checklist complete, findings closed)",
         "tags": ["qa"],
         "x-permission": "qa.approve",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3763,6 +3802,7 @@
         "summary": "Render a watermarked draft report (not stored, not for reliance)",
         "tags": ["reports"],
         "x-permission": "report.generate_draft",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3813,6 +3853,7 @@
         "summary": "Issue the final report: versioned watermarked PDF, separate invoice, delivery to approved recipients",
         "tags": ["reports"],
         "x-permission": "report.issue",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -3891,6 +3932,7 @@
         "summary": "Issued report metadata and delivery status",
         "tags": ["reports"],
         "x-permission": "report.read_issued | job.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "reportId",
@@ -3941,6 +3983,7 @@
         "summary": "Download the immutable issued PDF",
         "tags": ["reports"],
         "x-permission": "report.read_issued | job.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "reportId",
@@ -3991,6 +4034,7 @@
         "summary": "Download the tax invoice for an issued report",
         "tags": ["reports"],
         "x-permission": "invoice.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "reportId",
@@ -4041,6 +4085,7 @@
         "summary": "Re-render the PDF, invoice and email payloads from the immutable snapshot and compare hashes",
         "tags": ["reports"],
         "x-permission": "job.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "reportId",
@@ -4091,6 +4136,7 @@
         "summary": "Email provider delivery-status callback (system actor)",
         "tags": ["reports"],
         "x-permission": "email.send (system)",
+        "x-actors": ["system"],
         "parameters": [
           {
             "name": "id",
@@ -4162,6 +4208,7 @@
         "summary": "List template versions",
         "tags": ["administration"],
         "x-permission": "template.edit",
+        "x-actors": ["human"],
         "responses": {
           "200": {
             "description": "Success",
@@ -4198,6 +4245,7 @@
         "summary": "Create a new draft template version (clause wording authored by the firm)",
         "tags": ["administration"],
         "x-permission": "template.edit",
+        "x-actors": ["human"],
         "requestBody": {
           "required": true,
           "content": {
@@ -4257,6 +4305,7 @@
         "summary": "Record a specialist review outcome for a template version",
         "tags": ["administration"],
         "x-permission": "template.approve",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "templateId",
@@ -4351,6 +4400,7 @@
         "summary": "Standards owner approves a template version and its clauses (not the author; MFA)",
         "tags": ["administration"],
         "x-permission": "template.approve",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "templateId",
@@ -4409,6 +4459,7 @@
         "summary": "Standards owner approves a rule-set version (not the author; MFA)",
         "tags": ["administration"],
         "x-permission": "ruleset.approve",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "ruleSetId",
@@ -4483,6 +4534,7 @@
         "summary": "Approve an email recipient for a client",
         "tags": ["administration"],
         "x-permission": "job.allocate",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "clientId",
@@ -4552,6 +4604,7 @@
         "summary": "Apply a legal hold (blocks deletion and retention disposal)",
         "tags": ["administration"],
         "x-permission": "legal_hold.manage",
+        "x-actors": ["human"],
         "requestBody": {
           "required": true,
           "content": {
@@ -4617,6 +4670,7 @@
         "summary": "Audit events for a job (hash chained)",
         "tags": ["audit"],
         "x-permission": "audit.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -4667,6 +4721,7 @@
         "summary": "Verify the integrity of the job audit chain",
         "tags": ["audit"],
         "x-permission": "audit.read",
+        "x-actors": ["human"],
         "parameters": [
           {
             "name": "jobId",
@@ -4717,6 +4772,7 @@
         "summary": "Organisation security stream (authorisation denials, configuration approvals)",
         "tags": ["audit"],
         "x-permission": "audit.read",
+        "x-actors": ["human"],
         "responses": {
           "200": {
             "description": "Success",
@@ -4755,6 +4811,7 @@
         "summary": "Apply offline operations idempotently (assets and photos); returns per-operation outcomes",
         "tags": ["sync"],
         "x-permission": "asset.edit / photo.capture",
+        "x-actors": ["human"],
         "requestBody": {
           "required": true,
           "content": {

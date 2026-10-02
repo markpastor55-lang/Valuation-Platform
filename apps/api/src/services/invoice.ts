@@ -1,5 +1,6 @@
 import { formatAud, formatAustralianDate, roundHalfAwayFromZero, type LocalDate } from '@vp/domain';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { makeSanitiser } from './pdf.js';
 
 export interface InvoiceData {
   readonly number: string;
@@ -63,10 +64,12 @@ export async function renderInvoicePdf(inv: InvoiceData, renderedAt: string): Pr
   doc.setModificationDate(at);
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  // Names and descriptions may contain characters the standard fonts cannot encode.
+  const clean = makeSanitiser(regular);
   const page = doc.addPage([595.28, 841.89]);
   let y = 780;
   const line = (text: string, opts: { size?: number; font?: typeof regular; x?: number } = {}) => {
-    page.drawText(text, {
+    page.drawText(clean(text), {
       x: opts.x ?? 50,
       y,
       size: opts.size ?? 10,
@@ -85,7 +88,7 @@ export async function renderInvoicePdf(inv: InvoiceData, renderedAt: string): Pr
   line(`Job ${inv.jobReference}    Report ${inv.reportId}`);
   y -= 12;
   for (const l of inv.lines) {
-    page.drawText(l.description, { x: 50, y, size: 10, font: regular });
+    page.drawText(clean(l.description), { x: 50, y, size: 10, font: regular });
     const amount = formatAud(l.amountCents / 100, true);
     page.drawText(amount, {
       x: 545 - regular.widthOfTextAtSize(amount, 10),

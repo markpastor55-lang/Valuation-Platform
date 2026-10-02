@@ -2,7 +2,8 @@ import { exportJWK, generateKeyPair, SignJWT, createLocalJWKSet } from 'jose';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { oidcAuthenticator } from '../src/auth/auth.js';
 import { loadConfig } from '../src/config.js';
-import { DEMO, createTestApp, newJobBody, type TestApp } from './helpers.js';
+import { loadAggregate, snapshotHashOf } from '../src/services/aggregate.js';
+import { DEMO, createTestApp, newJobBody, submitDirectly, type TestApp } from './helpers.js';
 
 describe('configuration safety', () => {
   it('refuses development auth, embedded databases and draft configuration in production', () => {
@@ -118,7 +119,7 @@ describe('separation of duties in QA', () => {
       '/v1/jobs',
       newJobBody({ responsibleValuerId: DEMO.users.valuer2, reviewerId: DEMO.users.reviewer }),
     );
-    await t.db.query("UPDATE job SET status = 'submitted' WHERE id = $1", [job.body.id]);
+    await submitDirectly(t, job.body.id);
     const self = await t.call<{ error: { code: string } }>(
       'valuer2',
       'POST',
@@ -155,6 +156,14 @@ describe('separation of duties in QA', () => {
     );
     expect(start.status).toBe(200);
     expect(start.body.selfApprovalException.authorisedBy).toBe(DEMO.users.admin);
+    // starting QA (not by the allocated reviewer) must not change the certified snapshot
+    const { rows } = await t.db.query<{ submitted_snapshot_hash: string }>(
+      'SELECT submitted_snapshot_hash FROM job WHERE id = $1',
+      [job.body.id],
+    );
+    expect(snapshotHashOf(await loadAggregate(t.db, job.body.id))).toBe(
+      rows[0]!.submitted_snapshot_hash,
+    );
   });
 
   it('allocators cannot make the reviewer the responsible valuer', async () => {
@@ -165,7 +174,7 @@ describe('separation of duties in QA', () => {
       `/v1/jobs/${job.body.id}/assign`,
       { reviewerId: DEMO.users.valuer },
     );
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('SEPARATION_OF_DUTIES');
   });
 

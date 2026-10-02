@@ -27,11 +27,43 @@ export class AuthorizationDenied extends HttpError {
     },
     code: string,
     message: string,
+    /** Reason recorded in the security stream when it differs from the public code (hidden 404s). */
+    readonly recordedCode: string = code,
+    status = 403,
   ) {
-    super(403, code, message);
+    super(status, code, message);
     this.name = 'AuthorizationDenied';
   }
 }
+
+export type DenialSubject = AuthorizationDenied['denial'];
+
+/** A recorded 403 for checks made in route handlers (e.g. "only the assigned reviewer"). */
+export const denied = (
+  principal: {
+    userId: string;
+    orgId: string;
+    kind: 'human' | 'system' | 'ai';
+    roles: readonly string[];
+  },
+  permission: string,
+  entity: { type: string; id: string },
+  code: string,
+  message: string,
+): AuthorizationDenied =>
+  new AuthorizationDenied(
+    {
+      userId: principal.userId,
+      orgId: principal.orgId,
+      kind: principal.kind,
+      roles: principal.roles,
+      permission,
+      entityType: entity.type,
+      entityId: entity.id,
+    },
+    code,
+    message,
+  );
 
 export const notFound = (what: string): HttpError =>
   new HttpError(404, 'NOT_FOUND', `${what} not found`);
@@ -108,7 +140,10 @@ export function toHttpError(err: unknown): { status: number; body: ErrorBody } {
   if (pgCode === 'P0001') {
     return {
       status: 409,
-      body: { error: { code: 'IMMUTABLE_RECORD', message: (err as Error).message } },
+      // Database guard messages name internal tables; return a stable, generic message.
+      body: {
+        error: { code: 'IMMUTABLE_RECORD', message: 'the record is immutable or under legal hold' },
+      },
     };
   }
   if (pgCode === '23505')

@@ -436,3 +436,47 @@ describe('issue gates', () => {
     expect(c).toEqual(expect.arrayContaining(['VAL-TPL-001', 'VAL-TPL-002']));
   });
 });
+
+describe('certification consistency', () => {
+  const cert = (over: Record<string, unknown> = {}) =>
+    ({
+      id: 'c1',
+      jobId: 'j1',
+      valuer: { userId: 'valuer1', fullName: 'V', credentials: ['CPV'] },
+      role: 'responsible_valuer',
+      inspectionScope: 'FULL',
+      inspectionScopeStatement: 'Full',
+      valuationDate: '2026-09-30',
+      basisOfValue: 'Market value',
+      amount: { value: 1_150_000, currency: 'AUD', kind: 'value' },
+      independenceStatement: 'x',
+      conflictsStatement: 'x',
+      assumptions: [],
+      specialAssumptions: [],
+      limitations: ['x'],
+      standardsReliedOn: ['x'],
+      clauseVersionIds: ['c@1'],
+      signedAt: NOW,
+      snapshotHash: 'h',
+      signature: { method: 'typed_attestation', attestationText: 'x', attestationHash: 'h' },
+      ...over,
+    }) as never;
+
+  it('passes when the certificate matches the report', () => {
+    expect(codes(cleanContext({ certification: cert() }))).not.toContain('VAL-CERT-002');
+  });
+
+  it('blocks a certified amount, date or basis that differs from the report', () => {
+    const r = runValidation(
+      cleanContext({
+        certification: cert({
+          amount: { value: 2_000_000, currency: 'AUD', kind: 'value' },
+          valuationDate: '2026-09-29',
+          basisOfValue: 'Fair value',
+        }),
+      }),
+    ).findings.filter((f) => f.code === 'VAL-CERT-002');
+    expect(r).toHaveLength(3);
+    expect(r[0]!.severity).toBe('blocking');
+  });
+});

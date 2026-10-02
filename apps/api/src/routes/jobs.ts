@@ -1,5 +1,7 @@
 import {
+  FIELD_BY_ID,
   FIELD_CATALOGUE,
+  isValuerJudgementField,
   INSPECTION_SCOPE_LABELS,
   JURISDICTION_LABELS,
   PROPERTY_TYPE_LABELS,
@@ -22,9 +24,11 @@ import {
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
 import type { Db } from '../db/db.js';
-import { HttpError, notFound } from '../http/errors.js';
+import { denied, HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
 import {
+  assertOrgClient,
+  assertOrgUser,
   authorizeJob,
   authorizeOrThrow,
   getJob,
@@ -134,6 +138,19 @@ async function insertAsset(
   return id;
 }
 
+/** Assignees must be active users of the organisation holding the role the assignment needs. */
+async function assertAssignees(
+  db: Db,
+  orgId: string,
+  a: { responsibleValuerId?: string; reviewerId?: string; inspectorIds?: readonly string[] },
+): Promise<void> {
+  if (a.responsibleValuerId)
+    await assertOrgUser(db, orgId, a.responsibleValuerId, ['VALUER'], 'responsible valuer');
+  if (a.reviewerId) await assertOrgUser(db, orgId, a.reviewerId, ['QA_REVIEWER'], 'reviewer');
+  for (const id of a.inspectorIds ?? [])
+    await assertOrgUser(db, orgId, id, ['FIELD_INSPECTOR', 'VALUER'], 'inspector');
+}
+
 const ACTIONS: readonly JobAction[] = [
   'acceptEngagement',
   'submitForQa',
@@ -237,6 +254,21 @@ export function registerJobRoutes(r: Router): void {
       if (body.selection.mode === 'SINGLE' && body.assets.length !== 1) {
         throw new HttpError(422, 'SINGLE_ASSET_MODE', 'single-asset jobs have exactly one asset');
       }
+      if (body.responsibleValuerId && body.responsibleValuerId === body.reviewerId) {
+        throw denied(
+          principal,
+          'job.create',
+          { type: 'job', id: 'new' },
+          'SEPARATION_OF_DUTIES',
+          'the reviewer must be a different person from the responsible valuer',
+        );
+      }
+      await assertOrgClient(ctx.db, principal.orgId, body.clientId);
+      await assertAssignees(ctx.db, principal.orgId, {
+        ...(body.responsibleValuerId ? { responsibleValuerId: body.responsibleValuerId } : {}),
+        ...(body.reviewerId ? { reviewerId: body.reviewerId } : {}),
+        inspectorIds: body.inspectorIds,
+      });
       let portfolioRestricted = false;
       if (body.portfolioId) {
         const p = await ctx.db.query<{ org_id: string; restricted: boolean }>(
@@ -461,12 +493,19 @@ export function registerJobRoutes(r: Router): void {
         const valuer = body.responsibleValuerId ?? job.responsible_valuer_id;
         const reviewer = body.reviewerId ?? job.reviewer_id;
         if (valuer && reviewer && valuer === reviewer) {
-          throw new HttpError(
-            422,
+          throw denied(
+            principal,
+            'job.allocate',
+            { type: 'job', id: job.id },
             'SEPARATION_OF_DUTIES',
             'the reviewer must be a different person from the responsible valuer',
           );
         }
+        await assertAssignees(tx, job.org_id, {
+          ...(body.responsibleValuerId ? { responsibleValuerId: body.responsibleValuerId } : {}),
+          ...(body.reviewerId ? { reviewerId: body.reviewerId } : {}),
+          ...(body.inspectorIds ? { inspectorIds: body.inspectorIds } : {}),
+        });
         await tx.query(
           'UPDATE job SET responsible_valuer_id = $2, reviewer_id = $3 WHERE id = $1',
           [job.id, valuer, reviewer],
@@ -562,6 +601,15 @@ export function registerJobRoutes(r: Router): void {
           needsJobUpdate ? 'job.update' : 'asset.edit',
           params.jobId,
         );
+        // Professional judgement (evidence selection, approaches, rates, conclusions) is the valuer's.
+        if (
+          body.values.some((v) => {
+            const def = FIELD_BY_ID.get(v.fieldId);
+            return def !== undefined && isValuerJudgementField(def);
+          })
+        ) {
+          await authorizeJob(ctx, tx, principal, 'valuation.edit', params.jobId);
+        }
         assertEditable(job.status);
         let changed = 0;
         for (const v of body.values) {

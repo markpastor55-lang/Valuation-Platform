@@ -411,26 +411,35 @@ export function registerEvidenceRoutes(r: Router): void {
             'closing a risk flag requires a note',
           );
         if (body.assetId) await assetOfJob(tx, job, body.assetId);
+        // Accepting or resolving a risk (which clears VAL-RISK-001 / VAL-SCOPE-001) is the valuer's decision.
+        if (body.status !== 'open') {
+          await authorizeJob(ctx, tx, principal, 'validation.acknowledge', params.jobId);
+        }
+        let previousAssetId: string | null = null;
         if (body.id) {
-          const existing = await tx.query<{ job_id: string }>(
-            'SELECT job_id FROM risk_flag WHERE id = $1',
+          const existing = await tx.query<{ job_id: string; asset_id: string | null }>(
+            'SELECT job_id, asset_id FROM risk_flag WHERE id = $1 FOR UPDATE',
             [body.id],
           );
           if (existing.rows[0] && existing.rows[0].job_id !== job.id) {
             throw new HttpError(422, 'UNKNOWN_RISK_FLAG', 'risk flag belongs to another job');
           }
+          previousAssetId = existing.rows[0]?.asset_id ?? null;
         }
         const flag = compact({ ...body, id: body.id ?? ctx.newId() }) as RiskFlag;
         await tx.query(
           `INSERT INTO risk_flag (id, org_id, job_id, asset_id, status, data) VALUES ($1, $2, $3, $4, $5, $6)
-           ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status, data = EXCLUDED.data`,
+           ON CONFLICT (id) DO UPDATE SET asset_id = EXCLUDED.asset_id, status = EXCLUDED.status, data = EXCLUDED.data`,
           [flag.id, job.org_id, job.id, flag.assetId ?? null, flag.status, JSON.stringify(flag)],
         );
-        if (flag.assetId) {
+        // Recompute the map risk level for every asset the flag touched (old and new).
+        for (const assetId of new Set(
+          [flag.assetId, previousAssetId].filter((a): a is string => typeof a === 'string'),
+        )) {
           await tx.query(
             `UPDATE asset SET risk_level = (SELECT CASE coalesce(max(CASE data->>'severity' WHEN 'high' THEN 3 WHEN 'medium' THEN 2 ELSE 1 END), 0)
                WHEN 3 THEN 'high' WHEN 2 THEN 'medium' WHEN 1 THEN 'low' ELSE 'none' END FROM risk_flag WHERE asset_id = $1 AND status = 'open') WHERE id = $1`,
-            [flag.assetId],
+            [assetId],
           );
         }
         await touchJob(tx, job.id, ctx.clock.now());

@@ -2,6 +2,7 @@ import type { Principal } from '@vp/domain';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z, type ZodType } from 'zod';
 import type { AppContext } from '../context.js';
+import { denied } from './errors.js';
 
 export interface HandlerArgs<P, B, Q> {
   readonly req: FastifyRequest;
@@ -25,6 +26,11 @@ export interface RouteDef<P, B, Q> {
   readonly query?: ZodType<Q>;
   readonly responseDescription?: string;
   readonly produces?: 'application/json' | 'application/pdf';
+  /**
+   * Actor kinds allowed to call the route. Defaults to people only: service and AI accounts are
+   * limited to the few routes that explicitly allow them.
+   */
+  readonly actors?: readonly ('human' | 'system' | 'ai')[];
   handler(args: HandlerArgs<P, B, Q>): Promise<unknown>;
 }
 
@@ -47,6 +53,7 @@ interface RegisteredRoute {
   readonly query?: ZodType;
   readonly produces: string;
   readonly authenticated: boolean;
+  readonly actors?: readonly string[];
 }
 
 const header = (req: FastifyRequest, name: string): string | undefined => {
@@ -77,6 +84,7 @@ export class Router {
       ...(def.query ? { query: def.query } : {}),
       produces: def.produces ?? 'application/json',
       authenticated: true,
+      actors: def.actors ?? ['human'],
     });
     this.app.route({
       method: def.method,
@@ -88,6 +96,15 @@ export class Router {
           devMfa: header(req, 'x-mfa'),
           devActorKind: header(req, 'x-actor-kind'),
         });
+        if (!(def.actors ?? ['human']).includes(principal.kind)) {
+          throw denied(
+            principal,
+            def.permission ?? 'route',
+            { type: 'route', id: `${def.method} ${def.url}` },
+            'ACTOR_NOT_PERMITTED',
+            `${principal.kind} actors cannot call this endpoint`,
+          );
+        }
         const params = (def.params ? def.params.parse(req.params) : {}) as P;
         const body = (def.body ? def.body.parse(req.body ?? {}) : undefined) as B;
         const query = (def.query ? def.query.parse(req.query) : {}) as Q;
@@ -149,6 +166,7 @@ export class Router {
         summary: r.summary,
         tags: r.tags,
         ...(r.permission ? { 'x-permission': r.permission } : {}),
+        ...(r.actors ? { 'x-actors': r.actors } : {}),
         ...(parameters.length ? { parameters } : {}),
         ...(r.body
           ? {

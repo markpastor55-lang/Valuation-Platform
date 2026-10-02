@@ -17,7 +17,7 @@ not in code is marked **Planned**.
 | P1  | REST over HTTPS, JSON in and out    | Fastify; TLS terminated at the edge (11 TB-1). PDFs are returned as `application/pdf`                                                                          |
 | P2  | Versioned base path                 | Every business route is under `/v1`. Additive changes stay in `v1`; breaking changes need `/v2`. A deprecation policy is **Planned**                           |
 | P3  | Contract generated from code        | `Router` (`http/route.ts`) records each route's method, path, summary, tags, zod schemas and permission and emits OpenAPI 3.1 (`z.toJSONSchema`, input shapes) |
-| P4  | Validation at the edge              | Path, query and body are parsed with zod before the handler runs; failures return `400 BAD_REQUEST` with per-path details                                      |
+| P4  | Input validation                    | Path, query and body are parsed with zod before the handler runs; failures return `400 BAD_REQUEST` with per-path details                                      |
 | P5  | Every route declares its permission | `permission` is published as `x-permission`. The handler enforces it through the domain `authorize()` (§2.3)                                                   |
 | P6  | Domain decides                      | Handlers call `@vp/domain` for permissions, requirements, validation, calculations, geometry and workflow guards; the API persists and audits                  |
 | P7  | One transaction per mutation        | Each mutating handler runs in one database transaction with its audit events (06 §5.2)                                                                         |
@@ -77,17 +77,17 @@ reach restricted portfolios leave no security event `[REVIEW: SECURITY]`. List e
 
 Route-level checks outside `authorize()` (not recorded as `auth.denied` — gap):
 
-| Code                   | Status  | Route                                                                |
-| ---------------------- | ------- | -------------------------------------------------------------------- |
-| `AI_SERVICE_ONLY`      | 403     | `POST /v1/jobs/{jobId}/ai-suggestions` requires actor kind `ai`      |
-| `SYSTEM_ONLY`          | 403     | `POST /v1/email-deliveries/{id}/status` requires actor kind `system` |
-| `HUMAN_REQUIRED`       | 403     | `POST …/sketch-versions/{versionId}/confirm-scale`                   |
-| `NOT_REVIEWER`         | 403     | QA checklist and findings: only the reviewer who started the review  |
-| `ADMIN_ONLY`           | 403     | `GET /v1/admin/security-events`                                      |
-| `SEPARATION_OF_DUTIES` | **422** | `POST /v1/jobs/{jobId}/assign` with valuer = reviewer                |
+| Code                   | Status  | Route                                                                                               |
+| ---------------------- | ------- | --------------------------------------------------------------------------------------------------- |
+| `AI_SERVICE_ONLY`      | 403     | `POST /v1/jobs/{jobId}/ai-suggestions` requires actor kind `ai`                                     |
+| `SYSTEM_ONLY`          | 403     | `POST /v1/email-deliveries/{id}/status` requires actor kind `system` (then `authorize(email.send)`) |
+| `HUMAN_REQUIRED`       | 403     | `POST …/sketch-versions/{versionId}/confirm-scale`                                                  |
+| `NOT_REVIEWER`         | 403     | QA checklist and findings: only the reviewer who started the review                                 |
+| `ADMIN_ONLY`           | 403     | `GET /v1/admin/security-events`                                                                     |
+| `SEPARATION_OF_DUTIES` | **422** | `POST /v1/jobs/{jobId}/assign` with valuer = reviewer                                               |
 
 Permissions granted to roles but not yet checked by any route: `org.manage`, `user.manage`,
-`datasource.manage`, `ruleset.edit`, `photo.view_unredacted`, `invoice.manage`, `email.send`,
+`datasource.manage`, `ruleset.edit`, `photo.view_unredacted`, `invoice.manage`,
 `retention.manage` (their endpoints are **Planned**). `x-permission` is free text on six routes
 (`job.update | asset.edit`, `report.read_issued | job.read`, `asset.edit / photo.capture`,
 `inspection.capture (AI service accounts only)`, `email.send (system)`), and
@@ -130,11 +130,11 @@ code-specific. Bodies never contain stack traces or SQL (`toHttpError` in `http/
 
 ### 3.3 Route-specific codes
 
-| Status | Codes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 403    | `ACCOUNT_SUSPENDED`, `AI_SERVICE_ONLY`, `SYSTEM_ONLY`, `HUMAN_REQUIRED`, `NOT_REVIEWER`, `ADMIN_ONLY`                                                                                                                                                                                                                                                                                                                                                                                                     |
-| 409    | `NO_RULE_SET`, `NO_TEMPLATE`, `NO_QA_REVIEW`, `STALE_VERSION`, `REPORT_NOT_ISSUABLE` (`details.problems`), `IMMUTABLE_RECORD` (configuration already approved or retired)                                                                                                                                                                                                                                                                                                                                 |
-| 422    | `SINGLE_ASSET_MODE`, `SEPARATION_OF_DUTIES` (assign), `UNKNOWN_FIELD`, `ASSET_REQUIRED`, `JOB_LEVEL_FIELD`, `INVALID_FIELD_VALUE`, `UNKNOWN_ASSET`, `RESOLUTION_NOTE_REQUIRED`, `UNKNOWN_CONVENTION`, `SKETCH_ASSET_MISMATCH`, `SOURCE_PLAN_REQUIRED`, `SKETCH_INCOMPLETE`, `NO_CALIBRATION`, `CERTIFICATION_MISMATCH`, `FEE_REQUIRED`, `UNAPPROVED_RECIPIENTS` (`details.unapproved`), `INVALID_TEMPLATE` / `INVALID_RULE_SET` (`details.problems`), `WRONG_JOB`, `ASSET_INCOMPLETE`, `PHOTO_INCOMPLETE` |
+| Status | Codes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 403    | `ACCOUNT_SUSPENDED`, `AI_SERVICE_ONLY`, `SYSTEM_ONLY`, `HUMAN_REQUIRED`, `NOT_REVIEWER`, `ADMIN_ONLY`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 409    | `NO_RULE_SET`, `NO_TEMPLATE`, `NO_QA_REVIEW`, `STALE_VERSION`, `REPORT_NOT_ISSUABLE` (`details.problems`), `IMMUTABLE_RECORD` (configuration already approved or retired)                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 422    | `SINGLE_ASSET_MODE`, `SEPARATION_OF_DUTIES` (assign), `UNKNOWN_FIELD`, `ASSET_REQUIRED`, `JOB_LEVEL_FIELD`, `INVALID_FIELD_VALUE`, `UNKNOWN_ASSET`, `RESOLUTION_NOTE_REQUIRED`, `UNKNOWN_CONVENTION`, `SKETCH_ASSET_MISMATCH`, `SOURCE_PLAN_REQUIRED`, `SKETCH_INCOMPLETE`, `NO_CALIBRATION`, `CERTIFICATION_MISMATCH`, `FEE_REQUIRED`, `UNAPPROVED_RECIPIENTS` (`details.unapproved`), `INVALID_TEMPLATE` / `INVALID_RULE_SET` (`details.problems`), `WRONG_JOB`, `ASSET_INCOMPLETE`, `PHOTO_INCOMPLETE`, `UNKNOWN_PHOTO`, `UNKNOWN_RISK_FLAG`, `INVALID_REDACTION`, `SUPPLIER_ABN_REQUIRED` |
 
 Workflow transitions (`transitionJob`) fail with `409 INVALID_TRANSITION` when the job is in the
 wrong state and `409 GUARD_FAILED` when a guard fails; both carry every failed guard in
@@ -276,7 +276,7 @@ Paths are relative to `/v1/jobs/{jobId}` unless absolute.
 | Certification `POST /certification`                                                                                             | `valuer { fullName, credentials[], registration? }`, `inspectionScopeStatement`, `valuationDate` (must equal `dates.valuation`), `basisOfValue`, `amount { value, kind }`, `independenceStatement`, `conflictsStatement`, `assumptions[]`, `specialAssumptions[]`, `limitations[1..]`, `standardsReliedOn[1..]`, `attestationText` (≥ 20)                                        | `Certification` with `snapshotHash` and `signature { method: typed_attestation, attestationHash }`. Responsible valuer, human, MFA                                                                                            |
 | Submit `POST /submit`                                                                                                           | —                                                                                                                                                                                                                                                                                                                                                                                | `{ status: "submitted", snapshotHash }`; needs clean validation and a current certification                                                                                                                                   |
 | QA `POST /qa/start`, `/qa/checklist`, `/qa/findings`, `/qa/findings/{findingId}/respond`, `/close`, `/qa/return`, `/qa/approve` | checklist `itemId`, `response` ∈ yes, no, na; finding `severity` ∈ critical, major, minor, observation, `category`, `description`, `ref?`; respond `response`; close `status` ∈ resolved, accepted, withdrawn, `note`; return `reason?`                                                                                                                                          | `QaReview` (start and edits; findings of a returned round carry forward) · `{ status: "returned" }` · `{ status: "approved", approvedSnapshotHash }`                                                                          |
-| Issue `POST /issue`                                                                                                             | `recipients[1..20]` (approved for the client), `invoiceDescription`                                                                                                                                                                                                                                                                                                              | §5.2                                                                                                                                                                                                                          |
+| Issue `POST /issue`                                                                                                             | `recipients[1..20]` (approved for the client), `invoiceDescription`                                                                                                                                                                                                                                                                                                              | §5.2. Needs the job fee (`FEE_REQUIRED`) and the organisation ABN (`SUPPLIER_ABN_REQUIRED`) `[REVIEW: TAX]`                                                                                                                   |
 | Reproduce `POST /v1/reports/{reportId}/reproduce`                                                                               | —                                                                                                                                                                                                                                                                                                                                                                                | §5.2                                                                                                                                                                                                                          |
 | Audit `GET /audit` · `GET /audit/verify`                                                                                        | —                                                                                                                                                                                                                                                                                                                                                                                | `{ events[] }` · `{ valid, count, headHash }` or `{ valid: false, brokenAtSeq, reason }`                                                                                                                                      |
 
@@ -290,7 +290,7 @@ Arrays marked "abbreviated" are shortened and the issue request spells out the d
 
 ```json
 {
-  "reference": "VAL-2026-65883",
+  "reference": "VAL-2026-833856",
   "clientId": "00000000-0000-4000-8000-000000000010",
   "portfolioId": "00000000-0000-4000-8000-000000000011",
   "selection": {
@@ -320,8 +320,8 @@ from 8):
 
 ```json
 {
-  "id": "a0059b21-0dc8-4646-86fb-fce1c06dda9c",
-  "reference": "VAL-2026-65883",
+  "id": "0bf2ef9d-a524-403d-8847-ad9d8f62b82a",
+  "reference": "VAL-2026-833856",
   "status": "draft",
   "clientId": "00000000-0000-4000-8000-000000000010",
   "portfolioId": "00000000-0000-4000-8000-000000000011",
@@ -335,12 +335,12 @@ from 8):
   "responsibleValuerId": "00000000-0000-4000-8000-000000000104",
   "reviewerId": "00000000-0000-4000-8000-000000000107",
   "feeCents": 88000,
-  "ruleSet": "au-core@2026.1-draft (approved)",
+  "ruleSet": "au-core@2026.1 (approved)",
   "template": "au-generic v2 (approved)",
   "version": 1,
   "assets": [
     {
-      "id": "60bafb05-be95-4082-955e-1916a308f77a",
+      "id": "ec991e17-2c5e-4c5c-afb6-c2da559e2e09",
       "label": "10 Sample Road, Exampleton VIC 3000",
       "address": { "formatted": "10 Sample Road, Exampleton VIC 3000" },
       "latitude": -37.81,
@@ -357,7 +357,7 @@ from 8):
     "requiredCount": 42,
     "missingRequired": [
       { "fieldId": "dates.valuation", "assetId": null },
-      { "fieldId": "evidence.sales", "assetId": "60bafb05-be95-4082-955e-1916a308f77a" }
+      { "fieldId": "evidence.sales", "assetId": "ec991e17-2c5e-4c5c-afb6-c2da559e2e09" }
     ]
   },
   "transitions": {
@@ -399,23 +399,23 @@ Calling that transition anyway (`POST /v1/jobs/{jobId}/engagement/accept`) retur
 
 ```json
 {
-  "reportId": "1811c2d2-d928-45d4-b8fb-914f38203406",
+  "reportId": "7ea59e31-97e1-4a93-8180-221ef7f44ef3",
   "version": 1,
-  "snapshotHash": "1fd8929e6192e53b59a86e6bab757f856a4f933371ba99c0d04fa0ea98d286bd",
-  "contentHash": "cf14c58129500de359ccf1aa18fc073b0bef8c7a26922629a23663d68962985f",
-  "pdfSha256": "78079b2377a2e17961f022ab8036b918cc894bef7a032a8a02aad5a4ed8ef2fe",
+  "snapshotHash": "c2ce167f56f857fd9a6d2467ff4b6b98c26f4ac36008f4850f2519a4e38a1968",
+  "contentHash": "1bcf1a0b355cef2e1b0b914dc0f1d2e80d437d4d3c6e860b2139454d496e323d",
+  "pdfSha256": "69fcb87524a7081a8f7cd12de9d9f86a43c4b667188286ece1b82dd48f1878a0",
   "invoice": {
     "number": "INV-2026-00001",
     "totalCents": 96800,
     "gstCents": 8800,
-    "pdfSha256": "37b4d4db81dfe3412adb75b142078bd805196627351bd6fb35bec949705790ec"
+    "pdfSha256": "63a93b383aaf1cb35f6cf3af6417c49485def758956c41330df3c5699aa28a6b"
   },
   "deliveries": [
     {
-      "id": "d5a7b905-8d83-47db-aad3-48839f524817",
+      "id": "ad1ef95e-0492-414e-aa9e-fd7114a9a0de",
       "recipient": "credit@lender.example",
       "status": "sent",
-      "providerMessageId": "local-d0f7fc3f33cc938699b7"
+      "providerMessageId": "local-1042bcd290678a4966ab"
     }
   ]
 }
@@ -423,7 +423,7 @@ Calling that transition anyway (`POST /v1/jobs/{jobId}/engagement/accept`) retur
 
 An unapproved recipient returns `422 UNAPPROVED_RECIPIENTS` with
 `details.unapproved: ["someone@else.example"]`; a valuer not assigned to the job gets
-`403 NOT_ASSIGNED`.
+`403 NOT_ASSIGNED`; an organisation without an ABN gets `422 SUPPLIER_ABN_REQUIRED`.
 
 **Reproduce** — `POST /v1/reports/{reportId}/reproduce` (no body) as the QA reviewer:
 
@@ -431,20 +431,20 @@ An unapproved recipient returns `422 UNAPPROVED_RECIPIENTS` with
 {
   "snapshotIntact": true,
   "pdf": {
-    "stored": "78079b2377a2e17961f022ab8036b918cc894bef7a032a8a02aad5a4ed8ef2fe",
-    "reproduced": "78079b2377a2e17961f022ab8036b918cc894bef7a032a8a02aad5a4ed8ef2fe",
+    "stored": "69fcb87524a7081a8f7cd12de9d9f86a43c4b667188286ece1b82dd48f1878a0",
+    "reproduced": "69fcb87524a7081a8f7cd12de9d9f86a43c4b667188286ece1b82dd48f1878a0",
     "match": true
   },
   "invoice": {
-    "stored": "37b4d4db81dfe3412adb75b142078bd805196627351bd6fb35bec949705790ec",
-    "reproduced": "37b4d4db81dfe3412adb75b142078bd805196627351bd6fb35bec949705790ec",
+    "stored": "63a93b383aaf1cb35f6cf3af6417c49485def758956c41330df3c5699aa28a6b",
+    "reproduced": "63a93b383aaf1cb35f6cf3af6417c49485def758956c41330df3c5699aa28a6b",
     "match": true
   },
   "emails": [
     {
       "recipient": "credit@lender.example",
-      "stored": "d0f7fc3f33cc938699b765470472a3fb7374fd972d53b292fdb79a4dbaa590c7",
-      "reproduced": "d0f7fc3f33cc938699b765470472a3fb7374fd972d53b292fdb79a4dbaa590c7",
+      "stored": "1042bcd290678a4966abab02ae3f211ad32d6727dbe58e76b29b8e0a1ff537ea",
+      "reproduced": "1042bcd290678a4966abab02ae3f211ad32d6727dbe58e76b29b8e0a1ff537ea",
       "match": true
     }
   ],
@@ -464,12 +464,12 @@ development and tests use `RecordingEmailTransport`. Each delivery has a `payloa
 
 Delivery-status callback `POST /v1/email-deliveries/{id}/status`:
 
-| Aspect   | Contract                                                                                                                                                                                                                                                        |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Caller   | Service account in the same organisation with `actor_kind = system` (otherwise `403 SYSTEM_ONLY`; other organisation → `404`)                                                                                                                                   |
-| Body     | `{ status: delivered \| bounced \| failed, providerMessageId? }`                                                                                                                                                                                                |
-| Response | `{ id, status }`; audit `email.delivery_updated` with before/after status                                                                                                                                                                                       |
-| Gaps     | `providerMessageId` is neither checked nor stored; no status-transition guard (e.g. `delivered → failed`); no provider signature verification; no event-id idempotency. A live provider with signed webhooks is **Planned** (S-058, S-072) `[REVIEW: SECURITY]` |
+| Aspect   | Contract                                                                                                                                                                                                                                                                     |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Caller   | Service account in the same organisation with `actor_kind = system` (otherwise `403 SYSTEM_ONLY`) and a role granting `email.send` (today `VALUER` or `FINANCE`; a dedicated integration role is recommended `[REVIEW: SECURITY]`); delivery in another organisation → `404` |
+| Body     | `{ status: delivered \| bounced \| failed, providerMessageId? }`                                                                                                                                                                                                             |
+| Response | `{ id, status }`; audit `email.delivery_updated` with before/after status                                                                                                                                                                                                    |
+| Gaps     | `providerMessageId` is neither checked nor stored; no status-transition guard (e.g. `delivered → failed`); no provider signature verification; no event-id idempotency. A live provider with signed webhooks is **Planned** (S-058, S-072) `[REVIEW: SECURITY]`              |
 
 ### 6.2 Planning adapters (domain contract, no HTTP endpoint yet)
 

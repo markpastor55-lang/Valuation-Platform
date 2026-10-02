@@ -310,6 +310,7 @@ Organisation-wide roles: ADMINISTRATOR, STANDARDS_OWNER, ALLOCATOR, FINANCE. Oth
 | `photo.redact`               |               |                 |           | ✓      | ✓               |             |         |                 |            |     |
 | `photo.view_unredacted`      |               |                 |           | ✓      |                 | ✓           |         |                 |            |     |
 | `evidence.edit`              |               |                 |           | ✓      |                 |             |         |                 |            |     |
+| `valuation.edit`             |               |                 |           | ✓      |                 |             |         |                 | 👤         |     |
 | `calculation.run`            |               |                 |           | ✓      |                 |             |         |                 |            |     |
 | `calculation.override`       |               |                 |           | ✓      |                 |             |         |                 | 👤         |     |
 | `sketch.edit`                |               |                 |           | ✓      | ✓               |             |         |                 |            |     |

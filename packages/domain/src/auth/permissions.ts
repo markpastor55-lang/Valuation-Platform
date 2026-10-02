@@ -44,6 +44,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'photo.redact',
     'photo.view_unredacted',
     'evidence.edit',
+    'valuation.edit',
     'calculation.run',
     'calculation.override',
     'sketch.edit',
@@ -88,6 +89,7 @@ export const ORG_WIDE_ROLES: ReadonlySet<Role> = new Set([
 
 /** Professional decisions that software or AI must never take. */
 export const HUMAN_ONLY_PERMISSIONS: ReadonlySet<Permission> = new Set([
+  'valuation.edit',
   'engagement.accept',
   'calculation.override',
   'measurement.approve',

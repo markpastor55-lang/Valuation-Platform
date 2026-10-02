@@ -19,7 +19,7 @@ import {
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
 import type { Db } from '../db/db.js';
-import { HttpError, notFound } from '../http/errors.js';
+import { denied, HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
 import { authorizeJob, touchJob, type JobRow } from '../repo/jobs.js';
 import {
@@ -414,6 +414,13 @@ export function registerWorkflowRoutes(r: Router): void {
           { forUpdate: true },
         );
         const agg = await loadAggregate(tx, job.id, job);
+        if (job.submitted_snapshot_hash !== snapshotHashOf(agg)) {
+          throw new HttpError(
+            409,
+            'SNAPSHOT_MISMATCH',
+            'content differs from the submitted snapshot',
+          );
+        }
         const res = await transition(tx, ctx, principal, job, agg, 'startReview');
         const exception = resource.selfApprovalExceptionAuthorised
           ? (
@@ -474,6 +481,7 @@ export function registerWorkflowRoutes(r: Router): void {
       principal: Principal,
       at: string,
       ctx: AppContext,
+      job: JobRow,
     ) => QaReview,
     auditAction: string,
   ) => {
@@ -497,6 +505,7 @@ export function registerWorkflowRoutes(r: Router): void {
             principal,
             ctx.clock.now(),
             ctx,
+            job,
           );
           await saveReview(tx, updated);
           await audit(tx, ctx, {
@@ -524,8 +533,10 @@ export function registerWorkflowRoutes(r: Router): void {
     }),
     (review, b, principal) => {
       if (review.reviewerId !== principal.userId)
-        throw new HttpError(
-          403,
+        throw denied(
+          principal,
+          'qa.review',
+          { type: 'job', id: review.jobId },
           'NOT_REVIEWER',
           'only the assigned reviewer can answer the checklist',
         );
@@ -546,7 +557,13 @@ export function registerWorkflowRoutes(r: Router): void {
     }),
     (review, b, principal, at, ctx) => {
       if (review.reviewerId !== principal.userId)
-        throw new HttpError(403, 'NOT_REVIEWER', 'only the assigned reviewer can raise findings');
+        throw denied(
+          principal,
+          'qa.review',
+          { type: 'job', id: review.jobId },
+          'NOT_REVIEWER',
+          'only the assigned reviewer can raise findings',
+        );
       return raiseFinding(review, {
         id: ctx.newId(),
         severity: b.severity,
@@ -564,8 +581,25 @@ export function registerWorkflowRoutes(r: Router): void {
     'Valuer responds to a finding',
     'job.update',
     z.object({ response: z.string().min(3), findingId: z.string().optional() }),
-    (review, b, principal, at) =>
-      respondToFinding(review, b.findingId ?? '', b.response, principal.userId, at),
+    (review, b, principal, at, _ctx, job) => {
+      if (job.responsible_valuer_id !== principal.userId) {
+        throw denied(
+          principal,
+          'job.update',
+          { type: 'job', id: job.id },
+          'NOT_RESPONSIBLE_VALUER',
+          'only the responsible valuer responds to findings',
+        );
+      }
+      if (job.status !== 'returned') {
+        throw new HttpError(
+          409,
+          'INVALID_TRANSITION',
+          'findings are answered after the job is returned',
+        );
+      }
+      return respondToFinding(review, b.findingId ?? '', b.response, principal.userId, at);
+    },
     'qa.finding_responded',
   );
 
@@ -602,6 +636,15 @@ export function registerWorkflowRoutes(r: Router): void {
           forUpdate: true,
         });
         const agg = await loadAggregate(tx, job.id, job);
+        if (agg.qaReview && agg.qaReview.reviewerId !== principal.userId) {
+          throw denied(
+            principal,
+            'qa.review',
+            { type: 'job', id: job.id },
+            'NOT_REVIEWER',
+            'only the reviewer conducting the review can return the job',
+          );
+        }
         const res = await transition(
           tx,
           ctx,

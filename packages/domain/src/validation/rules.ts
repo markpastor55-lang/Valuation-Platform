@@ -960,6 +960,61 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
         : [{ path: 'job/certification', message: 'certification has not been signed' }],
   }),
   rule({
+    code: 'VAL-CERT-002',
+    title: 'Certification inconsistent with the report',
+    category: 'certification',
+    severity: 'blocking',
+    stages: ['submit', 'issue'],
+    acknowledgeable: false,
+    description:
+      'The certified amount, basis of value and valuation date must match the adopted figures and dates in the report.',
+    evaluate: (ctx) => {
+      const c = ctx.certification;
+      if (!c) return [];
+      const out: RawFinding[] = [];
+      const field =
+        c.amount.kind === 'market_rent'
+          ? 'rent.adoptedMarketRent'
+          : c.amount.kind === 'sum_insured'
+            ? 'ins.sumInsured'
+            : 'valuation.adoptedValue';
+      const amounts = ctx.assetIds.flatMap((assetId) => {
+        const v = ctx.values.assets[assetId]?.[field];
+        if (typeof v === 'number') return [v];
+        if (typeof v === 'string') {
+          const calc = ctx.calculations.find((x) => x.id === v);
+          return calc ? [effectiveValue(calc)] : [];
+        }
+        return [];
+      });
+      if (amounts.length) {
+        const total = amounts.reduce((a, b) => a + b, 0);
+        if (Math.abs(total - c.amount.value) > 0.5) {
+          out.push({
+            path: 'job/certification',
+            message: `certified ${c.amount.kind.replace('_', ' ')} ${c.amount.value} differs from the reported ${field} total ${total}`,
+          });
+        }
+      }
+      const valuationDate = jobDate(ctx, 'dates.valuation');
+      if (valuationDate && valuationDate !== c.valuationDate) {
+        out.push({
+          path: 'job/certification',
+          message: `certified valuation date ${c.valuationDate} differs from ${valuationDate}`,
+        });
+      }
+      const norm = (x: string) => x.toLowerCase().replace(/[^a-z]/g, '');
+      const basis = ctx.values.job['instruction.basisOfValue'];
+      if (typeof basis === 'string' && norm(basis) !== norm(c.basisOfValue)) {
+        out.push({
+          path: 'job/certification',
+          message: `certified basis "${c.basisOfValue}" differs from the instructed basis ${basis}`,
+        });
+      }
+      return out;
+    },
+  }),
+  rule({
     code: 'VAL-QA-001',
     title: 'QA incomplete',
     category: 'qa',
