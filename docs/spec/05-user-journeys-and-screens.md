@@ -1,0 +1,427 @@
+# 05 — User journeys and screens
+
+> Status: **Draft for review** · Owner: Product architecture (with UX lead) · Applies to: mobile app (phone/tablet), web portal, API workflow guards, end-to-end tests
+
+Journeys use the roles, lifecycle states and transitions, and audit actions in 00 §5, §7 and §8.
+Screen IDs are defined in §2. Personas are in spec 02. Defaults and assumptions (A-xx, Q-xx) are in
+spec 01.
+
+How to read the journeys:
+
+- Steps are numbered. The actor's action comes first, then "→" and the system response.
+- Lifecycle transitions are shown as `state → state` (transition name).
+- Exceptions are labelled E1, E2, … within each journey.
+
+## 1. User journeys
+
+### J-01 — Create and allocate a job (single and portfolio)
+
+| Item          | Detail                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| Actor         | Allocator                                                                                                     |
+| Trigger       | Instruction received (email, lender platform, phone, client portal request).                                  |
+| Preconditions | Signed in with MFA; holds `job.create` and `job.allocate`; is a member of the portfolio if it is restricted.  |
+| End state     | Job in `draft` with instruction, assets and assignees. Audit: `job.created`, `asset.created`, `job.assigned`. |
+
+1. Allocator opens W-01 and chooses asset mode `SINGLE` or `PORTFOLIO`. → The instruction form opens: client/entity, instructing party, intended users, intended use, basis of value, interest valued, fee basis, due date, engagement documents.
+2. Allocator selects or creates the client entity, enters the instruction and uploads the instruction documents. → The job is created in `draft` with a tenant-scoped reference; documents are stored with provenance `uploaded_document`. Audit: `job.created`.
+3. `SINGLE`: allocator searches for the address. → The geocoder adapter returns candidates with confidence. The chosen candidate stores the address, coordinates, LGA, jurisdiction, confidence and provenance. Audit: `asset.created`, `datasource.used`.
+4. `PORTFOLIO`: allocator adds assets one at a time, or uploads a CSV/XLSX using the import template. → Each row is validated: required columns, jurisdiction, duplicates within the file and against existing assets (normalised address or parcel). Rows are geocoded and shown as accepted, needs pin, or rejected (with reason). Only accepted rows create assets.
+5. Optionally, the allocator records a preliminary selection (purpose, property type, scope) from the instruction. → Stored as the job default; the valuer confirms it in J-03.
+6. Allocator marks the portfolio as restricted, if required, and names its members. → Membership is enforced from then on (02 SoD-05).
+7. Allocator opens W-02 and assigns the responsible valuer, any co-signatory, inspectors and the QA reviewer. → Only eligible users are offered: current credentials for each asset's jurisdiction, availability, workload. The responsible valuer is excluded from the QA reviewer list. Each assignment is audited `job.assigned` and assignees are notified.
+8. Allocator books inspection appointments (date, time window, site contact, access notes). → The job appears in the assignees' M-01 "Today/Upcoming" lists and offline packs.
+
+Exceptions:
+
+- **E1** Low geocode confidence or no match (e.g. lot-only or RMB rural addresses). → The asset is saved with location `unverified` and listed as "Needs pin". A user places the pin manually (provenance `manual`).
+- **E2** Duplicate asset detected. → The existing asset and its open jobs are shown. The allocator links to it, or confirms a distinct asset with a reason.
+- **E3** No eligible valuer. → Allocation is blocked with the reason, and the job stays in the W-02 unallocated queue.
+- **E4** Import contains invalid rows. → Rejected rows create nothing. An error report is downloadable, and corrected rows can be re-uploaded.
+- **E5** Allocator is not a member of a restricted portfolio. → The job is not visible; the allocator requests membership from an Administrator.
+
+### J-02 — Engagement acceptance with conflict check
+
+| Item          | Detail                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Actor         | Responsible valuer (declaration). Responsible valuer or Allocator with `engagement.accept` (acceptance).                      |
+| Trigger       | `job.assigned` notification for the responsible valuer.                                                                       |
+| Preconditions | Job in `draft`; responsible valuer assigned; approved engagement template available; online.                                  |
+| End state     | `draft → active` (acceptEngagement), audit `job.engagement_accepted`; or `draft → cancelled` (cancel), audit `job.cancelled`. |
+
+1. Responsible valuer opens W-03. → A conflict search runs over the organisation's jobs within a configurable look-back period. It matches the asset address and parcel, client entity, instructing party, named parties (owners, borrowers, parties to proceedings) and related entities. Matches are listed with job reference, role, date and outcome.
+2. Valuer records an outcome for each match: `not_relevant`, `disclosed_and_managed` (note mandatory) or `conflict`. → Any `conflict` disables acceptance.
+3. Valuer completes the independence and conflict declaration and confirms competence for the property type and jurisdiction. → Stored as a first-class record (G5), with the version of the declaration wording.
+4. Valuer or allocator confirms the engagement terms (scope, intended use and users, reliance limits, fee basis, due date) and generates the engagement letter. → The letter is rendered from the pinned template version. Client acceptance is recorded as an uploaded signed letter, or as an acceptance date and method.
+5. A user with `engagement.accept` selects **Accept engagement**. → Preconditions are checked: declaration complete, no `conflict` outcome, required instruction fields present, client acceptance recorded (or an override reason where firm policy allows). The job moves `draft → active`.
+
+Exceptions:
+
+- **E1** Conflict found. → The valuer declines. The allocator reallocates (J-01 step 7) or cancels with a reason.
+- **E2** Client has not returned the engagement letter. → Firm policy decides whether this blocks acceptance or allows it with a recorded reason `[REVIEW: LEGAL]`.
+- **E3** Offline. → W-03 is online only, because the conflict search is server-side.
+- **E4** Purpose or intended users change after acceptance. → `field.updated`; the conflict check must be re-run before submission (blocking validation).
+
+### J-03 — Select purpose, property type, scope, jurisdiction and template version
+
+| Item          | Detail                                                                                                   |
+| ------------- | -------------------------------------------------------------------------------------------------------- |
+| Actor         | Responsible valuer                                                                                       |
+| Trigger       | First step after acceptance, or a change in instruction or site circumstances.                           |
+| Preconditions | Job in `draft`, `active` or `returned`; `job.update`; rule-set versions cached on the device if offline. |
+| End state     | Selection stored and requirements resolved per asset. Audit: `job.selection_changed`.                    |
+
+1. Valuer opens M-03. → The current selection is shown: jurisdiction (per asset, derived from the address; changing it needs a reason), purpose and scope (job defaults with per-asset override), property type (per asset), asset mode, and template and rule-set version. The default version is the latest approved version effective at job creation for the jurisdiction, purpose and client.
+2. Valuer changes a value (e.g. scope `FULL` → `KERBSIDE`). → The domain library resolves the requirements (works offline) and shows an impact preview before commit:
+   - fields added and fields no longer required;
+   - sections added or removed;
+   - new blocking validations;
+   - certification wording changes;
+   - selection-rule results (e.g. `DESKTOP` escalation triggers).
+3. Valuer confirms, giving a reason where the rule set requires one (e.g. a scope downgrade). → The selection is saved and audited `job.selection_changed` (before/after, rule-set version). M-04 and the report section list update immediately.
+4. → Captured values for fields that are no longer required are kept and listed under "Not required in current selection" (01 A-17). They are excluded from the report and from validation, keep their provenance, and return if the selection reverts.
+5. Optionally, the valuer moves the job to a newer approved template or rule-set version. → A diff summary is shown. The new version is pinned and requirements are re-resolved.
+
+Exceptions:
+
+- **E1** Blocked combination (e.g. SEL-001: `INSURANCE_REPLACEMENT` with `VACANT_LAND`). → The rule ID and an explanation are shown. Nothing is saved.
+- **E2** Job is `submitted` or later. → Selection is read-only. Changes need a QA return or `openAmendment`.
+- **E3** Offline and the needed rule-set version is not cached. → The change is blocked with "Rule set not available offline". The previous selection is kept.
+- **E4** Selection changed on two devices. → `sync.conflict_detected`, resolved in M-13. Selection is never auto-merged.
+- **E5** `CGT_RETROSPECTIVE` selected. → The retrospective valuation date and the retrospective-data cut-off become required. Existing evidence and commentary dated after the cut-off are flagged.
+
+### J-04 — Route planning and offline field inspection
+
+| Item          | Detail                                                                                                                                                                                   |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Actor         | Field Inspector or Valuer                                                                                                                                                                |
+| Trigger       | Inspection day.                                                                                                                                                                          |
+| Preconditions | Assigned to the job; job `active`; device enrolled; location permission optional.                                                                                                        |
+| End state     | Inspection complete for its scope. Photos, notes, documents and sketches synced without duplicates. Audit: `field.updated`, `photo.captured`, `photo.privacy_flagged`, `photo.redacted`. |
+
+1. User opens M-01 in "Today" mode. → The day's inspections are shown in appointment order on a list and a map. The user can reorder stops. Each job shows whether it is ready offline.
+2. User selects **Prepare offline** (automatic on Wi-Fi). → The job package is downloaded to the encrypted store: asset data, selection, rule-set and template versions, checklists, prior photo thumbnails, plans and documents. The job is marked "Available offline".
+3. User selects **Navigate**. → The destination address or coordinates are handed to the device's maps app. No other job data is passed.
+4. On arrival, user selects **Start inspection**. → The start time is recorded. GPS is recorded only with OS permission and the in-app setting on. A scope banner is shown (e.g. `KERBSIDE`: "External only — do not enter").
+5. User works through the M-06 checklist generated from the rule set (e.g. `RESIDENTIAL` + `FULL`: site, exterior, living, kitchen, bedrooms, bathrooms, laundry, garage, outdoor improvements), recording condition, finishes, fixtures and notes for each area. → Every change is autosaved locally. Required items are marked and progress is shown per area.
+6. User dictates notes. → On-device dictation is used where available and the transcript is inserted for editing. Audio is not kept (01 Q-22).
+7. User captures photos in M-07. → Each photo is stored with UUID, content hash, timestamp, sequence, area, caption and optional GPS. Blur, low-light and duplicate checks run on the device and warn the user. Audit: `photo.captured`.
+8. User flags sensitive content (people, personal documents, number plates). → The photo is excluded from any report until it is redacted or consent is recorded. Audit: `photo.privacy_flagged`. Redaction is done in M-08 (audit: `photo.redacted`).
+9. User captures documents (lease, rates notice, plans) or barcodes (plant tags, meter numbers) in document mode. → Edges are detected and perspective corrected. The item is stored as a Document with provenance `site_capture`.
+10. User records areas not inspected and access attempts (required for `KERBSIDE` and `RESTRICTED`). → The restricted-access section fields are populated.
+11. User selects **Finish inspection**. → Required checklist items for the scope are checked and gaps listed. The user may finish with gaps, giving a reason for each; each gap becomes a validation warning for the valuer.
+12. Connectivity returns. → Queued operations are replayed idempotently using client UUIDs. Photos upload in the background and uploads resume after interruption. The server de-duplicates by UUID and hash, and per-record status is shown in M-13.
+
+Exceptions:
+
+- **E1** Location permission denied. → No current-location dot and no photo GPS. Everything else works.
+- **E2** Camera permission denied. → Capture is disabled, with a link to OS settings. Notes and checklist still work.
+- **E3** Storage low. → Warning at a threshold; new capture stops at a hard floor. Unsynced data is never evicted.
+- **E4** App killed or crashed. → On relaunch the autosaved state reopens at the same area.
+- **E5** Access refused or site unsafe. → The attempt is recorded (time, person spoken to, reason) and a scope change is suggested. Only the responsible valuer can change the scope (J-03).
+- **E6** Another user edited the same field. → `sync.conflict_detected`; resolved in M-13 (`sync.conflict_resolved`).
+- **E7** Device lost. → An Administrator deprovisions it, and local data is wiped when the token is rejected (01 A-19).
+
+### J-05 — Review AI photo suggestions (accept / edit / reject)
+
+| Item          | Detail                                                                                                    |
+| ------------- | --------------------------------------------------------------------------------------------------------- |
+| Actor         | Valuer, or Field Inspector with `ai.decide` on assigned inspections. The AI service is a non-human actor. |
+| Trigger       | Photos synced (or processed on the device).                                                               |
+| Preconditions | AI enabled for the organisation (01 Q-16).                                                                |
+| End state     | Every suggestion has a human decision or stays pending. Accepted or edited facts carry provenance.        |
+
+1. → The AI service creates suggestions per photo. Only allow-listed types are produced: area class (kitchen, bathroom, façade, plant room) and visible attributes (induction cooktop, oven, rangehood, stone benchtop). Each has a confidence, model ID and version, and the source region. Suggestions are stored separately from facts. Audit: `ai.suggestion_created`.
+2. User opens M-09 from a photo, an area or the suggestion queue. → Each suggestion card shows the source photo with the highlighted region, the suggested value, confidence (percentage and band) and model version, with **Accept / Edit / Reject**.
+3. User selects **Accept**. → A fact is written with the accepting user as author, the time, photo ID, suggestion ID and model version. It is labelled "From photo, confirmed by <user>". Audit: `ai.suggestion_accepted`.
+4. User selects **Edit** and changes the value (e.g. to "gas cooktop"). → A human-authored fact is written and linked to the suggestion. Audit: `ai.suggestion_edited`.
+5. User selects **Reject**, with an optional reason. → The suggestion is hidden and kept in the audit. Audit: `ai.suggestion_rejected`.
+6. → A fact accepted by a Field Inspector stays "inspector-captured" until the valuer confirms it (01 A-25).
+7. → Pending suggestions never appear in the report. A non-blocking validation warning counts the undecided suggestions. There is no "accept all".
+
+Exceptions:
+
+- **E1** AI unavailable or device offline. → Photos are usable; suggestions arrive later. Nothing is blocked.
+- **E2** The model returns a type that is not allowed (concealed construction, operational condition, brand, compliance, dimensions, defects). → The server filter discards it and logs it for model monitoring. It is never shown.
+- **E3** Source photo later redacted or deleted. → Pending suggestions are invalidated. Accepted facts keep their provenance and are flagged for re-check.
+- **E4** Accepted facts conflict across photos (e.g. two benchtop materials in one kitchen). → A conflict is raised for the valuer to resolve.
+
+### J-06 — Areas & Sketch: import, calibrate, draw, deduct, schedule, approve
+
+| Item          | Detail                                                                                                                                                                       |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Actor         | Valuer (draws and approves). Field Inspector (draws only).                                                                                                                   |
+| Trigger       | Improvement areas are needed for the selection.                                                                                                                              |
+| Preconditions | `sketch.edit`; job editable; asset has improvements.                                                                                                                         |
+| End state     | Approved area-schedule version referenced by the asset area fields. Audit: `sketch.version_created`, `calibration.created`, `calibration.confirmed`, `measurement.approved`. |
+
+1. User opens M-10 and chooses a source: existing plan (image or PDF page), photograph of a plan, aerial/site image (licensed sources only) or blank canvas. → The original file is stored unchanged as a SourcePlan with its provenance. Optional perspective correction for photographed plans is labelled "Assistive — not a surveyed measurement".
+2. Image source: user opens M-11, taps two points on a known dimension, and enters the length in metres and its source (measured on site, plan dimension, title/survey, estimated). → The scale is computed and labelled "Unverified" (`GEO-SCALE-UNVERIFIED`). A check dimension is requested and the discrepancy shown as a percentage. Audit: `calibration.created`.
+3. Valuer confirms the scale. → Audit: `calibration.confirmed`. Recalibrating creates a new calibration and recomputes all dependent areas, keeping the history.
+4. Blank canvas: user draws by entering lengths and angles. → Geometry is driven by the entered dimensions, so scale calibration does not apply. The source of each dimension is recorded.
+5. User draws closed polygons (tap corners; snap to corners, grid and right angles; exact lengths; undo/redo; duplicate; internal partitions). Each polygon is labelled with level, component, use (living, garage, verandah, office, warehouse, mezzanine, …) and measurement basis (GFA, GLA, NLA, building area, site coverage, other). → m² and perimeter are calculated live. Each committed change saves a sketch version (`sketch.version_created`).
+6. Optionally, the user requests an AI outline. → Suggested walls, corners and labels appear as a dashed overlay. Each boundary and label is accepted, edited or rejected individually (J-05 rules).
+7. User adds deductions (voids, courtyards, excluded areas). → They are subtracted. Overlaps (`GEO-OVERLAP`) are detected and never double-counted. Open shapes, implausible dimensions, inconsistent floor totals and differences from supplied or online areas beyond the threshold are flagged.
+8. User opens M-12. → The schedule shows one row per component: level, component, use, basis, gross, deductions, net, source, confidence, measured by, date, and a link to the sketch or source image. Totals are shown per floor and overall.
+9. Valuer selects **Approve**. → Approval requires no blocking GEO issues and a confirmed (or dimension-driven) scale. The schedule version is locked and the asset area fields reference it. Audit: `measurement.approved`.
+10. Valuer chooses what the report includes: the approved sketch, legend, north point (if known), scale status, schedule and disclaimer; or excludes working sketches. → The choice is recorded. Excluded sketches stay in the audit record.
+
+Exceptions:
+
+- **E1** Edit after approval. → A new sketch version is created and the approval is voided. Area fields show "Unverified" until re-approved.
+- **E2** Calibration discrepancy above tolerance. → Blocking until the image is recalibrated or a reason is recorded.
+- **E3** Offline. → Everything works. Approval is queued and re-validated by the server on sync. If rejected, the user is notified and the approval is voided.
+- **E4** PDF unreadable or encrypted. → An error with guidance is shown; the original is kept.
+- **E5** Area differs from the supplied plan beyond the threshold. → A warning that needs acknowledgement with a reason.
+
+### J-07 — Evidence analysis, adjustments and reconciliation
+
+| Item          | Detail                                                                                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Actor         | Responsible valuer                                                                                                       |
+| Trigger       | Analysis begins (usually after inspection).                                                                              |
+| Preconditions | Job `active` or `returned`; `evidence.edit`, `calculation.run`.                                                          |
+| End state     | Sales and rental evidence analysed, approaches applied, adopted value reconciled with rationale. Every figure traceable. |
+
+1. Valuer opens W-04 and adds a sale, either manually or from a licensed adapter. → Required: address, transaction date, price, interest, land area, improvement area and basis, zoning, source, retrieval time, effective date, licence basis and verification status. Audit: `evidence.sale_added`, `datasource.used`.
+2. → Unit rates (e.g. `land.rate_per_m2@1`) are computed. Raw inputs, units, formula ID and version are stored. Audit: `calculation.run`.
+3. Valuer rates comparability by attribute and enters adjustments (time, location, land size, improvements, condition, …) as a percentage or a dollar amount. → The adjusted indication and gross and net adjustment totals are shown. Outliers in the evidence set are flagged.
+4. Valuer opens W-06 on any figure. → The drawer shows inputs with provenance, units, conversions, formula and version, intermediate values, author and time.
+5. Valuer overrides a calculated value. → A reason is required. Both the calculated and the overridden values are kept, and the figure shows an "Overridden" badge wherever it appears. Audit: `calculation.overridden`.
+6. Valuer records rental evidence in W-05: rent basis (gross/net), face and effective rent, incentives, outgoings, lease area, term and options, review mechanism, date. → $/m² and effective rent are computed. Audit: `evidence.rental_added`.
+7. In W-07, valuer applies the primary approach and the cross-checks the rule set requires, and reconciles: adopted rate or value, weighting and written rationale. → The rationale is mandatory. The range of indications is shown. Template rounding is applied as a separate, recorded step.
+8. In W-08, valuer selects national, state and local commentary modules, or writes job-specific commentary. → Modules dated after the retrospective valuation date or research cut-off are blocked.
+
+Exceptions:
+
+- **E1** Evidence without complete provenance. → Blocking validation (G3).
+- **E2** Retrospective job with a sale dated after the valuation date. → A warning requiring justification, or a block, depending on the rule set `[REVIEW: TAX]`.
+- **E3** Adapter outage or rate limit. → Manual entry fallback; adapter status shown.
+- **E4** The licence prohibits reproduction in client reports. → The evidence can be used in analysis but appears in the report only in the permitted form `[REVIEW: DATA_LICENSING]`.
+- **E5** Areas in other units (e.g. squares). → Converted to m², with the original value and unit kept.
+
+### J-08 — Validation, certification and lock for QA
+
+| Item          | Detail                                                                                                                                  |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Actor         | Responsible valuer (and any co-signatories)                                                                                             |
+| Trigger       | Valuer considers the job ready for QA.                                                                                                  |
+| Preconditions | Job `active` or `returned`; online; no pending sync operations or conflicts.                                                            |
+| End state     | `active/returned → submitted` (submitForQa). Snapshot hash recorded and content locked. Audit: `certification.signed`, `job.submitted`. |
+
+1. Valuer opens W-10 and runs validation (it also runs continuously). → Results are grouped as Blocking, Warning and Info, each with a `VAL-`/`GEO-` code, message, field link and rule version. Audit: `validation.run`.
+2. Valuer resolves blocking items by editing data through the field links. → Validation re-runs on each change.
+3. Valuer acknowledges warnings with a reason. → Audit: `validation.acknowledged`. Blocking items cannot be acknowledged.
+4. Valuer opens W-11. → The template-driven certification is rendered: valuer identity and credentials, role, inspection scope, valuation date, basis and amount, independence and conflicts, assumptions and special assumptions, limitations, standards relied on, signing date. The template version and its review status are shown.
+5. Valuer types their full name as an attestation and completes MFA step-up. → The system checks that the actor is the responsible valuer, is human, has a fresh MFA, holds current credentials, and that no blocking validations remain. Audit: `certification.signed`.
+6. Any co-signatories required by the template sign their own statements. → Each statement is recorded separately.
+7. Valuer selects **Submit for QA**. → The server re-runs validation, creates the snapshot, computes its hash and locks content. The job moves to `submitted` and enters the QA queue. Audit: `job.submitted`.
+
+Exceptions:
+
+- **E1** Data changed between validation and signing (e.g. a late sync). → Signing fails and the new issues are listed.
+- **E2** User is not the responsible valuer. → No sign control is shown. A direct API call returns `auth.denied`.
+- **E3** MFA failed or timed out. → Nothing is signed.
+- **E4** Clauses in `placeholder`/`draft` review status in production. → Signing is blocked (G1).
+- **E5** Offline. → W-11 is unavailable, with the reason shown.
+- **E6** Credentials expired. → Blocking.
+
+### J-09 — QA review, findings, return or approve
+
+| Item          | Detail                                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Actor         | QA Reviewer. The responsible valuer responds. A user with `qa.self_approval_exception` authorises any exception.        |
+| Trigger       | Job in `submitted`.                                                                                                     |
+| Preconditions | Reviewer is not the responsible valuer or a co-signatory (02 SoD-02, SoD-07), unless an exception is authorised.        |
+| End state     | `in_review → approved` (approve), audit `qa.approved`; or `in_review → returned` (returnToValuer), audit `qa.returned`. |
+
+1. Reviewer opens W-12. → Submitted jobs are listed with due date, purpose, property type, risk flags and round number. Jobs where the reviewer is the responsible valuer or a co-signatory are excluded.
+2. Reviewer starts the review. → `submitted → in_review` (startReview). The snapshot hash is verified. Audit: `qa.started`.
+3. Reviewer works through the checklist from the pinned rule-set version in W-13, beside the report preview, evidence, traces, photos and audit. → Each item is recorded as pass, finding, or N/A with a reason.
+4. Reviewer raises findings, each anchored to a field, section or photo, with severity (`CRITICAL`, `MAJOR`, `MINOR`, `ADVISORY`; values proposed, final list in spec 06) and the required action. → Audit: `qa.finding_raised`.
+5. Reviewer returns the job. → `in_review → returned` (returnToValuer). Content unlocks for the valuer and the certification is invalidated, because content will change. Audit: `qa.returned`.
+6. Valuer responds to each finding (changed, or not changed with reasoning), re-validates, re-certifies and resubmits (J-08 steps 4–7). → Audit: `qa.finding_responded`; job moves `returned → submitted` (resubmit).
+7. Reviewer starts the next round. → A diff against the previous round is shown. Findings are closed with a disposition (`RESOLVED`, `ACCEPTED_AS_IS`, `WITHDRAWN`). Audit: `qa.finding_closed`.
+8. Reviewer approves with MFA step-up once the checklist is complete and no `CRITICAL` or `MAJOR` findings are open. → The snapshot hash is re-verified. `in_review → approved` (approve). Audit: `qa.approved`.
+9. Self-approval exception, used only when no eligible reviewer exists: the responsible valuer requests an exception with a reason, and a different user holding `qa.self_approval_exception` authorises it with a reason and MFA. → Audit: `qa.self_approval_exception_authorised`. The responsible valuer may then review and approve. The exception appears in the issued report's audit metadata `[REVIEW: API_STANDARDS]`.
+
+Exceptions:
+
+- **E1** Snapshot hash mismatch. → Approval is blocked and a security incident is logged for investigation.
+- **E2** Reviewer reassigned mid-review. → Findings are kept and the new reviewer continues.
+- **E3** Unresolved disagreement. → Escalated to `STANDARDS_OWNER` and recorded in the finding thread.
+- **E4** An exception authorised by the requester, or approval attempted without an exception. → `auth.denied`.
+
+### J-10 — Issue: final PDF, invoice, email and delivery status
+
+| Item          | Detail                                                                                                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Actor         | Responsible valuer or Allocator with `report.issue` and `email.send`. Finance for the invoice.                                                                                                        |
+| Trigger       | Job in `approved`.                                                                                                                                                                                    |
+| Preconditions | Online; approved recipients recorded at engagement.                                                                                                                                                   |
+| End state     | `approved → issued` (issue). Immutable PDF and snapshot stored, invoice created, delivery tracked. Audit: `report.issued`, `invoice.created`, `email.queued`, `email.sent`, `email.delivery_updated`. |
+
+1. Issuer opens W-15. → Shown: summary of the approved snapshot, report version number, approved recipients, and the delivery method from client config (portal link, attachment or both).
+2. Issuer generates the final PDF. → The snapshot hash is verified and the PDF rendered deterministically from it. It contains the body sections and appendices: redacted photos only, maps with provider attribution, evidence tables, the approved sketch and schedule (if included), certification, and audit metadata (snapshot hash, template and rule-set versions, QA approver, any exception). It carries the template watermark (e.g. "Issued to <client> — v1"). The PDF hash is computed.
+3. Issuer confirms issue with MFA step-up. → The PDF and snapshot are written to object storage under object-lock. The job moves to `issued`. Audit: `report.issued`.
+4. → A draft invoice is created from the fee basis (per-asset lines for portfolios, GST 10 %) and Finance is notified. Finance reviews and sends it in W-16. Audit: `invoice.created`.
+5. Issuer sends to recipients; approved recipients are pre-selected. Adding an address needs approval and a reason. → Audit: `email.queued` per recipient, then `email.sent` through the adapter.
+6. → Delivery webhooks update the status per recipient (delivered, bounced, complaint), and a bounce alerts the issuer. Audit: `email.delivery_updated`.
+7. → The report becomes visible in the client portal (J-11).
+
+Exceptions:
+
+- **E1** Renderer failure. → The job stays `approved`. Retry is offered. No partial issue.
+- **E2** A verification re-render does not reproduce the PDF hash. → Issue is blocked (ADR-007).
+- **E3** Email provider outage. → Messages stay queued with retries. The issue stands.
+- **E4** Bounce. → The issuer corrects the address (new approval) and re-sends. The original record is kept.
+- **E5** Correction needed after issue. → `issued → active` (openAmendment). A new report version follows the full workflow. The original is kept and marked superseded when the new version issues.
+
+### J-11 — Client portal read-only access
+
+| Item          | Detail                                                                          |
+| ------------- | ------------------------------------------------------------------------------- |
+| Actor         | Client (`CLIENT_READONLY`)                                                      |
+| Trigger       | Delivery email or portal invitation.                                            |
+| Preconditions | Invited by the firm, linked to one or more client entities, MFA enrolled.       |
+| End state     | Client has viewed or downloaded the issued report or invoice. Access is logged. |
+
+1. Client follows the link. → OIDC sign-in with MFA (passkeys supported), then a deep link to the report.
+2. Client opens W-17. → Only issued reports for the client's own entities are listed, with reference, property, purpose, valuation date, version, issue date and current/superseded status, plus invoices and their status.
+3. Client opens a report. → The stored issued PDF is displayed with its hash, and the reliance and intended-use notice is shown. Access is logged (`report.accessed`, proposed §4).
+4. Client downloads a report or invoice. → The stored file is served unchanged and the download is logged.
+
+Exceptions:
+
+- **E1** Link to another entity's report. → A generic "not found" response. Audit: `auth.denied`.
+- **E2** Superseded version opened. → A banner links to the current version.
+- **E3** Account disabled or invitation expired. → "Contact the firm" message, revealing nothing about the report.
+
+### J-12 — Standards owner creates and approves template and rule-set versions
+
+| Item          | Detail                                                                                                               |
+| ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Actor         | Standards Owner A (author) and Standards Owner B (approver)                                                          |
+| Trigger       | A standards change, client requirement or specialist reviewer feedback.                                              |
+| Preconditions | At least two users hold `STANDARDS_OWNER` (01 Q-21).                                                                 |
+| End state     | Approved, immutable version with an effective date. Audit: `template.version_approved` / `ruleset.version_approved`. |
+
+1. A opens W-18 and creates a new version from the current approved version, scoped by jurisdiction(s), purpose(s), property type(s), optional client, and effective-from date. → A draft version is created. Audit: `template.version_created` (for rule sets, `ruleset.version_created`, proposed in §4).
+2. A edits sections, clauses, field requirements, validation thresholds and checklists; sets the review status of each clause; and records the reviewer, date and document reference against each `[REVIEW: …]` item. → The schema is validated and clauses still in `placeholder` are highlighted.
+3. A runs the regression set. → Fixture jobs are rendered and resolved against the new and previous versions, and a diff is shown: fields, sections, wording, and changed validation outcomes.
+4. A submits for approval. → Other standards owners are notified, and the version becomes read-only for A.
+5. B reviews the diff and reviewer references, then approves or rejects with comments. → If B is the author, the action is blocked (02 SoD-03). On approval the version becomes immutable and takes effect from its date.
+6. → New jobs created on or after the effective date use the new version. Jobs in progress stay pinned and show "Newer version available" in M-03.
+
+Exceptions:
+
+- **E1** Author attempts approval. → `auth.denied`.
+- **E2** Effective dates overlap another approved version with the same scope. → Approval is blocked.
+- **E3** Version contains `placeholder` clauses. → It may be approved for non-production use only. Production issue is blocked (G1).
+- **E4** An approved version must be withdrawn. → A superseding version is created (approved versions are never edited). Jobs on the withdrawn version are flagged for review.
+
+### J-13 — Administrator applies and releases a legal hold
+
+| Item          | Detail                                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Actor         | Administrator                                                                                                           |
+| Trigger       | Notice of a claim, complaint, subpoena, regulator request or proceedings.                                               |
+| Preconditions | `legal_hold.manage`; MFA.                                                                                               |
+| End state     | Hold active and deletion suspended for every record in scope. Audit: `legal_hold.applied`, later `legal_hold.released`. |
+
+1. Administrator opens W-22 and selects the scope: jobs, asset, client entity or portfolio. → The number of affected records and their retention status, including scheduled deletions, are shown.
+2. Administrator enters the reason, matter reference, requester and review date. → All are mandatory.
+3. Administrator applies the hold with MFA step-up. → Records are marked, scheduled deletions are cancelled, object-level legal hold is applied to stored files, and an internal hold badge appears on affected jobs. Audit: `legal_hold.applied`.
+4. → A reminder is sent on the review date.
+5. Administrator releases the hold with a reason. → The retention clock resumes. Records past retention are scheduled for secure deletion after a notice period. Audit: `legal_hold.released`.
+
+Exceptions:
+
+- **E1** Records already deleted under retention. → Listed with their deletion audit reference. They cannot be restored.
+- **E2** Job edited during a hold. → Allowed; every change is versioned and nothing is deleted.
+- **E3** Overlapping holds. → A record is released only when all holds on it are released.
+
+## 2. Screen inventory
+
+M-xx screens are implemented in the mobile app (phone and tablet). Where the platform column also
+lists web, the web portal implements the same screen spec under the same ID. W-xx screens are web
+portal screens; where tablet is listed, the mobile app also implements them. **The web portal is
+online only.** The offline column describes the mobile app.
+
+| ID   | Name                              | Platform(s)        | Purpose                                                                                 | Key components                                                                                                                                                                                                                                                         | Required permission(s)                                                 | Offline                                                                          | Key empty / error states                                                                                                                   |
+| ---- | --------------------------------- | ------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| M-01 | Job list & map                    | phone, tablet, web | Find jobs and assets; plan the day                                                      | List/map toggle; clustered pins coloured by status or risk, with glyphs; filters (status, due date, purpose, risk, assignee); search (address, reference, client); "Today" route order; open asset from pin; navigation handoff; current location only with permission | `job.read`                                                             | Read-only cached (base-map tiles online only unless the licence permits caching) | No jobs assigned; location denied (map works, no location dot); map provider down (list fallback); asset not geocoded ("Not mapped" group) |
+| M-02 | Job dashboard                     | phone, tablet, web | Job state and next actions                                                              | Lifecycle stage; assets; key dates; assignees; requirement progress; validation summary; QA round; legal-hold badge; permission-driven actions                                                                                                                         | `job.read`; `job.update`, `job.allocate`, `job.cancel` for actions     | Read-only cached; field edits full                                               | Cancelled (read-only banner); locked after submission (banner with reason); restricted portfolio (not found)                               |
+| M-03 | Selection wizard                  | phone, tablet, web | Set or change jurisdiction, purpose, property type, scope, asset mode, template version | Step selectors with help text; per-asset overrides; impact preview; reason prompt; version picker                                                                                                                                                                      | `job.update`                                                           | Full (needs cached rule-set versions)                                            | Blocked combination (SEL rule ID and explanation); rule set not cached; job locked                                                         |
+| M-04 | Requirement checklist             | phone, tablet, web | What the current selection requires, and its status                                     | Grouped by section; required/optional; complete, missing or unverified; jump to field; "Not required in current selection" group                                                                                                                                       | `job.read`                                                             | Full                                                                             | All complete; no selection yet                                                                                                             |
+| M-05 | Asset detail                      | phone, tablet, web | View and edit asset data                                                                | Tabs: Location, Title, Planning, Land, Improvements, Occupancy; provenance chips; attachments; adapter lookups                                                                                                                                                         | `job.read`; `asset.edit` to edit                                       | Full (adapter lookups online only)                                               | Adapter unavailable or unlicensed (manual entry offered); missing provenance (blocking); privacy-restricted occupancy fields hidden        |
+| M-06 | Inspection room/area checklist    | phone, tablet      | Guided capture per room or area                                                         | Area list from the rule set; add or rename areas; condition and finish pickers; dictated notes; photo strip; required markers; access-attempt and not-inspected records; scope banner                                                                                  | `inspection.capture`                                                   | Full                                                                             | No checklist for the selection (generic fallback); dictation unavailable; internal areas disabled for `KERBSIDE`                           |
+| M-07 | Camera & photo review             | phone, tablet      | Capture photos, documents and barcodes; review the sequence                             | Camera with area tag; blur, low-light and duplicate warnings; document mode; barcode mode; reorder; captions; annotations                                                                                                                                              | `photo.capture`                                                        | Full                                                                             | Camera denied; storage low; duplicate detected (keep or discard)                                                                           |
+| M-08 | Photo privacy & redaction         | phone, tablet, web | Flag and redact sensitive content; record consent                                       | Flag reasons (person, personal document, number plate, other); blur or box redaction; consent record; reveal-original control (logged)                                                                                                                                 | `photo.redact`; `photo.view_unredacted` for originals                  | Full                                                                             | Original view denied; redaction failed (original untouched)                                                                                |
+| M-09 | AI suggestion review              | phone, tablet, web | Decide AI suggestions                                                                   | Card: source photo and region, value, confidence (percentage and band), model version; Accept / Edit / Reject; queue by area                                                                                                                                           | `ai.decide`                                                            | Decisions full (queued); generation online only                                  | No suggestions; AI disabled for the organisation; source photo redacted (suggestion invalidated)                                           |
+| M-10 | Areas & Sketch workspace          | phone, tablet, web | Draw and measure improvements                                                           | Canvas (zoom, pan, snap, undo/redo, duplicate); source-plan layer; polygon tools with numeric entry; component list (level, use, basis); GEO issue list; version history                                                                                               | `sketch.edit`                                                          | Full                                                                             | No source yet; "Scale unverified" banner; open-shape and overlap issues                                                                    |
+| M-11 | Scale calibration dialog          | phone, tablet, web | Calibrate image scale                                                                   | Two-point picker with magnifier; length (m); dimension source; check dimension and discrepancy %; confirm                                                                                                                                                              | `sketch.edit`; `measurement.approve` to confirm                        | Full                                                                             | Points too close; discrepancy above tolerance                                                                                              |
+| M-12 | Area schedule & approval          | phone, tablet, web | Review and approve the area schedule                                                    | Component rows (level, use, basis, gross, deductions, net, source, confidence, measured by, date, link); floor totals; comparison with supplied areas; report-inclusion toggle; Approve                                                                                | `job.read`; `measurement.approve` to approve                           | Full (approval re-validated on sync)                                             | Blocking GEO issues; scale unverified; approval voided by a later edit                                                                     |
+| M-13 | Sync status & conflict resolution | phone, tablet      | Pending operations and conflicts                                                        | Connection state; pending count and size; per-record status; retry; conflict view (mine / theirs / base, author, device, time)                                                                                                                                         | Edit permission on the record                                          | Full                                                                             | Nothing pending; upload failed (retry); conflict on a locked record (server version kept, local value saved as a note)                     |
+| W-01 | New job & portfolio import        | web                | Create single or portfolio jobs                                                         | Instruction form; client lookup; address search with confidence; manual pin; CSV/XLSX import with row results; restricted flag                                                                                                                                         | `job.create`                                                           | Online only                                                                      | No geocode match; duplicate asset; import row errors                                                                                       |
+| W-02 | Allocation board                  | web                | Assign people and appointments                                                          | Unallocated queue; eligibility (credentials per jurisdiction, availability, workload); assignee pickers with a non-drag alternative; appointment booking                                                                                                               | `job.allocate`                                                         | Online only                                                                      | No eligible valuer; reviewer equals valuer (blocked)                                                                                       |
+| W-03 | Engagement & conflict check       | web, tablet        | Conflict check, declarations, acceptance                                                | Conflict matches with outcomes; independence declaration; engagement terms; letter generation; client acceptance record; Accept                                                                                                                                        | `engagement.accept`                                                    | Online only                                                                      | Conflict search unavailable; unresolved conflict (Accept disabled)                                                                         |
+| W-04 | Sales evidence                    | web, tablet        | Record and analyse comparable sales                                                     | Evidence grid; add or import; provenance; comparability; adjustments; adjusted indications; comparables map with table equivalent; outlier flags                                                                                                                       | `job.read`; `evidence.edit` to edit                                    | Full on tablet                                                                   | No evidence; missing provenance (blocking); sale after a retrospective date                                                                |
+| W-05 | Rental evidence                   | web, tablet        | Record and analyse rental comparables                                                   | Grid; rent basis; face and effective rent; incentives; outgoings; lease area and basis; term and options; $/m²                                                                                                                                                         | `job.read`; `evidence.edit` to edit                                    | Full on tablet                                                                   | No evidence; rent basis missing; area-basis mismatch                                                                                       |
+| W-06 | Calculation trace drawer          | web, tablet        | How any figure was derived                                                              | Inputs with provenance, units and conversions; formula ID@version; intermediate steps; result; override history and reasons                                                                                                                                            | `job.read`; `calculation.run`; `calculation.override`                  | Full                                                                             | Formula version retired (shown, recalculation offered); override reason missing                                                            |
+| W-07 | Approaches & reconciliation       | web, tablet        | Apply approaches and reconcile                                                          | Approach panels per rule set; cross-checks; range chart with table equivalent; weighting; rationale; rounding step                                                                                                                                                     | `calculation.run`, `calculation.override`                              | Full on tablet                                                                   | Required approach missing; rationale missing                                                                                               |
+| W-08 | Market commentary                 | web                | Assemble dated commentary                                                               | Library modules (national, state, local) with date, source and author; job-specific text; date guard                                                                                                                                                                   | `job.update` (job); `template.edit` (library)                          | Online only                                                                      | Module dated after the valuation date or cut-off (blocked); no modules for the jurisdiction                                                |
+| W-09 | Assumptions & limitations         | web, tablet        | Record assumptions, special assumptions, limitations, reliance and intended use         | Clause pickers and custom text; special-assumption flag; material-uncertainty toggle with reason                                                                                                                                                                       | `job.update`                                                           | Full on tablet                                                                   | Required item missing; clause "Under review" (placeholder)                                                                                 |
+| W-10 | Validation panel                  | web, tablet, phone | Run and act on validations                                                              | Blocking/Warning/Info groups; code, message, field link, rule version; acknowledge with reason; re-run                                                                                                                                                                 | `job.read`; `validation.acknowledge`                                   | Full (server re-runs at submit)                                                  | No issues; results stale (re-run prompt)                                                                                                   |
+| W-11 | Certification                     | web, tablet        | Sign the certification                                                                  | Rendered certification with template version; data summary; typed attestation; co-signatory statements; MFA step-up                                                                                                                                                    | `certification.sign` (responsible valuer only)                         | Online only                                                                      | Not the responsible valuer (no sign control); blocking validations; expired credentials; MFA failed                                        |
+| W-12 | QA queue                          | web                | Pick up and track QA work                                                               | Queue (due date, purpose, type, risk, round, reviewer); filters; claim                                                                                                                                                                                                 | `qa.review`                                                            | Online only                                                                      | Empty queue; own jobs excluded                                                                                                             |
+| W-13 | QA review                         | web                | Review, raise findings, return or approve                                               | Checklist; side-by-side preview; findings (anchor, severity, disposition, thread); round diff; Return / Approve; exception request and authorisation                                                                                                                   | `qa.review`, `qa.approve`; `qa.self_approval_exception`                | Online only                                                                      | Snapshot hash mismatch (approval blocked); open `CRITICAL`/`MAJOR` findings; self-approval without an exception                            |
+| W-14 | Report preview                    | web, tablet        | Preview the draft report                                                                | Paginated preview with DRAFT watermark; section navigation; missing-content markers                                                                                                                                                                                    | `report.generate_draft`                                                | Online only (last draft cached read-only on tablet)                              | Render failed; placeholder clauses marked                                                                                                  |
+| W-15 | Issue & delivery                  | web                | Issue the final PDF and deliver it                                                      | Snapshot summary; final render; MFA confirmation; approved recipients; add recipient with approval; delivery status per recipient                                                                                                                                      | `report.issue`, `email.send`                                           | Online only                                                                      | Not approved; hash mismatch; bounce; provider outage (queued)                                                                              |
+| W-16 | Invoice                           | web                | Prepare, send and track invoices                                                        | Fee-basis lines; per-asset lines; disbursements; GST; totals; send; credit note; export or sync                                                                                                                                                                        | `invoice.manage`; `invoice.read`                                       | Online only                                                                      | No fee basis; accounting sync failed; sent invoice (credit note only)                                                                      |
+| W-17 | Client portal                     | web (responsive)   | Client access to issued reports and invoices                                            | Report list (current/superseded); PDF viewer; download; invoices; reliance notice                                                                                                                                                                                      | `report.read_issued`, `invoice.read`                                   | Online only                                                                      | No reports yet; superseded banner; other entity (not found)                                                                                |
+| W-18 | Template & rule-set admin         | web                | Author and approve versions                                                             | Version list by scope; section, clause, requirement, validation and checklist editors; clause review status; reviewer references; fixture diff; submit and approve                                                                                                     | `template.edit`, `template.approve`, `ruleset.edit`, `ruleset.approve` | Online only                                                                      | Author approval attempt (blocked); effective-date overlap; schema error                                                                    |
+| W-19 | Data-source & licence admin       | web                | Register sources and licence rules                                                      | Source list; licence basis; permitted uses; attribution; caching and offline rights; rate limits; freshness; adapter health; enable/disable                                                                                                                            | `datasource.manage`                                                    | Online only                                                                      | Licence missing (cannot enable); adapter outage; rate limit reached                                                                        |
+| W-20 | Organisation, user & role admin   | web                | Organisation, users, roles, credentials, memberships                                    | Branding; users; invitations; roles; credentials with expiry; restricted-portfolio membership; devices and deprovisioning                                                                                                                                              | `org.manage`, `user.manage`                                            | Online only                                                                      | Removing the last administrator (blocked); credential expired                                                                              |
+| W-21 | Audit log viewer                  | web                | Search and verify audit history                                                         | Filters (entity, actor, action, date); event detail with before/after values; hash-chain verification; export                                                                                                                                                          | `audit.read`                                                           | Online only                                                                      | Chain verification failure (security alert); no results                                                                                    |
+| W-22 | Retention & legal hold            | web                | Configure retention; apply and release holds                                            | Retention rules by purpose; deletion schedule; hold create and release (scope, reason, reference, review date); affected-record counts                                                                                                                                 | `retention.manage`, `legal_hold.manage`                                | Online only                                                                      | Records already deleted; overlapping holds                                                                                                 |
+
+## 3. Cross-cutting UX requirements
+
+| ID    | Requirement                                           | Detail and acceptance check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UX-01 | Accessibility target: WCAG 2.2 AA                     | Web portal and mobile app (mobile through the platform accessibility APIs). Verified by automated checks in CI plus a manual assistive-technology audit before each release. No conformance claim is published without an audit report.                                                                                                                                                                                                                                                                                          |
+| UX-02 | WCAG 2.2 criteria that need design attention          | 2.5.7 Dragging Movements: the sketch canvas, map and allocation board offer single-pointer and numeric alternatives. 2.5.8 Target Size (Minimum). 2.4.11 Focus Not Obscured: the offline banner and sticky footers never cover the focused control. 3.3.7 Redundant Entry: portfolio and instruction data are not asked for twice. 3.3.8 Accessible Authentication: passkeys, password-manager paste, and MFA codes that can be pasted.                                                                                          |
+| UX-03 | Dynamic type                                          | iOS Dynamic Type and Android font scale up to 200 % without loss of content or function. Layouts reflow. Canvas tool palettes stay reachable. Web supports 400 % zoom with reflow.                                                                                                                                                                                                                                                                                                                                               |
+| UX-04 | Screen readers (VoiceOver, TalkBack, desktop readers) | Every control has a label, role and state. Photos announce caption, area, sequence and privacy status. Every map pin has a list equivalent. The area schedule is the accessible equivalent of the sketch, and each polygon is announced with its label and area. Sync and validation changes are announced through polite live regions.                                                                                                                                                                                          |
+| UX-05 | Colour is never the only indicator                    | Status combines text, icon or shape, and colour. Map pins carry a status glyph and a risk ring pattern. Validation severity shows an icon and a word. Diffs use +/− markers. Charts have a data-table equivalent.                                                                                                                                                                                                                                                                                                                |
+| UX-06 | Large touch targets for field use                     | Field-flow controls are at least 48 × 48 dp (Android) / 44 × 44 pt (iOS), beyond the WCAG minimum. The capture button is at least 64 dp. Primary actions sit within one-handed reach on phones. Controls are spaced so they work with gloves.                                                                                                                                                                                                                                                                                    |
+| UX-07 | Outdoor-contrast mode                                 | A user-selectable high-contrast theme: text contrast of at least 7:1, thicker strokes and outlines, no low-contrast placeholders. Available from quick settings on every M-xx screen.                                                                                                                                                                                                                                                                                                                                            |
+| UX-08 | Autosave                                              | Mobile: every field change is persisted to the encrypted local store immediately; there is no Save button for drafts. Web: autosave with a debounce of 2 s or less, and a "Saved hh:mm" indicator. Unsaved input is never silently discarded.                                                                                                                                                                                                                                                                                    |
+| UX-09 | Offline indicators                                    | A persistent connection badge with a pending-operation count. Per-record sync status (synced, pending, conflict, failed). An "Available offline" marker on jobs. Online-only actions are disabled with the reason (e.g. "Requires connection — certification needs MFA").                                                                                                                                                                                                                                                        |
+| UX-10 | Conflict resolution UI                                | Field-level view of mine, theirs and base values, with author, device and time. Choose a value or merge text. Append-only records (photos, notes, audit) never conflict. Every resolution is audited `sync.conflict_resolved`. Unresolved conflicts block submit for QA.                                                                                                                                                                                                                                                         |
+| UX-11 | Unverified-data badges                                | Every value from an external source, an inspector or an AI decision shows a provenance chip: source, retrieval date, effective date, verification status. `Unverified` uses a distinct shape and the text "Unverified". Missing provenance shows the blocking state (G3). Areas show "Unverified" until the scale is confirmed and the schedule approved.                                                                                                                                                                        |
+| UX-12 | AI suggestion treatment                               | Dashed outline and an "AI suggestion" label with an icon. Confidence shown as a percentage and a band word. Source photo thumbnail with the highlighted region; model version in the details. Accept / Edit / Reject are separate full-size controls; there is no "accept all". A suggestion is never shown as a fact, counted in totals, used in validation or shown in the report preview until accepted. After the decision, the author and time are shown. Rejected suggestions are hidden by default and kept in the audit. |
+| UX-13 | Locked and read-only states                           | From `submitted` onward, a lock banner states the state and the reason. Edit controls are disabled with an explanation and a route (QA return or amendment). Issued content shows its version and hash.                                                                                                                                                                                                                                                                                                                          |
+| UX-14 | Step-up authentication                                | Certification, QA approval, exception authorisation, issue and legal hold use an MFA re-authentication sheet with a short validity window. On failure or cancel, nothing changes.                                                                                                                                                                                                                                                                                                                                                |
+| UX-15 | Wording rules (G1)                                    | UI copy never says "compliant" or "API compliant". Template status reads "Version N approved by <name> on <date>". Placeholder clauses read "Under review".                                                                                                                                                                                                                                                                                                                                                                      |
+| UX-16 | Dates, money, units, ratios                           | Dates display as DD/MM/YYYY. Valuation dates are calendar dates without a time. Instants display in local time with a zone label. Money in AUD with a GST label where relevant. Areas in m² with a basis label (GFA, GLA, NLA). Ratios are entered and shown as percentages and stored as fractions (01 A-05 to A-09).                                                                                                                                                                                                           |
+| UX-17 | Errors                                                | Inline, linked to the field, saying what happened and what to do. Network errors retry automatically with visible status. No data is lost on error.                                                                                                                                                                                                                                                                                                                                                                              |
+| UX-18 | Motion and feedback                                   | Respects the OS reduce-motion setting. Haptic and audible confirmation (optional) on capture and on finishing an inspection.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| UX-19 | Privacy by default                                    | Privacy-flagged photos are blurred in every list. Revealing an original needs `photo.view_unredacted` and an explicit tap, and is logged. The current-location dot appears only after OS permission and the in-app opt-in.                                                                                                                                                                                                                                                                                                       |
+| UX-20 | Destructive actions                                   | Confirmation plus undo where possible. Captured evidence is soft-deleted (audited) and purged only under the retention rules.                                                                                                                                                                                                                                                                                                                                                                                                    |
+
+## 4. Audit actions proposed for addition to 00 §8
+
+These actions are used above but are not yet in the 00 §8 vocabulary. They need a 00 revision.
+
+| Proposed action                              | Used in     | Purpose                                                     |
+| -------------------------------------------- | ----------- | ----------------------------------------------------------- |
+| `ruleset.version_created`                    | J-12        | Symmetry with `template.version_created`.                   |
+| `job.conflict_declared`                      | J-02        | Records conflict outcomes and the independence declaration. |
+| `inspection.started`, `inspection.completed` | J-04        | Inspection chronology and gaps recorded at finish.          |
+| `photo.unredacted_viewed`                    | M-08, UX-19 | Logs access to unredacted originals.                        |
+| `report.accessed`                            | J-11        | Logs client views and downloads.                            |
+| `job.amendment_opened`                       | J-10 E5     | Records the `openAmendment` transition.                     |
+| `user.membership_changed`                    | 02 SoD-05   | Restricted-portfolio membership changes.                    |
+| `invoice.sent`, `invoice.credited`           | J-10, W-16  | Invoice lifecycle after `invoice.created`.                  |
