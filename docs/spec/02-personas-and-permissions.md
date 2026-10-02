@@ -272,11 +272,11 @@ API rejects violations with `auth.denied`, even if a client presents the action.
 
 ### Small-practice configurations
 
-| Practice size      | Role assignment that satisfies SoD                                                                                                                                                                                                           |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sole practitioner  | `VALUER` + `ALLOCATOR` + `ADMINISTRATOR`. QA needs either an external reviewer account (`QA_REVIEWER`) or a self-approval exception authorised by another user who holds `STANDARDS_OWNER`. SoD-03 needs a second standards owner (01 Q-21). |
-| Two valuers        | Each is `VALUER` + `QA_REVIEWER` and reviews the other's jobs. Both are `STANDARDS_OWNER`, so each approves the other's versions.                                                                                                            |
-| Five or more staff | Separate allocator, finance and administrator. At least two `QA_REVIEWER`s and two `STANDARDS_OWNER`s.                                                                                                                                       |
+| Practice size      | Role assignment that satisfies SoD                                                                                                                                                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sole practitioner  | `VALUER` + `ALLOCATOR` + `ADMINISTRATOR`. QA needs either an external reviewer account (`QA_REVIEWER`) or a self-approval exception authorised by another user who holds `ADMINISTRATOR` (`qa.self_approval_exception`). SoD-03 needs a second standards owner (01 Q-21). |
+| Two valuers        | Each is `VALUER` + `QA_REVIEWER` and reviews the other's jobs. Both are `STANDARDS_OWNER`, so each approves the other's versions.                                                                                                                                         |
+| Five or more staff | Separate allocator, finance and administrator. At least two `QA_REVIEWER`s and two `STANDARDS_OWNER`s.                                                                                                                                                                    |
 
 ## Permission matrix
 

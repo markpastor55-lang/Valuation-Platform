@@ -466,7 +466,7 @@ Record `photo`: `id`, `assetId`, `sha256`, `dHash`, `sequence`, `capturedAt`, `g
 `photo.capture` (VALUER, FIELD_INSPECTOR). `photo.redact` (VALUER, FIELD_INSPECTOR). `photo.view_unredacted` (VALUER, QA_REVIEWER). All of these are assignment-scoped.
 
 **Audit events**
-`photo.captured`, `photo.privacy_flagged`, `photo.redacted`. The consent and exclude actions also currently emit `photo.redacted` (§3.6). `photo.unredacted_viewed` is _(planned)_.
+`photo.captured`, `photo.privacy_flagged`, `photo.redacted`, `photo.consent_recorded`, `photo.excluded`. `photo.unredacted_viewed` is _(planned)_.
 
 **Offline behaviour**
 Full on mobile: capture, flag and redact are queued. Uploads resume in the background, and the server de-duplicates by UUID and content hash (F-07).
@@ -1222,16 +1222,15 @@ The following names are in the 00 §8 planned list or 05 §4 and are **not yet e
 
 The following are new proposals, not in 00 §8. Each needs a 00 revision before use.
 
-| Proposed                                                         | Feature | Reason                                                                    |
-| ---------------------------------------------------------------- | ------- | ------------------------------------------------------------------------- |
-| `photo.consent_recorded`, `photo.excluded`                       | F-08    | The consent and exclude actions are currently emitted as `photo.redacted` |
-| `report.reproduced`                                              | F-20    | The reproduction check (with its result) is not audited                   |
-| `qa.self_approval_exception_requested`, `qa.reviewer_reassigned` | F-19    | J-09 step 9 and E2                                                        |
-| `measurement.approval_voided`                                    | F-10    | J-06 E1 (edit after approval) and E3 (approval rejected on sync)          |
-| `fact.confirmed`                                                 | F-09    | A-25 valuer confirmation                                                  |
-| `recipient.revoked`                                              | F-20    | `approved_recipient.revoked_at` exists but nothing sets it                |
-| `job.ruleset_repinned`                                           | F-03    | TC-FLD-006 requires an audited re-pin                                     |
-| `audit.verification_failed`, `auth.step_up_failed`               | F-22    | Security alerting (S-095); J-08 E3                                        |
+| Proposed                                                         | Feature | Reason                                                           |
+| ---------------------------------------------------------------- | ------- | ---------------------------------------------------------------- |
+| `report.reproduced`                                              | F-20    | The reproduction check (with its result) is not audited          |
+| `qa.self_approval_exception_requested`, `qa.reviewer_reassigned` | F-19    | J-09 step 9 and E2                                               |
+| `measurement.approval_voided`                                    | F-10    | J-06 E1 (edit after approval) and E3 (approval rejected on sync) |
+| `fact.confirmed`                                                 | F-09    | A-25 valuer confirmation                                         |
+| `recipient.revoked`                                              | F-20    | `approved_recipient.revoked_at` exists but nothing sets it       |
+| `job.ruleset_repinned`                                           | F-03    | TC-FLD-006 requires an audited re-pin                            |
+| `audit.verification_failed`, `auth.step_up_failed`               | F-22    | Security alerting (S-095); J-08 E3                               |
 
 ### 3.5 API endpoints not yet present
 

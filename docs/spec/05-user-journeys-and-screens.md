@@ -137,7 +137,7 @@ Exceptions:
 4. User selects **Edit** and changes the value (e.g. to "gas cooktop"). → A human-authored fact is written and linked to the suggestion. Audit: `ai.suggestion_edited`.
 5. User selects **Reject**, with an optional reason. → The suggestion is hidden and kept in the audit. Audit: `ai.suggestion_rejected`.
 6. → A fact accepted by a Field Inspector stays "inspector-captured" until the valuer confirms it (01 A-25).
-7. → Pending suggestions never appear in the report. A non-blocking validation warning counts the undecided suggestions. There is no "accept all".
+7. → Pending suggestions never appear in the report. Undecided suggestions block submission for QA (`VAL-AI-001`, blocking at the submit and issue stages). There is no "accept all".
 
 Exceptions:
 
@@ -242,7 +242,7 @@ Exceptions:
 5. Reviewer returns the job. → `in_review → returned` (returnToValuer). Content unlocks for the valuer and the certification is invalidated, because content will change. Audit: `qa.returned`.
 6. Valuer responds to each finding (changed, or not changed with reasoning), re-validates, re-certifies and resubmits (J-08 steps 4–7). → Audit: `qa.finding_responded`; job moves `returned → submitted` (resubmit).
 7. Reviewer starts the next round. → A diff against the previous round is shown. Findings are closed with a disposition (`RESOLVED`, `ACCEPTED_AS_IS`, `WITHDRAWN`). Audit: `qa.finding_closed`.
-8. Reviewer approves with MFA step-up once the checklist is complete and no `CRITICAL` or `MAJOR` findings are open. → The snapshot hash is re-verified. `in_review → approved` (approve). Audit: `qa.approved`.
+8. Reviewer approves with MFA step-up once the checklist is complete and no findings remain open (critical findings must be resolved; others resolved, accepted with a note or withdrawn). → The snapshot hash is re-verified. `in_review → approved` (approve). Audit: `qa.approved`.
 9. Self-approval exception, used only when no eligible reviewer exists: the responsible valuer requests an exception with a reason, and a different user holding `qa.self_approval_exception` authorises it with a reason and MFA. → Audit: `qa.self_approval_exception_authorised`. The responsible valuer may then review and approve. The exception appears in the issued report's audit metadata `[REVIEW: API_STANDARDS]`.
 
 Exceptions:

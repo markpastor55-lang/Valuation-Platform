@@ -182,6 +182,7 @@ Actions emitted by the iteration-1 API (see `06-data-model-and-audit.md` for whe
 `evidence.rental_added`, `evidence.commentary_added`, `risk.flag_recorded`, `calculation.run`,
 `calculation.overridden`, `sketch.version_created`, `calibration.created`, `calibration.confirmed`,
 `measurement.approved`, `photo.captured`, `photo.privacy_flagged`, `photo.redacted`,
+`photo.consent_recorded`, `photo.excluded`,
 `ai.suggestion_created`, `ai.suggestion_accepted`, `ai.suggestion_edited`, `ai.suggestion_rejected`,
 `validation.run`, `validation.acknowledged`, `certification.signed`, `qa.started`,
 `qa.checklist_answered`, `qa.finding_raised`, `qa.finding_responded`, `qa.finding_closed`,

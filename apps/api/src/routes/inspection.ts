@@ -599,7 +599,12 @@ export function registerInspectionRoutes(r: Router): void {
           orgId: job.org_id,
           streamId: jobStream(job.id),
           actor: principal,
-          action: body.action === 'flag' ? 'photo.privacy_flagged' : 'photo.redacted',
+          action: {
+            flag: 'photo.privacy_flagged',
+            redact: 'photo.redacted',
+            consent: 'photo.consent_recorded',
+            exclude: 'photo.excluded',
+          }[body.action],
           entityType: 'photo',
           entityId: photo.id,
           before: { privacyStatus: photo.privacyStatus },
