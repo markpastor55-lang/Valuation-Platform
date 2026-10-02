@@ -504,6 +504,7 @@ export function reportDataOf(
     areaSchedules: agg.schedules,
     sketches: agg.reportingSketches.map((s) => ({
       assetId: s.assetId,
+      sketchId: s.sketchId,
       sketchVersionId: s.id,
       version: s.version,
       includeInClientReport: s.includeInClientReport,

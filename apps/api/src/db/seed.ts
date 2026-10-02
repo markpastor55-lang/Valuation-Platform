@@ -15,9 +15,14 @@ export async function seedOrganisation(
   db: Db,
   ids: { orgId: string; ruleSetVersionId: string; templateVersionId: string },
   name: string,
+  abn?: string,
 ): Promise<SeededOrg> {
   await db.transaction(async (tx) => {
-    await tx.query('INSERT INTO organisation (id, name) VALUES ($1, $2)', [ids.orgId, name]);
+    await tx.query('INSERT INTO organisation (id, name, abn) VALUES ($1, $2, $3)', [
+      ids.orgId,
+      name,
+      abn ?? null,
+    ]);
     await tx.query(
       `INSERT INTO rule_set_version (id, org_id, rule_set_id, version, status, effective_from, content, content_hash, authored_by)
        VALUES ($1, $2, $3, $4, 'draft', $5, $6, $7, $8)`,
@@ -102,7 +107,7 @@ export const DEMO = {
 } as const;
 
 export async function seedDemo(db: Db): Promise<typeof DEMO> {
-  await seedOrganisation(db, DEMO, 'Example Valuers Pty Ltd');
+  await seedOrganisation(db, DEMO, 'Example Valuers Pty Ltd', '00 000 000 001');
   const u = DEMO.users;
   const people: [string, string, string, Role[], string[]?][] = [
     [u.admin, 'admin@example.com', 'Avery Admin', ['ADMINISTRATOR']],

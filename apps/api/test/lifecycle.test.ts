@@ -419,6 +419,19 @@ describe('job lifecycle (market value, residential, VIC)', () => {
     });
     expect([403, 404]).toContain(notResponsible.status);
 
+    await t.db.query('UPDATE organisation SET abn = NULL WHERE id = $1', [DEMO.orgId]);
+    const noAbn = await t.call<{ error: { code: string } }>(
+      'valuer',
+      'POST',
+      `/v1/jobs/${jobId}/issue`,
+      {
+        recipients: ['credit@lender.example'],
+      },
+    );
+    expect(noAbn.status).toBe(422);
+    expect(noAbn.body.error.code).toBe('SUPPLIER_ABN_REQUIRED');
+    await t.db.query("UPDATE organisation SET abn = '00 000 000 001' WHERE id = $1", [DEMO.orgId]);
+
     const issue = await t.call<{
       reportId: string;
       version: number;

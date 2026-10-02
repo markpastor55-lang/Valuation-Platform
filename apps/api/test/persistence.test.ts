@@ -3,7 +3,7 @@ import { composeReport, DEFAULT_TEMPLATE, resolveRequirements, AU_CORE_RULE_SET 
 import { PDFDocument } from 'pdf-lib';
 import { PgliteDb } from '../src/db/db.js';
 import { loadMigrations, migrate, MigrationDriftError } from '../src/db/migrate.js';
-import { renderReportPdf } from '../src/services/pdf.js';
+import { RENDERER_VERSION, renderReportPdf } from '../src/services/pdf.js';
 import { buildInvoice, renderInvoicePdf } from '../src/services/invoice.js';
 import { DEMO, createTestApp, newJobBody, type TestApp } from './helpers.js';
 
@@ -137,7 +137,7 @@ describe('deterministic documents', () => {
     expect(Buffer.from(a).equals(Buffer.from(b))).toBe(true);
     const doc = await PDFDocument.load(a, { updateMetadata: false });
     expect(doc.getPageCount()).toBeGreaterThan(3);
-    expect(doc.getProducer()).toBe('pdf-renderer@1');
+    expect(doc.getProducer()).toBe(RENDERER_VERSION);
     expect(doc.getCreationDate()?.toISOString()).toBe('2026-10-02T00:00:00.000Z');
   });
 

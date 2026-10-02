@@ -77,12 +77,9 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
 
 /** Approves the seed rule set and publishes an approved template with firm-authored clause wording. */
 export async function approveConfiguration(t: TestApp): Promise<void> {
-  const rs = await t.call(
-    'legal',
-    'POST',
-    '/v1/admin/rulesets/au-core/versions/2026.1-draft/approve',
-    { notes: 'Reviewed against current firm methodology' },
-  );
+  const rs = await t.call('legal', 'POST', '/v1/admin/rulesets/au-core/versions/2026.1/approve', {
+    notes: 'Reviewed against current firm methodology',
+  });
   if (rs.status !== 200) throw new Error(`rule set approval failed: ${JSON.stringify(rs.body)}`);
   const { DEFAULT_TEMPLATE } = await import('@vp/domain');
   const template = {

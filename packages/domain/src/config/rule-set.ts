@@ -97,7 +97,7 @@ const VALUATION_CORE = [
  */
 export const AU_CORE_RULE_SET: RuleSetVersion = {
   id: 'au-core',
-  version: '2026.1-draft',
+  version: '2026.1',
   status: 'draft',
   effectiveFrom: '2026-01-01',
   fieldCatalogueVersion: 1,

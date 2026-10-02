@@ -46,6 +46,8 @@ export interface ReportData {
   readonly areaSchedules: readonly AreaSchedule[];
   readonly sketches: readonly {
     readonly assetId: string;
+    /** Stable id across versions (the value of `improvements.areaSchedule`). */
+    readonly sketchId?: string;
     readonly sketchVersionId: string;
     readonly version: number;
     readonly includeInClientReport: boolean;
@@ -141,6 +143,16 @@ function formatValue(def: FieldDef | undefined, value: unknown, data: ReportData
   if (type === 'area' && typeof value === 'number') return formatArea(value);
   if (type === 'ratio' && typeof value === 'number') return formatPercent(value);
   if (type === 'length' && typeof value === 'number') return `${formatNumber(value)} m`;
+  // whole numbers such as years and ages are shown without thousands separators
+  if (type === 'integer' && typeof value === 'number') return String(value);
+  if (type === 'area_schedule_ref' && typeof value === 'string') {
+    const sketch = data.sketches.find((s) => s.sketchId === value || s.sketchVersionId === value);
+    const schedule =
+      sketch && data.areaSchedules.find((a) => a.sketchVersionId === sketch.sketchVersionId);
+    return sketch && schedule
+      ? `Sketch v${sketch.version}: ${formatArea(schedule.totalIncludedM2)} total (${schedule.basis.replaceAll('_', ' ').toLowerCase()})`
+      : 'See area schedule';
+  }
   if (type === 'date' && isLocalDate(value)) return formatAustralianDate(value);
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (type === 'user_ref' && typeof value === 'string') return data.userNames?.[value] ?? value;
@@ -311,7 +323,11 @@ export function composeReport(
       case 'sales_table': {
         if (!data.sales.length)
           return [{ kind: 'paragraph', text: 'No sales evidence recorded.', style: 'note' }];
-        const rows = data.sales.map((s) => {
+        // Most recent evidence first; ties broken by id so the order is deterministic.
+        const sales = [...data.sales].sort(
+          (a, b) => b.contractDate.localeCompare(a.contractDate) || a.id.localeCompare(b.id),
+        );
+        const rows = sales.map((s) => {
           const a = data.saleAnalyses.find((x) => x.saleId === s.id);
           return [
             s.address,
@@ -342,7 +358,7 @@ export function composeReport(
               'Status',
             ],
             rows,
-            note: 'Rates are traced to inputs and formula versions in the calculation appendix.',
+            note: 'Rates are traced to their inputs, units and formula versions (see the calculation trace).',
           },
         ];
       }
@@ -362,16 +378,21 @@ export function composeReport(
               'Incentive',
               'Comparability',
             ],
-            rows: data.rentals.map((r) => [
-              r.address,
-              formatAustralianDate(r.leaseStartDate),
-              formatAud(r.faceRentPa),
-              humanise(r.rentBasis),
-              formatArea(r.leaseAreaM2),
-              `${formatAud(r.faceRentPa / r.leaseAreaM2, true)}/m²`,
-              r.incentiveRatio !== undefined ? formatPercent(r.incentiveRatio) : '—',
-              humanise(r.comparability),
-            ]),
+            rows: [...data.rentals]
+              .sort(
+                (a, b) =>
+                  b.leaseStartDate.localeCompare(a.leaseStartDate) || a.id.localeCompare(b.id),
+              )
+              .map((r) => [
+                r.address,
+                formatAustralianDate(r.leaseStartDate),
+                formatAud(r.faceRentPa),
+                humanise(r.rentBasis),
+                formatArea(r.leaseAreaM2),
+                `${formatAud(r.faceRentPa / r.leaseAreaM2, true)}/m²`,
+                r.incentiveRatio !== undefined ? formatPercent(r.incentiveRatio) : '—',
+                humanise(r.comparability),
+              ]),
           },
         ];
       }

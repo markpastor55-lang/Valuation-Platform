@@ -11,7 +11,7 @@ import {
 } from 'pdf-lib';
 
 /** Bumped whenever rendering output changes; stored in issue snapshots. */
-export const RENDERER_VERSION = 'pdf-renderer@1';
+export const RENDERER_VERSION = 'pdf-renderer@2';
 
 export interface SketchDrawing {
   readonly boundaries: readonly {
@@ -228,13 +228,43 @@ class Layout {
     const size = 7.2;
     const lh = size * 1.3;
     const pad = 3;
-    // column widths proportional to the longest content (bounded), so text-heavy columns get room
-    const weights = columns.map((c, i) => {
-      const longest = Math.max(c.length, ...rows.map((r) => (r[i] ?? '').length));
-      return Math.min(Math.max(longest, 6), 60);
-    });
-    const total = weights.reduce((a, b) => a + b, 0);
-    const widths = weights.map((w) => (w / total) * WIDTH);
+    // Column widths: every column gets at least its longest word (so words never split), then
+    // the remaining width goes to columns in proportion to how much more text they hold.
+    const measure = (text: string, font: PDFFont) => font.widthOfTextAtSize(this.clean(text), size);
+    const longestWord = (text: string, font: PDFFont) =>
+      Math.max(0, ...text.split(/\s+/).map((w) => measure(w, font)));
+    const minW = columns.map(
+      (c, i) =>
+        Math.max(
+          longestWord(c, this.fonts.bold),
+          ...rows.map((r) => longestWord(r[i] ?? '', this.fonts.regular)),
+        ) +
+        pad * 2 +
+        1,
+    );
+    const wantW = columns.map((c, i) =>
+      Math.min(
+        Math.max(
+          measure(c, this.fonts.bold),
+          ...rows.map((r) => measure(r[i] ?? '', this.fonts.regular)),
+        ) +
+          pad * 2 +
+          1,
+        WIDTH * 0.45,
+      ),
+    );
+    const minTotal = minW.reduce((a, b) => a + b, 0);
+    let widths: number[];
+    if (minTotal >= WIDTH) {
+      widths = minW.map((w) => (w / minTotal) * WIDTH);
+    } else {
+      const extra = wantW.map((w, i) => Math.max(0, w - (minW[i] ?? 0)));
+      const extraTotal = extra.reduce((a, b) => a + b, 0);
+      const spare = WIDTH - minTotal;
+      widths = minW.map((w, i) =>
+        extraTotal > 0 ? w + ((extra[i] ?? 0) / extraTotal) * spare : w + spare / columns.length,
+      );
+    }
     const drawRow = (cells: readonly string[], header: boolean): void => {
       const font = header ? this.fonts.bold : this.fonts.regular;
       const wrapped = columns.map((_, i) =>
@@ -521,11 +551,14 @@ export async function renderReportPdf(
     ...(model.meta.snapshotHash ? [['Snapshot', model.meta.snapshotHash] as [string, string]] : []),
   ]);
 
-  for (const section of model.sections) {
-    layout.newPage();
+  // Sections flow continuously; a heading never sits at the foot of a page without content.
+  layout.newPage();
+  model.sections.forEach((section, i) => {
+    if (i > 0) layout.ensure(140);
     layout.heading(section.title, 1);
     for (const block of section.blocks) renderBlock(layout, block, assets);
-  }
+    layout.y -= 10;
+  });
 
   const total = layout.pages.length;
   const watermark = layout.clean(model.meta.watermark);

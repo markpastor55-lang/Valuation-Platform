@@ -319,7 +319,7 @@ describe('rule set versioning', () => {
   it('ignores drafts unless explicitly allowed', () => {
     expect(selectRuleSet([AU_CORE_RULE_SET], '2026-03-01')).toBeUndefined();
     expect(selectRuleSet([AU_CORE_RULE_SET], '2026-03-01', { allowDraft: true })?.version).toBe(
-      '2026.1-draft',
+      '2026.1',
     );
   });
 

@@ -201,6 +201,19 @@ export function registerReportRoutes(r: Router): void {
           throw new HttpError(409, 'NO_TEMPLATE', 'no report template is selected for this job');
         if (job.fee_cents === null)
           throw new HttpError(422, 'FEE_REQUIRED', 'the job fee must be recorded before invoicing');
+        // A tax invoice must identify the supplier by ABN. [REVIEW: TAX]
+        const partyRows = await tx.query<{ org_abn: string | null; client_abn: string | null }>(
+          'SELECT o.abn AS org_abn, c.abn AS client_abn FROM organisation o, client c WHERE o.id = $1 AND c.id = $2',
+          [job.org_id, job.client_id],
+        );
+        const supplierAbn = partyRows.rows[0]?.org_abn?.trim();
+        if (!supplierAbn)
+          throw new HttpError(
+            422,
+            'SUPPLIER_ABN_REQUIRED',
+            "the organisation's ABN must be recorded before a tax invoice can be issued",
+          );
+        const parties = { supplierAbn, clientAbn: partyRows.rows[0]?.client_abn?.trim() ?? null };
 
         const approved = await tx.query<{ email: string }>(
           'SELECT lower(email) AS email FROM approved_recipient WHERE client_id = $1 AND revoked_at IS NULL',
@@ -257,8 +270,11 @@ export function registerReportRoutes(r: Router): void {
           buildInvoice({
             number: await nextInvoiceNumber(tx, job.org_id, issueDate),
             issueDate,
-            supplier: { name: template.branding.firmName },
-            billTo: { name: agg.clientName },
+            supplier: { name: template.branding.firmName, abn: parties.supplierAbn },
+            billTo: {
+              name: agg.clientName,
+              ...(parties.clientAbn ? { abn: parties.clientAbn } : {}),
+            },
             jobReference: job.reference,
             reportId,
             feeCents: job.fee_cents,

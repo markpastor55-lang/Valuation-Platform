@@ -86,7 +86,7 @@ immediately changes required fields and report sections without losing prior dat
 - Approval requires the `ruleset.approve` permission (standards owner), a human actor with MFA, and a
   different person from the author; lint (`lintRuleSet`) must pass. Approval is audited
   (`ruleset.version_approved`).
-- The seed rule set `au-core 2026.1-draft` was authored from the brief. **It is a starting point for
+- The seed rule set `au-core 2026.1` (seeded with status `draft`) was authored from the brief. **It is a starting point for
   the standards owner, not a mapping to the API Rules, IVS or any guidance paper.**
   `[REVIEW: API_STANDARDS]`
 

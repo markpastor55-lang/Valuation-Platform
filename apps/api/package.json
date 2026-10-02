@@ -10,7 +10,8 @@
     "test": "vitest run",
     "dev": "tsx --conditions=source watch src/server.ts",
     "start": "node dist/server.js",
-    "migrate": "tsx --conditions=source src/db/migrate-cli.ts"
+    "migrate": "tsx --conditions=source src/db/migrate-cli.ts",
+    "demo": "tsx --conditions=source scripts/demo-issue.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
