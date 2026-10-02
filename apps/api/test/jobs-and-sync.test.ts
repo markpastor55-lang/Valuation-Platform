@@ -342,3 +342,24 @@ describe('cross-job references', () => {
     }
   });
 });
+
+describe('draft report', () => {
+  it('renders a watermarked draft for the team but not for clients', async () => {
+    const t = await createTestApp();
+    try {
+      const job = await t.call<{ id: string }>('allocator', 'POST', '/v1/jobs', newJobBody());
+      const draft = await t.call('valuer', 'GET', `/v1/jobs/${job.body.id}/report/draft.pdf`);
+      expect(draft.status).toBe(200);
+      expect(draft.headers['content-type']).toBe('application/pdf');
+      expect(draft.raw.subarray(0, 5).toString()).toBe('%PDF-');
+      expect(
+        (await t.call('client', 'GET', `/v1/jobs/${job.body.id}/report/draft.pdf`)).status,
+      ).toBe(403);
+      expect(
+        (await t.call('inspector', 'GET', `/v1/jobs/${job.body.id}/report/draft.pdf`)).status,
+      ).toBe(403);
+    } finally {
+      await t.close();
+    }
+  });
+});
