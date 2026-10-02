@@ -1,0 +1,561 @@
+# 07 — API contracts
+
+> Status: **Draft for review** · Owner: Product architecture (with `SECURITY` reviewer for authentication, authorisation and integrations) · Applies to: `apps/api` (`@vp/api`), the mobile and web clients, and integration service accounts
+
+This section explains the semantics of the HTTP API: authentication, authorisation, errors,
+concurrency, idempotency and offline sync, plus a resource catalogue for the key flows. The exact
+contract is generated from the route definitions and must not be edited by hand:
+`GET /v1/openapi.json` at runtime, and the committed copies `generated/openapi.json` and
+`generated/api-endpoints.md` (CI fails if they are stale). Vocabulary follows
+`00-architecture-and-conventions.md`; the data model is in `06-data-model-and-audit.md`. Anything
+not in code is marked **Planned**.
+
+## 1. Principles
+
+| #   | Principle                           | Implementation                                                                                                                                                 |
+| --- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1  | REST over HTTPS, JSON in and out    | Fastify; TLS terminated at the edge (11 TB-1). PDFs are returned as `application/pdf`                                                                          |
+| P2  | Versioned base path                 | Every business route is under `/v1`. Additive changes stay in `v1`; breaking changes need `/v2`. A deprecation policy is **Planned**                           |
+| P3  | Contract generated from code        | `Router` (`http/route.ts`) records each route's method, path, summary, tags, zod schemas and permission and emits OpenAPI 3.1 (`z.toJSONSchema`, input shapes) |
+| P4  | Validation at the edge              | Path, query and body are parsed with zod before the handler runs; failures return `400 BAD_REQUEST` with per-path details                                      |
+| P5  | Every route declares its permission | `permission` is published as `x-permission`. The handler enforces it through the domain `authorize()` (§2.3)                                                   |
+| P6  | Domain decides                      | Handlers call `@vp/domain` for permissions, requirements, validation, calculations, geometry and workflow guards; the API persists and audits                  |
+| P7  | One transaction per mutation        | Each mutating handler runs in one database transaction with its audit events (06 §5.2)                                                                         |
+| P8  | Successes return `200`              | Creates also return `200` with the created representation; `201`/`204` are not used                                                                            |
+
+Endpoints that are not under `/v1`: `GET /health` (public liveness and database readiness).
+`GET /v1/openapi.json` is public. `GET /v1/reference/selection` and `GET /v1/reference/fields`
+require authentication but no permission (the generated endpoint table labels them "public",
+which is inaccurate).
+
+## 2. Authentication and authorisation
+
+### 2.1 Modes
+
+| Mode   | When                                                                        | Credentials                                                     | Notes                                                                                                                              |
+| ------ | --------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `oidc` | Required in production; selected by `AUTH_MODE=oidc`                        | `Authorization: Bearer <JWT>`                                   | Verified with `jose` against `OIDC_JWKS_URL`, issuer `OIDC_ISSUER`, audience `OIDC_AUDIENCE`, algorithms `RS256`, `ES256`, `PS256` |
+| `dev`  | Default when `NODE_ENV` is `development` or `test` and `AUTH_MODE` is unset | `x-user-id` (UUID), `x-mfa: true`, `x-actor-kind: system \| ai` | Trusts headers. `loadConfig()` refuses to start in production unless `AUTH_MODE=oidc` and all three OIDC settings are present      |
+
+### 2.2 Token claims and principal
+
+| Claim / source                                 | Use                                                                          |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| `sub`                                          | Looked up as `app_user.idp_subject`; unknown subject → `401 UNAUTHENTICATED` |
+| `iss`, `aud`, `exp`                            | Verified; failure → `401 UNAUTHENTICATED` ("invalid or expired token")       |
+| `amr`                                          | Contains `mfa`, `otp` or `hwk` → `mfaVerified = true`                        |
+| `actor_kind`                                   | `system` or `ai` → service-account actor; anything else → `human`            |
+| `app_user.status`                              | Must be `active`; otherwise `403 ACCOUNT_SUSPENDED`                          |
+| `app_user.org_id`                              | The tenant. Never taken from the request body                                |
+| `user_role`, `portfolio_member`, `client_user` | Roles, portfolio memberships and client scopes of the `Principal`            |
+
+Gaps `[REVIEW: SECURITY]`: step-up freshness (`auth_time` within 10 minutes for MFA actions, 11
+SC-02) is not checked; there is no device binding or token revocation list; trust in `actor_kind`
+depends on the IdP issuing it only to service clients.
+
+### 2.3 Authorisation pipeline
+
+`authorize(principal, permission, resource)` (`packages/domain/src/auth/permissions.ts`) evaluates,
+in order:
+
+| Step                                                                                                                                                                                                                         | Denial code                    | HTTP result                           |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------- |
+| Resource in another organisation                                                                                                                                                                                             | `WRONG_ORGANISATION`           | `404 NOT_FOUND` (existence hidden)    |
+| No role grants the permission                                                                                                                                                                                                | `NO_ROLE_GRANT`                | `403`                                 |
+| Human-only permission and actor is `system`/`ai`                                                                                                                                                                             | `HUMAN_REQUIRED`               | `403`                                 |
+| MFA permission without MFA                                                                                                                                                                                                   | `MFA_REQUIRED`                 | `403`                                 |
+| Restricted portfolio and not a member                                                                                                                                                                                        | `RESTRICTED_PORTFOLIO`         | `404 NOT_FOUND` (information barrier) |
+| For each granting role: scope — org-wide roles pass; others need assignment (valuer, reviewer, inspector) or portfolio membership; `CLIENT_READONLY` needs own client and an issued report                                   | `NOT_ASSIGNED`, `CLIENT_SCOPE` | `403`                                 |
+| Separation of duties (00 §5): certification only by responsible valuer; QA not by responsible valuer without an exception; exception not by responsible valuer; config approval not by author; `VALUER` issues only own jobs | `SEPARATION_OF_DUTIES`         | `403`                                 |
+
+Every `403` produced this way (`AuthorizationDenied`) is recorded as `auth.denied` in the
+`org:<orgId>` stream, in its own transaction after the request rolls back, with the permission and
+code. A same-organisation user who is not assigned receives `403 NOT_ASSIGNED`, so job existence
+is visible inside an organisation. The two `404` outcomes are **not** recorded, so attempts to
+reach restricted portfolios leave no security event `[REVIEW: SECURITY]`. List endpoints
+(`GET /v1/jobs`, `GET /v1/map/assets`) filter silently and record nothing.
+
+Route-level checks outside `authorize()` (not recorded as `auth.denied` — gap):
+
+| Code                   | Status  | Route                                                                |
+| ---------------------- | ------- | -------------------------------------------------------------------- |
+| `AI_SERVICE_ONLY`      | 403     | `POST /v1/jobs/{jobId}/ai-suggestions` requires actor kind `ai`      |
+| `SYSTEM_ONLY`          | 403     | `POST /v1/email-deliveries/{id}/status` requires actor kind `system` |
+| `HUMAN_REQUIRED`       | 403     | `POST …/sketch-versions/{versionId}/confirm-scale`                   |
+| `NOT_REVIEWER`         | 403     | QA checklist and findings: only the reviewer who started the review  |
+| `ADMIN_ONLY`           | 403     | `GET /v1/admin/security-events`                                      |
+| `SEPARATION_OF_DUTIES` | **422** | `POST /v1/jobs/{jobId}/assign` with valuer = reviewer                |
+
+Permissions granted to roles but not yet checked by any route: `org.manage`, `user.manage`,
+`datasource.manage`, `ruleset.edit`, `photo.view_unredacted`, `invoice.manage`, `email.send`,
+`retention.manage` (their endpoints are **Planned**). `x-permission` is free text on six routes
+(`job.update | asset.edit`, `report.read_issued | job.read`, `asset.edit / photo.capture`,
+`inspection.capture (AI service accounts only)`, `email.send (system)`), and
+`POST /v1/reports/{reportId}/reproduce` declares `job.read` but also admits `report.read_issued`.
+A structured `x-permissions` array plus `x-actor-kinds` is recommended.
+
+## 3. Error model
+
+### 3.1 Envelope
+
+```json
+{
+  "error": {
+    "code": "GUARD_FAILED",
+    "message": "cannot acceptEngagement: …",
+    "details": { "failures": ["…"] }
+  }
+}
+```
+
+`code` is stable and machine-readable; `message` is for people; `details` is optional and
+code-specific. Bodies never contain stack traces or SQL (`toHttpError` in `http/errors.ts`).
+
+### 3.2 Status mapping
+
+| Source                                                                                                                                                                                | Status                              | `code`                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------- |
+| `ZodError` (path, query, body)                                                                                                                                                        | 400                                 | `BAD_REQUEST`, `details: [{ path, message }]` |
+| Fastify client errors (invalid JSON, body over limit, unsupported media type)                                                                                                         | Fastify status (e.g. 400, 413, 415) | `BAD_REQUEST`                                 |
+| Missing/invalid credentials                                                                                                                                                           | 401                                 | `UNAUTHENTICATED`                             |
+| `DomainError` `FORBIDDEN`, `SEPARATION_OF_DUTIES`, `HUMAN_ACTOR_REQUIRED`, `MFA_REQUIRED`                                                                                             | 403                                 | same as domain code                           |
+| `AuthorizationDenied`                                                                                                                                                                 | 403                                 | denial code (§2.3)                            |
+| `DomainError` `NOT_FOUND`; hidden cross-tenant or barrier resources                                                                                                                   | 404                                 | `NOT_FOUND`                                   |
+| `DomainError` `INVALID_TRANSITION`, `GUARD_FAILED`, `RECORD_LOCKED`, `IMMUTABLE_RECORD`, `TEMPLATE_NOT_APPROVED`, `CONFLICT`                                                          | 409                                 | same                                          |
+| PostgreSQL `P0001` (immutability or legal-hold trigger, 06 §7)                                                                                                                        | 409                                 | `IMMUTABLE_RECORD` (trigger message)          |
+| PostgreSQL `23505` unique violation                                                                                                                                                   | 409                                 | `CONFLICT` ("duplicate record")               |
+| PostgreSQL `23503` foreign-key violation                                                                                                                                              | 422                                 | `INVALID_REFERENCE`                           |
+| `DomainError` `INVALID_ARGUMENT`, `INVALID_DATE`, `INVALID_UNIT`, `UNKNOWN_FORMULA`, `OVERRIDE_REASON_REQUIRED`, `CALIBRATION_INVALID`, `GEOMETRY_INVALID`, `AI_INFERENCE_PROHIBITED` | 422                                 | same                                          |
+| Anything else                                                                                                                                                                         | 500                                 | `INTERNAL` (logged with the request id)       |
+
+### 3.3 Route-specific codes
+
+| Status | Codes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 403    | `ACCOUNT_SUSPENDED`, `AI_SERVICE_ONLY`, `SYSTEM_ONLY`, `HUMAN_REQUIRED`, `NOT_REVIEWER`, `ADMIN_ONLY`                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 409    | `NO_RULE_SET`, `NO_TEMPLATE`, `NO_QA_REVIEW`, `STALE_VERSION`, `REPORT_NOT_ISSUABLE` (`details.problems`), `IMMUTABLE_RECORD` (configuration already approved or retired)                                                                                                                                                                                                                                                                                                                                 |
+| 422    | `SINGLE_ASSET_MODE`, `SEPARATION_OF_DUTIES` (assign), `UNKNOWN_FIELD`, `ASSET_REQUIRED`, `JOB_LEVEL_FIELD`, `INVALID_FIELD_VALUE`, `UNKNOWN_ASSET`, `RESOLUTION_NOTE_REQUIRED`, `UNKNOWN_CONVENTION`, `SKETCH_ASSET_MISMATCH`, `SOURCE_PLAN_REQUIRED`, `SKETCH_INCOMPLETE`, `NO_CALIBRATION`, `CERTIFICATION_MISMATCH`, `FEE_REQUIRED`, `UNAPPROVED_RECIPIENTS` (`details.unapproved`), `INVALID_TEMPLATE` / `INVALID_RULE_SET` (`details.problems`), `WRONG_JOB`, `ASSET_INCOMPLETE`, `PHOTO_INCOMPLETE` |
+
+Workflow transitions (`transitionJob`) fail with `409 INVALID_TRANSITION` when the job is in the
+wrong state and `409 GUARD_FAILED` when a guard fails; both carry every failed guard in
+`details.failures`. `GET /v1/jobs/{jobId}` returns the same evaluation for every action under
+`transitions` so clients can explain disabled buttons without calling the action. Inconsistencies
+to resolve: `SEPARATION_OF_DUTIES` is 422 from assign but 403 elsewhere; `HUMAN_REQUIRED` and
+`HUMAN_ACTOR_REQUIRED` name the same rule.
+
+## 4. Concurrency and idempotency
+
+### 4.1 Transactions and locks
+
+| Mechanism                          | Where                                                                                    | Effect                                                         |
+| ---------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Job row lock `SELECT … FOR UPDATE` | Every job-scoped mutation (`authorizeJob(…, { forUpdate: true })`)                       | Writes to one job serialise; guards see a consistent aggregate |
+| Row locks on children              | `field_value`, `ai_suggestion`, `email_delivery`, `template_version`, `rule_set_version` | Serialise concurrent edits of the same record                  |
+| Status lock                        | `assertEditable()` → `409 RECORD_LOCKED` outside `draft`, `active`, `returned`           | Submitted, reviewed, approved and issued content cannot change |
+| Content hash preconditions         | Certification, QA start, approval and issue (06 §6.2)                                    | Any content change after certification invalidates it          |
+| Latest-version check               | Sketch confirm-scale and approve → `409 STALE_VERSION`                                   | No approval of a superseded version                            |
+| `job.version`                      | Incremented by `touchJob()` after content changes; returned by `GET /v1/jobs/{jobId}`    | Informational. `If-Match`/`ETag` preconditions are **Planned** |
+| Per-stream advisory lock           | Audit append                                                                             | Chains never fork                                              |
+
+Known races: invoice numbers are `count + 1` per organisation and year inside the issue
+transaction, so two jobs issued concurrently can collide and one gets `409 CONFLICT` (retry is
+safe); a sequence table is **Planned**. Emails are sent after the issue transaction commits; a
+crash leaves deliveries `queued` and there is no retry worker yet (outbox **Planned**).
+
+### 4.2 Idempotency
+
+| Operation                                          | Behaviour on retry                                                                                   |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Creates with client UUIDs (assets, sales, rentals) | Same id again → `409 CONFLICT` (record already exists)                                               |
+| `POST …/photos`                                    | Same `(assetId, sha256)` → `200 { id: <existing>, deduplicated: true }`, no audit event              |
+| `POST …/risk-flags` with `id`                      | Upsert by id                                                                                         |
+| `PUT …/fields`                                     | Unchanged values are no-ops (no history row, no audit event); response `changed` counts real changes |
+| `POST …/acknowledgements`                          | Upsert on `(job, code, path)`                                                                        |
+| Workflow transitions and issue                     | Not idempotent; a retry after success fails the state guard (`409 INVALID_TRANSITION`)               |
+| `POST /v1/sync`                                    | Idempotent per `opId` (§4.3)                                                                         |
+
+An `Idempotency-Key` header for non-sync POSTs is **Planned**.
+
+### 4.3 Offline sync (`POST /v1/sync`)
+
+Request: `{ deviceId (3–100), operations[1..500] }`; each operation has `opId` (8–100 chars),
+`jobId`, `entityType` (`asset` | `photo`), `entityId` (client UUID), `kind`
+(`create` | `update` | `delete`), `baseVersion` (`null` for creates), `changes` (JSON object;
+assets accept only `label`, `address`, `latitude`, `longitude`), `clientTimestamp` (UTC instant),
+optional `contentHash` (SHA-256 hex) and `parentId` (asset id for photos).
+
+Each operation runs in its own transaction, in order: authorise (`asset.edit` or `photo.capture`
+on `jobId`, job row locked) → plan with `planSyncOperation()` → persist → record.
+
+| Outcome        | When                                                                                                                                                                     | Recorded                                                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `applied`      | New entity, or update/delete at the current `baseVersion`                                                                                                                | `sync_operation`, `sync.operation_applied`                                                                                                        |
+| `merged`       | Older `baseVersion` but no changed field was also changed on the server                                                                                                  | as above                                                                                                                                          |
+| `duplicate_op` | `opId` already recorded; retried create with identical content; delete of a deleted entity                                                                               | nothing                                                                                                                                           |
+| `deduplicated` | Photo create whose `(parentId, contentHash)` already exists; `detail.existingId`                                                                                         | `sync_operation`, `sync.operation_applied`                                                                                                        |
+| `conflict`     | A changed field differs from a server change made after `baseVersion`; delete after server changes; update of a deleted entity. Non-conflicting fields are still applied | `sync_conflict` (`open`), `sync_operation`, `sync.conflict_detected`; `detail.conflicts[{ field, serverValue, clientValue, serverFieldVersion }]` |
+| `rejected`     | Job locked; unknown entity for update/delete; `baseVersion` null or newer than server; `detail.reason`                                                                   | nothing (the op may be replayed after an amendment)                                                                                               |
+
+Per-field versions (`field_versions`) drive merging; the default policy is `manual` for every
+field, so evidence is never silently overwritten. Gaps: there is no conflict-resolution endpoint
+(`sync.conflict_resolved` **Planned**); a request-level error (`403`, `422 UNKNOWN_FIELD`,
+`WRONG_JOB`) aborts the batch after earlier operations have committed, so clients must replay the
+batch (safe because of `opId`); asset changes made through sync do not update the
+`location.*` field values or their history; photo `parentId` is not checked against `jobId`
+`[REVIEW: SECURITY]`; only assets and photos sync today.
+
+```json
+{
+  "deviceId": "device-1",
+  "operations": [
+    {
+      "opId": "device1-op-0002",
+      "jobId": "b72fd194-4774-460b-a9e4-42672da8fe91",
+      "entityType": "photo",
+      "entityId": "33333333-3333-4333-8333-333333333333",
+      "kind": "create",
+      "baseVersion": null,
+      "changes": { "caption": "Facade", "sequence": 1, "capturedAt": "2026-10-01T23:05:00Z" },
+      "clientTimestamp": "2026-10-01T23:05:00Z",
+      "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "parentId": "22222222-2222-4222-8222-222222222222"
+    },
+    {
+      "opId": "device2-op-0001",
+      "jobId": "b72fd194-4774-460b-a9e4-42672da8fe91",
+      "entityType": "photo",
+      "entityId": "44444444-4444-4444-8444-444444444444",
+      "kind": "create",
+      "baseVersion": null,
+      "changes": { "caption": "Facade", "sequence": 1, "capturedAt": "2026-10-01T23:05:00Z" },
+      "clientTimestamp": "2026-10-01T23:05:00Z",
+      "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "parentId": "22222222-2222-4222-8222-222222222222"
+    }
+  ]
+}
+```
+
+Response after a replay (the first operation had already been applied):
+
+```json
+{
+  "results": [
+    { "opId": "device1-op-0002", "outcome": "duplicate_op" },
+    {
+      "opId": "device2-op-0001",
+      "outcome": "deduplicated",
+      "detail": { "existingId": "33333333-3333-4333-8333-333333333333" }
+    }
+  ]
+}
+```
+
+## 5. Resource catalogue
+
+`generated/api-endpoints.md` lists all 59 operations with method, path, permission and summary.
+Summary by area:
+
+| Area                      | Operations                                                                                                                      | Permission(s)                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Reference                 | `GET /v1/reference/selection`, `GET /v1/reference/fields`                                                                       | authenticated                                                                                               |
+| Jobs and map              | create, list (≤ 500), detail, change selection, assign, requirements, capture fields, add asset; `GET /v1/map/assets` (GeoJSON) | `job.create`, `job.read`, `job.update`, `job.allocate`, `asset.edit`                                        |
+| Evidence and calculations | sales, rentals, commentary, risk flags; run and override calculations                                                           | `evidence.edit`, `inspection.capture`, `calculation.run`, `calculation.override`                            |
+| Areas                     | create sketch/version, confirm scale, approve schedule                                                                          | `sketch.edit`, `measurement.approve`                                                                        |
+| Inspection and AI         | register photo, privacy action; AI suggestion; decision                                                                         | `photo.capture`, `photo.redact`, AI actor, `ai.decide`                                                      |
+| Validation and workflow   | validate, acknowledge, engagement accept, cancel, amend, certification, submit                                                  | `job.read`, `validation.acknowledge`, `engagement.accept`, `job.cancel`, `job.update`, `certification.sign` |
+| QA                        | self-approval exception, start, checklist, findings, respond, close, return, approve                                            | `qa.self_approval_exception`, `qa.review`, `job.update`, `qa.approve`                                       |
+| Reports                   | draft PDF, issue, metadata, PDF, invoice PDF, reproduce, delivery callback                                                      | `report.generate_draft`, `report.issue`, `report.read_issued`/`job.read`, `invoice.read`, system actor      |
+| Administration and audit  | template list/create/review/approve, rule-set approve, approve recipient, apply legal hold; job audit, verify, security events  | `template.edit`, `template.approve`, `ruleset.approve`, `job.allocate`, `legal_hold.manage`, `audit.read`   |
+| Sync                      | `POST /v1/sync`                                                                                                                 | per operation                                                                                               |
+
+### 5.1 Key flows
+
+Paths are relative to `/v1/jobs/{jobId}` unless absolute.
+
+| Flow                                                                                                                            | Request essentials                                                                                                                                                                                                                                                                                                                                                               | Response essentials                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create job `POST /v1/jobs`                                                                                                      | `reference` (3–40), `clientId`, `portfolioId?`, `selection` (5 codes, 00 §4), `responsibleValuerId?`, `reviewerId?`, `inspectorIds[]`, `feeCents?` (integer ≥ 0), `assets[1..500]` (`id?`, `label`, `address.formatted`, `latitude?`, `longitude?`, `geocodeConfidence?`); `SINGLE` mode needs exactly one asset                                                                 | Job view (example §5.2). Picks the effective rule set (`409 NO_RULE_SET` if none) and the best template for selection, client and date                                                                                        |
+| Change selection `PATCH /selection`                                                                                             | `selection`, `reason` (≥ 5)                                                                                                                                                                                                                                                                                                                                                      | `{ selection, diff: { newlyRequired, noLongerRequired, sectionsAdded, sectionsRemoved, retainedValues }, sections, selectionIssues }`. Values are retained; template re-selected; the pinned rule-set version does not change |
+| Capture fields `PUT /fields`                                                                                                    | `values[1..200]`: `fieldId`, `assetId` (null = job level), `value`, `provenance?` (`origin` ∈ manual_entry, external_source, client_supplied, calculated, measured; `sourceId`, `sourceRef`, `retrievedAt`, `effectiveDate`, `licenceBasis`, `verification` ∈ unverified, verified, disputed), `reason?`                                                                         | `{ changed }`. `job.update` if any job-level value, else `asset.edit`. Server sets `capturedBy/At` and, for `verified`, `verifiedBy/At`                                                                                       |
+| Add sale `POST /sales`                                                                                                          | `assetId`, `address`, `contractDate`, `price` (dollars), `interest`, `propertyType`, areas, `provenance` (origin external_source, client_supplied or manual_entry), `comparability`, `adjustments[]` (`factor`, `kind`, `value`, `rationale`), `analysisBasis`, `postValuationDateUse?`                                                                                          | `{ sale, analysis: { saleId, landRate?, buildingRate?, adjusted? } }` — traced `CalculationRecord`s stored with ids `<saleId>:<kind>`                                                                                         |
+| Run calculation `POST /calculations`                                                                                            | `formulaId`, `formulaVersion?`, `inputs[{ name, value, unit, sourceRef? }]`, `assetId?`                                                                                                                                                                                                                                                                                          | `CalculationRecord`: `formulaId`, `formulaVersion`, `expression`, traced inputs with normalised units, `output { value, unit, unrounded }`, `traceHash`                                                                       |
+| Override `POST /calculations/{calcId}/override`                                                                                 | `value`, `reason`                                                                                                                                                                                                                                                                                                                                                                | Record with `override { value, reason, by, at }`; original output kept; `422 OVERRIDE_REASON_REQUIRED` without a reason                                                                                                       |
+| Sketch `POST /assets/{assetId}/sketches`                                                                                        | New: `units`, `basis`, `conventionId`, `boundaries[]` (`level`, `label`, `role`, `componentType`, `points`, `closed`, `dimensionSource`, `origin`), `changeSummary`; optional `sourcePlanId`, `calibration` (`two_point` or `stated_scale`), `northBearingDeg`, `suppliedAreas`, `includeInClientReport`, `useForReport` (default true). New version: `sketchId` + changed parts | `{ version, schedule }` (rows, level totals, issues, `scaleStatus`, `reportable`, `scheduleHash`)                                                                                                                             |
+| Confirm scale / approve `POST /sketch-versions/{versionId}/confirm-scale` · `/approve`                                          | `checkNote` (≥ 5) · no body                                                                                                                                                                                                                                                                                                                                                      | `{ version, schedule }` (new version) · `{ approval, schedule }`; latest version only                                                                                                                                         |
+| Photos `POST /photos` · `POST /photos/{photoId}/privacy`                                                                        | `assetId`, `sha256`, `sequence`, `capturedAt`, optional `dHash`, `gps`, `caption`, `roomOrArea`, `quality`, `qualityOverrideReason`, `includeInReport` · `action` ∈ `flag {flags[]}`, `redact {redactedPhotoId}`, `consent {consentRef}`, `exclude`                                                                                                                              | `{ id, deduplicated }` · updated `PhotoRecord`. Only metadata is registered; image bytes are not uploaded (§6.4)                                                                                                              |
+| AI suggestion `POST /ai-suggestions` (AI actor) · decision `POST /ai-suggestions/{id}/decision`                                 | `assetId`, `kind`, `photoId?`, `sourcePlanId?`, `label`, `value?`, `confidence` (0–1), `model { provider, model, version }` · `decision` ∈ accept, edit, reject; `editedLabel?`, `editedValue?`, `reason?`                                                                                                                                                                       | Pending `AiSuggestion` (`422 AI_INFERENCE_PROHIBITED` for prohibited inferences) · `{ suggestion, fact }` — a fact exists only after a human accept or edit                                                                   |
+| Validate / acknowledge `POST /validate` · `/acknowledgements`                                                                   | `stage` ∈ draft, submit, issue (default submit) · `code`, `path`, `reason`                                                                                                                                                                                                                                                                                                       | `ValidationResult { stage, ranAt, findings[], blockingCount, unacknowledgedWarningCount, rulesEvaluated }` (stored in `validation_run`) · acknowledgement; blocking findings → `409 GUARD_FAILED`                             |
+| Certification `POST /certification`                                                                                             | `valuer { fullName, credentials[], registration? }`, `inspectionScopeStatement`, `valuationDate` (must equal `dates.valuation`), `basisOfValue`, `amount { value, kind }`, `independenceStatement`, `conflictsStatement`, `assumptions[]`, `specialAssumptions[]`, `limitations[1..]`, `standardsReliedOn[1..]`, `attestationText` (≥ 20)                                        | `Certification` with `snapshotHash` and `signature { method: typed_attestation, attestationHash }`. Responsible valuer, human, MFA                                                                                            |
+| Submit `POST /submit`                                                                                                           | —                                                                                                                                                                                                                                                                                                                                                                                | `{ status: "submitted", snapshotHash }`; needs clean validation and a current certification                                                                                                                                   |
+| QA `POST /qa/start`, `/qa/checklist`, `/qa/findings`, `/qa/findings/{findingId}/respond`, `/close`, `/qa/return`, `/qa/approve` | checklist `itemId`, `response` ∈ yes, no, na; finding `severity` ∈ critical, major, minor, observation, `category`, `description`, `ref?`; respond `response`; close `status` ∈ resolved, accepted, withdrawn, `note`; return `reason?`                                                                                                                                          | `QaReview` (start and edits; findings of a returned round carry forward) · `{ status: "returned" }` · `{ status: "approved", approvedSnapshotHash }`                                                                          |
+| Issue `POST /issue`                                                                                                             | `recipients[1..20]` (approved for the client), `invoiceDescription`                                                                                                                                                                                                                                                                                                              | §5.2                                                                                                                                                                                                                          |
+| Reproduce `POST /v1/reports/{reportId}/reproduce`                                                                               | —                                                                                                                                                                                                                                                                                                                                                                                | §5.2                                                                                                                                                                                                                          |
+| Audit `GET /audit` · `GET /audit/verify`                                                                                        | —                                                                                                                                                                                                                                                                                                                                                                                | `{ events[] }` · `{ valid, count, headHash }` or `{ valid: false, brokenAtSeq, reason }`                                                                                                                                      |
+
+### 5.2 Examples
+
+Captured from the iteration-1 test flow (`apps/api/test/lifecycle.test.ts`, dev authentication).
+Arrays marked "abbreviated" are shortened and the issue request spells out the default
+`invoiceDescription`; everything else is verbatim.
+
+**Create job** — `POST /v1/jobs` as an `ALLOCATOR`:
+
+```json
+{
+  "reference": "VAL-2026-65883",
+  "clientId": "00000000-0000-4000-8000-000000000010",
+  "portfolioId": "00000000-0000-4000-8000-000000000011",
+  "selection": {
+    "jurisdiction": "VIC",
+    "purpose": "MARKET_VALUE",
+    "propertyType": "RESIDENTIAL",
+    "scope": "FULL",
+    "mode": "SINGLE"
+  },
+  "responsibleValuerId": "00000000-0000-4000-8000-000000000104",
+  "reviewerId": "00000000-0000-4000-8000-000000000107",
+  "inspectorIds": ["00000000-0000-4000-8000-000000000106"],
+  "feeCents": 88000,
+  "assets": [
+    {
+      "label": "10 Sample Road, Exampleton VIC 3000",
+      "address": { "formatted": "10 Sample Road, Exampleton VIC 3000" },
+      "latitude": -37.81,
+      "longitude": 144.96
+    }
+  ]
+}
+```
+
+`200` response (`missingRequired` abbreviated from 40 entries; `transitions` abbreviated from 8):
+
+```json
+{
+  "id": "a0059b21-0dc8-4646-86fb-fce1c06dda9c",
+  "reference": "VAL-2026-65883",
+  "status": "draft",
+  "clientId": "00000000-0000-4000-8000-000000000010",
+  "portfolioId": "00000000-0000-4000-8000-000000000011",
+  "selection": {
+    "jurisdiction": "VIC",
+    "purpose": "MARKET_VALUE",
+    "propertyType": "RESIDENTIAL",
+    "scope": "FULL",
+    "mode": "SINGLE"
+  },
+  "responsibleValuerId": "00000000-0000-4000-8000-000000000104",
+  "reviewerId": "00000000-0000-4000-8000-000000000107",
+  "feeCents": 88000,
+  "ruleSet": "au-core@2026.1-draft (approved)",
+  "template": "au-generic v2 (approved)",
+  "version": 1,
+  "assets": [
+    {
+      "id": "60bafb05-be95-4082-955e-1916a308f77a",
+      "label": "10 Sample Road, Exampleton VIC 3000",
+      "address": { "formatted": "10 Sample Road, Exampleton VIC 3000" },
+      "latitude": -37.81,
+      "longitude": 144.96,
+      "riskLevel": "none",
+      "version": 1
+    }
+  ],
+  "requirements": {
+    "sections": [
+      "instructions",
+      "scope",
+      "basis",
+      "location",
+      "planning",
+      "land",
+      "improvements",
+      "areas",
+      "occupancy",
+      "market",
+      "hbu",
+      "sales_evidence",
+      "valuation_approach",
+      "reconciliation",
+      "risk",
+      "assumptions",
+      "certification",
+      "photos",
+      "appendices",
+      "audit_metadata"
+    ],
+    "warnings": [],
+    "selectionIssues": [],
+    "specialistReviews": ["API_STANDARDS"],
+    "requiredCount": 42,
+    "missingRequired": [
+      { "fieldId": "dates.valuation", "assetId": null },
+      { "fieldId": "evidence.sales", "assetId": "60bafb05-be95-4082-955e-1916a308f77a" }
+    ]
+  },
+  "transitions": {
+    "acceptEngagement": {
+      "allowed": false,
+      "to": "active",
+      "failures": [
+        "conflict-of-interest check has not been recorded",
+        "engagement documents must be attached"
+      ]
+    },
+    "cancel": { "allowed": false, "to": "cancelled", "failures": ["a reason is required"] }
+  }
+}
+```
+
+Calling that transition anyway (`POST /v1/jobs/{jobId}/engagement/accept`) returns `409`:
+
+```json
+{
+  "error": {
+    "code": "GUARD_FAILED",
+    "message": "cannot acceptEngagement: conflict-of-interest check has not been recorded; engagement documents must be attached",
+    "details": {
+      "failures": [
+        "conflict-of-interest check has not been recorded",
+        "engagement documents must be attached"
+      ]
+    }
+  }
+}
+```
+
+**Issue** — `POST /v1/jobs/{jobId}/issue` as the responsible `VALUER` with MFA, after QA approval:
+
+```json
+{ "recipients": ["credit@lender.example"], "invoiceDescription": "Professional valuation services" }
+```
+
+```json
+{
+  "reportId": "1811c2d2-d928-45d4-b8fb-914f38203406",
+  "version": 1,
+  "snapshotHash": "1fd8929e6192e53b59a86e6bab757f856a4f933371ba99c0d04fa0ea98d286bd",
+  "contentHash": "cf14c58129500de359ccf1aa18fc073b0bef8c7a26922629a23663d68962985f",
+  "pdfSha256": "78079b2377a2e17961f022ab8036b918cc894bef7a032a8a02aad5a4ed8ef2fe",
+  "invoice": {
+    "number": "INV-2026-00001",
+    "totalCents": 96800,
+    "gstCents": 8800,
+    "pdfSha256": "37b4d4db81dfe3412adb75b142078bd805196627351bd6fb35bec949705790ec"
+  },
+  "deliveries": [
+    {
+      "id": "d5a7b905-8d83-47db-aad3-48839f524817",
+      "recipient": "credit@lender.example",
+      "status": "sent",
+      "providerMessageId": "local-d0f7fc3f33cc938699b7"
+    }
+  ]
+}
+```
+
+An unapproved recipient returns `422 UNAPPROVED_RECIPIENTS` with
+`details.unapproved: ["someone@else.example"]`; a valuer not assigned to the job gets
+`403 NOT_ASSIGNED`.
+
+**Reproduce** — `POST /v1/reports/{reportId}/reproduce` (no body) as the QA reviewer:
+
+```json
+{
+  "snapshotIntact": true,
+  "pdf": {
+    "stored": "78079b2377a2e17961f022ab8036b918cc894bef7a032a8a02aad5a4ed8ef2fe",
+    "reproduced": "78079b2377a2e17961f022ab8036b918cc894bef7a032a8a02aad5a4ed8ef2fe",
+    "match": true
+  },
+  "invoice": {
+    "stored": "37b4d4db81dfe3412adb75b142078bd805196627351bd6fb35bec949705790ec",
+    "reproduced": "37b4d4db81dfe3412adb75b142078bd805196627351bd6fb35bec949705790ec",
+    "match": true
+  },
+  "emails": [
+    {
+      "recipient": "credit@lender.example",
+      "stored": "d0f7fc3f33cc938699b765470472a3fb7374fd972d53b292fdb79a4dbaa590c7",
+      "reproduced": "d0f7fc3f33cc938699b765470472a3fb7374fd972d53b292fdb79a4dbaa590c7",
+      "match": true
+    }
+  ],
+  "reproducible": true
+}
+```
+
+The procedure is in 06 §6.4.
+
+## 6. Integrations and webhooks
+
+### 6.1 Email delivery
+
+Outbound email goes through the `EmailTransport` interface after the issue transaction commits;
+development and tests use `RecordingEmailTransport`. Each delivery has a `payload_hash`
+(canonical hash of from, lower-cased to, subject, text and attachment metadata).
+
+Delivery-status callback `POST /v1/email-deliveries/{id}/status`:
+
+| Aspect   | Contract                                                                                                                                                                                                                                                        |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Caller   | Service account in the same organisation with `actor_kind = system` (otherwise `403 SYSTEM_ONLY`; other organisation → `404`)                                                                                                                                   |
+| Body     | `{ status: delivered \| bounced \| failed, providerMessageId? }`                                                                                                                                                                                                |
+| Response | `{ id, status }`; audit `email.delivery_updated` with before/after status                                                                                                                                                                                       |
+| Gaps     | `providerMessageId` is neither checked nor stored; no status-transition guard (e.g. `delivered → failed`); no provider signature verification; no event-id idempotency. A live provider with signed webhooks is **Planned** (S-058, S-072) `[REVIEW: SECURITY]` |
+
+### 6.2 Planning adapters (domain contract, no HTTP endpoint yet)
+
+`packages/domain/src/integration/planning.ts` defines `PlanningAdapter { id, jurisdiction,
+dataSourceId, capabilities[], lookup(req, ctx) }`. `PlanningLookupRequest` takes jurisdiction and
+address, parcel (`lot`, `plan`, `volumeFolio`) or coordinates; `PlanningControlResult` returns
+zone, overlays, instrument, permissible/prohibited uses, an optional property report reference and
+a full `Provenance`. `lookupPlanning()` runs the adapter under the connector policy and returns
+`found` or `manual_fallback` (reason, attempts), including when provenance is incomplete;
+`manualPlanningResult()` builds a result from an uploaded planning document. The per-jurisdiction
+plan (`PLANNING_ADAPTER_PLAN`): VIC MVP and NSW Pilot are `planned`; the other six are
+`manual_only` (04 §3). An API endpoint, the `datasource.lookup`/`datasource.verify` permissions
+and the field mapping to `planning.*` values are **Planned** (04 §2) `[REVIEW: DATA_LICENSING]`.
+
+### 6.3 Connector policy
+
+`DEFAULT_CONNECTOR_POLICY` (`integration/connector.ts`) applies to every external connector:
+
+| Setting         | Default                                                                      |
+| --------------- | ---------------------------------------------------------------------------- |
+| Timeout         | 10 s per attempt (aborts the call)                                           |
+| Retries         | 2, exponential backoff 500 ms × 2ⁿ; `PermanentConnectorError` is not retried |
+| Rate limit      | 60 calls per minute (sliding window) → `rate_limited`                        |
+| Circuit breaker | Opens after 5 failures; half-open after 60 s → `circuit_open`                |
+| Freshness       | 90 days (stale data → validation `VAL-STALE-002`)                            |
+| Fallback        | Always `manual_entry`; outages never block field work                        |
+
+Licence rules come from the `data_source` registry: `checkDataSourceUsage()` reports whether a
+datum is storable, reproducible in a report, expired or stale `[REVIEW: DATA_LICENSING]`.
+
+### 6.4 Not yet exposed (Planned)
+
+| Capability                                                                                                                   | State today                                                                                                      | Backlog                 |
+| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Document and plan upload, object storage, signed short-lived URLs                                                            | `document` table only; photos register metadata and sha256; PDFs stored in the database                          | S-034, S-047            |
+| E-signature for certification                                                                                                | `Certification.signature.method` reserves `e_signature` and `providerRef`; only typed attestation is implemented | S-070 `[REVIEW: LEGAL]` |
+| Accounting export, credit notes                                                                                              | Invoice PDF only                                                                                                 | S-071                   |
+| Live email provider and signed webhooks                                                                                      | Recording transport; system-actor callback (§6.1)                                                                | S-058, S-072            |
+| Geocoding                                                                                                                    | Coordinates and confidence accepted from clients                                                                 | S-039                   |
+| AI model integration                                                                                                         | Suggestions accepted only from `ai` service accounts                                                             | 13 §1.5                 |
+| Administration of organisations, users, clients, portfolios, data sources; rule-set authoring; legal-hold release; retention | Seed data or not implemented                                                                                     | S-077, S-091            |
+| Sync conflict resolution; sync of fields, evidence and sketches                                                              | Assets and photos only                                                                                           | 13                      |
+
+## 7. Non-functional contract
+
+| Concern               | Today                                                                                                                                                                                                                                | Planned                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Rate limiting         | None in the API                                                                                                                                                                                                                      | Edge/WAF per-user and per-device limits; `429` with `Retry-After` (11 T-32)             |
+| Pagination            | `GET /v1/jobs` reads the newest 500 jobs of the organisation, then filters by permission (a user may see fewer than exist); `GET /v1/map/assets` and `GET /v1/jobs/{jobId}/audit` are unbounded; security events return the last 200 | Cursor pagination (`limit`, opaque `cursor`, `nextCursor`) on every list                |
+| Request size          | Body limit 5 MB (`413`); schema bounds: assets ≤ 500, field values ≤ 200, sync operations ≤ 500, boundaries ≤ 300, points ≤ 500, recipients ≤ 20                                                                                     | Resumable uploads with quotas for binaries                                              |
+| Security headers      | `x-content-type-options: nosniff` and `cache-control: no-store` on every response; no CORS plugin (cross-origin browser calls are not enabled)                                                                                       | HSTS and CORS allow-list at the edge `[REVIEW: SECURITY]`                               |
+| Transport             | TLS at the edge; database TLS with certificate verification when `DATABASE_SSL` (default on in production)                                                                                                                           | Mutual TLS or private networking for service accounts                                   |
+| Logging               | Fastify/pino; redacts `authorization`, `cookie` and `x-user-id` headers; request bodies not logged; 5xx logged with the error                                                                                                        | Field allow-list with no personal information (11 SC-16)                                |
+| Correlation           | `genReqId` gives each request a UUID used in logs                                                                                                                                                                                    | Echo it as `x-request-id`, accept one from the edge, propagate to connectors (04 CT-12) |
+| Formats               | Instants ISO-8601 UTC; dates `YYYY-MM-DD`; money as integer cents in `feeCents` and invoice totals but dollars inside evidence and certification payloads (06 DM-1)                                                                  | Single money representation `[REVIEW: ACCOUNTING]`                                      |
+| Contract completeness | OpenAPI lists request schemas, `x-permission` and a shared error schema; success responses have no schema                                                                                                                            | Response schemas from zod; structured permission metadata (§2.3)                        |
