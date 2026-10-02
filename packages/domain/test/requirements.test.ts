@@ -328,3 +328,27 @@ describe('rule set versioning', () => {
     expect(selectRuleSet([ended], '2026-07-01')).toBeUndefined();
   });
 });
+
+describe('field value type checks', () => {
+  it('validates values against field definitions', async () => {
+    const { getField, fieldValueProblem } = await import('../src/index.js');
+    expect(fieldValueProblem(getField('dates.valuation'), '2026-09-30')).toBeUndefined();
+    expect(fieldValueProblem(getField('dates.valuation'), '30/09/2026')).toMatch(/date/);
+    expect(fieldValueProblem(getField('instruction.basisOfValue'), 'market_value')).toBeUndefined();
+    expect(fieldValueProblem(getField('instruction.basisOfValue'), 'vibes')).toMatch(/one of/);
+    expect(
+      fieldValueProblem(getField('valuation.approaches'), ['direct_comparison', 'summation']),
+    ).toBeUndefined();
+    expect(fieldValueProblem(getField('valuation.approaches'), ['astrology'])).toMatch(/list/);
+    expect(fieldValueProblem(getField('income.capRate'), 5.5)).toMatch(/ratio/);
+    expect(fieldValueProblem(getField('land.area'), -1)).toMatch(/non-negative/);
+    expect(
+      fieldValueProblem(getField('location.coordinates'), { lat: -37.8, lng: 144.9 }),
+    ).toBeUndefined();
+    expect(
+      fieldValueProblem(getField('location.address'), { formatted: '1 Main St' }),
+    ).toBeUndefined();
+    expect(fieldValueProblem(getField('fl.singleExpert'), 'yes')).toMatch(/true or false/);
+    expect(fieldValueProblem(getField('land.area'), null)).toBeUndefined();
+  });
+});

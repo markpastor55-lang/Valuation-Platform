@@ -575,3 +575,64 @@ export function hasValue(value: unknown): boolean {
   if (typeof value === 'object') return Object.keys(value).length > 0;
   return true;
 }
+
+const isLocalDateString = (v: unknown): boolean =>
+  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+/** Type-checks a captured value against its field definition. Returns a problem or undefined. */
+export function fieldValueProblem(def: FieldDef, value: unknown): string | undefined {
+  if (value === null) return undefined; // clearing a value is always allowed
+  const finite = typeof value === 'number' && Number.isFinite(value);
+  switch (def.type) {
+    case 'text':
+    case 'longtext':
+    case 'user_ref':
+    case 'calculation_ref':
+    case 'area_schedule_ref':
+      return typeof value === 'string' ? undefined : 'expected text';
+    case 'date':
+      return isLocalDateString(value) ? undefined : 'expected a date (YYYY-MM-DD)';
+    case 'integer':
+      return finite && Number.isInteger(value) ? undefined : 'expected a whole number';
+    case 'number':
+      return finite ? undefined : 'expected a number';
+    case 'money':
+    case 'area':
+    case 'length':
+      return finite && value >= 0 ? undefined : 'expected a non-negative number';
+    case 'ratio':
+      return finite && value >= 0 && value <= 1 ? undefined : 'expected a ratio between 0 and 1';
+    case 'boolean':
+      return typeof value === 'boolean' ? undefined : 'expected true or false';
+    case 'enum':
+      return typeof value === 'string' && (def.options ?? []).includes(value)
+        ? undefined
+        : `expected one of ${(def.options ?? []).join(', ')}`;
+    case 'multi_enum':
+      return Array.isArray(value) &&
+        value.every((v) => typeof v === 'string' && (def.options ?? []).includes(v))
+        ? undefined
+        : `expected a list drawn from ${(def.options ?? []).join(', ')}`;
+    case 'list':
+    case 'document_refs':
+    case 'datasource_refs':
+    case 'evidence_list':
+      return Array.isArray(value) ? undefined : 'expected a list';
+    case 'address':
+      return typeof value === 'object' &&
+        !Array.isArray(value) &&
+        typeof (value as Record<string, unknown>)['formatted'] === 'string'
+        ? undefined
+        : 'expected an address with a formatted line';
+    case 'coordinates': {
+      const c = value as { lat?: unknown; lng?: unknown };
+      return typeof c === 'object' &&
+        typeof c.lat === 'number' &&
+        typeof c.lng === 'number' &&
+        Math.abs(c.lat) <= 90 &&
+        Math.abs(c.lng) <= 180
+        ? undefined
+        : 'expected { lat, lng }';
+    }
+  }
+}

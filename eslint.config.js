@@ -33,6 +33,8 @@ export default tseslint.config(
       // vitest asymmetric matchers (expect.objectContaining, …) are typed as any
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/require-await': 'off',
+      // typed response helpers (call<T>()) intentionally use a single type parameter
+      '@typescript-eslint/no-unnecessary-type-parameters': 'off',
     },
   },
 );
