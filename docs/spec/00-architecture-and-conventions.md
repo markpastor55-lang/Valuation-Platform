@@ -133,6 +133,10 @@ The permission matrix is defined in code (`packages/domain/src/auth/permissions.
 generated table is in `generated/permission-matrix.md`. Separation-of-duties rules:
 
 - `certification.sign` — only the job's responsible valuer, as a human actor, with MFA.
+- `valuation.edit` — professional-judgement fields (evidence selection, approaches, rates,
+  reconciliation, conclusions) are written only by valuers; field inspectors capture facts.
+- Service and AI accounts can call only the routes that explicitly allow their actor kind (AI:
+  suggestion submission; system: email delivery callback).
 - `qa.approve` — never the responsible valuer, unless a documented self-approval exception
   authorised by a different user holding `qa.self_approval_exception` exists.
 - `template.approve` / `ruleset.approve` — never the author of that version.
