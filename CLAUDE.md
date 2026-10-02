@@ -2,7 +2,8 @@
 
 - Monorepo: pnpm workspaces. `packages/domain` (pure TS, no I/O) is the single source of truth for
   requirements, validation, calculations, geometry, permissions, workflow and audit; `apps/api` only
-  persists, authenticates and orchestrates. Put business rules in the domain package.
+  persists, authenticates and orchestrates. `apps/preview` is a browser-only preview that calls the
+  domain directly with synthetic data. Put business rules in the domain package, never in the preview.
 - Run `pnpm check` before committing (format, lint, typecheck, tests, generated docs). After changing
   rules, permissions, fields, formulas, validation rules or routes, run `pnpm docs:generate` and commit
   the regenerated `docs/spec/generated/*` and `docs/spec/02-personas-and-permissions.md`.

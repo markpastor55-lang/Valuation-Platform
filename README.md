@@ -18,6 +18,7 @@ invoicing and a tamper-evident audit trail.
 | Specification (sections 00–14, generated tables)                                                                                | Draft for review — [`docs/spec`](docs/spec/README.md) |
 | `@vp/domain` — rules, calculations, geometry, workflow, permissions, audit, validation, AI governance, sync, report composition | Implemented, 200+ unit tests                          |
 | `@vp/api` — Fastify service, PostgreSQL schema, auth, workflow endpoints, deterministic PDF/invoice issue, offline sync         | Implemented, end-to-end tests on embedded PostgreSQL  |
+| `@vp/preview` — clickable browser preview running `@vp/domain` on synthetic data (no server)                                    | Implemented, journey tests                            |
 | Mobile app (iOS/Android, offline capture, sketch canvas)                                                                        | Planned — next iteration                              |
 | Web portal (allocation, QA, administration)                                                                                     | Planned                                               |
 | Live data integrations, e-signature, object storage, AI models                                                                  | Planned (interfaces and policies in place)            |
@@ -34,6 +35,7 @@ docs/spec/             specification 00–14 and generated/ tables (from code)
 packages/domain/       @vp/domain — pure TypeScript domain engine shared by API, mobile and web
 apps/api/              @vp/api — Fastify API, SQL migrations, PDF renderer, tests
 apps/api/scripts/      documentation generator
+apps/preview/          @vp/preview — single-page browser preview of the app (Preact + @vp/domain)
 ```
 
 ## Getting started
@@ -54,6 +56,11 @@ sources). In development, requests authenticate with headers:
 curl -s localhost:3000/v1/reference/selection \
   -H 'x-user-id: 00000000-0000-4000-8000-000000000104' -H 'x-mfa: true'
 ```
+
+`pnpm --filter @vp/preview build` writes `apps/preview/dist/index.html`, a self-contained page that
+runs the domain engine in the browser with synthetic data: change the selection and watch the
+requirements change, capture fields by role, draw and approve areas, clear validation findings, sign,
+submit, review as QA and issue. Nothing is sent to a server; state stays in the browser.
 
 The OpenAPI contract is served at `/v1/openapi.json` and committed at
 [`docs/spec/generated/openapi.json`](docs/spec/generated/openapi.json). Demo user ids are listed in
