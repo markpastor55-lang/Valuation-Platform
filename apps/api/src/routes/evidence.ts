@@ -15,7 +15,7 @@ import { z } from 'zod';
 import type { Db } from '../db/db.js';
 import { HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
-import { authorizeJob, touchJob, type JobRow } from '../repo/jobs.js';
+import { assertAssetInJob, authorizeJob, touchJob, type JobRow } from '../repo/jobs.js';
 import { audit, jobStream } from '../services/audit.js';
 import { JobParams, LocalDateSchema, ProvenanceInput, Uuid, compact } from './schemas.js';
 
@@ -43,13 +43,8 @@ const EvidenceProvenance = ProvenanceInput.extend({
   origin: z.enum(['external_source', 'client_supplied', 'manual_entry']),
 });
 
-async function assetOfJob(db: Db, job: JobRow, assetId: string): Promise<void> {
-  const { rows } = await db.query(
-    'SELECT 1 FROM asset WHERE id = $1 AND job_id = $2 AND NOT deleted',
-    [assetId, job.id],
-  );
-  if (!rows.length) throw new HttpError(422, 'UNKNOWN_ASSET', 'asset does not belong to this job');
-}
+const assetOfJob = (db: Db, job: JobRow, assetId: string): Promise<void> =>
+  assertAssetInJob(db, job.id, assetId);
 
 async function insertCalculation(
   tx: Db,
@@ -415,6 +410,16 @@ export function registerEvidenceRoutes(r: Router): void {
             'RESOLUTION_NOTE_REQUIRED',
             'closing a risk flag requires a note',
           );
+        if (body.assetId) await assetOfJob(tx, job, body.assetId);
+        if (body.id) {
+          const existing = await tx.query<{ job_id: string }>(
+            'SELECT job_id FROM risk_flag WHERE id = $1',
+            [body.id],
+          );
+          if (existing.rows[0] && existing.rows[0].job_id !== job.id) {
+            throw new HttpError(422, 'UNKNOWN_RISK_FLAG', 'risk flag belongs to another job');
+          }
+        }
         const flag = compact({ ...body, id: body.id ?? ctx.newId() }) as RiskFlag;
         await tx.query(
           `INSERT INTO risk_flag (id, org_id, job_id, asset_id, status, data) VALUES ($1, $2, $3, $4, $5, $6)

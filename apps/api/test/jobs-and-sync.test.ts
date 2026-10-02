@@ -283,3 +283,62 @@ describe('selection changes, portfolios and offline sync', () => {
     expect(r.body.results[0]!.outcome).toBe('rejected');
   });
 });
+
+describe('cross-job references', () => {
+  it('rejects photos, suggestions and evidence that point at another job’s asset', async () => {
+    const t = await createTestApp();
+    try {
+      const a = await t.call<{ id: string; assets: { id: string }[] }>(
+        'allocator',
+        'POST',
+        '/v1/jobs',
+        newJobBody(),
+      );
+      const b = await t.call<{ id: string; assets: { id: string }[] }>(
+        'allocator',
+        'POST',
+        '/v1/jobs',
+        newJobBody(),
+      );
+      const foreignAsset = b.body.assets[0]!.id;
+      const photo = await t.call<{ error: { code: string } }>(
+        'inspector',
+        'POST',
+        `/v1/jobs/${a.body.id}/photos`,
+        {
+          assetId: foreignAsset,
+          sha256: 'c'.repeat(64),
+          sequence: 1,
+          capturedAt: '2026-10-01T00:00:00Z',
+        },
+      );
+      expect(photo.status).toBe(422);
+      expect(photo.body.error.code).toBe('UNKNOWN_ASSET');
+      const flag = await t.call('inspector', 'POST', `/v1/jobs/${a.body.id}/risk-flags`, {
+        assetId: foreignAsset,
+        category: 'environmental',
+        description: 'Flood overlay',
+        severity: 'high',
+        requiresEscalation: true,
+      });
+      expect(flag.status).toBe(422);
+      const ai = await t.call(
+        'aiService',
+        'POST',
+        `/v1/jobs/${a.body.id}/ai-suggestions`,
+        {
+          assetId: foreignAsset,
+          kind: 'room_classification',
+          photoId: '55555555-5555-4555-8555-555555555555',
+          label: 'kitchen',
+          confidence: 0.9,
+          model: { provider: 'x', model: 'y', version: '1' },
+        },
+        { kind: 'ai' },
+      );
+      expect(ai.status).toBe(422);
+    } finally {
+      await t.close();
+    }
+  });
+});

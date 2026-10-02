@@ -8,7 +8,7 @@ import {
 } from '@vp/domain';
 import type { AppContext } from '../context.js';
 import type { Db } from '../db/db.js';
-import { AuthorizationDenied, notFound } from '../http/errors.js';
+import { AuthorizationDenied, HttpError, notFound } from '../http/errors.js';
 import { audit, orgStream } from '../services/audit.js';
 
 export interface JobRow {
@@ -155,4 +155,21 @@ export async function touchJob(db: Db, jobId: string, at: string): Promise<void>
     jobId,
     at,
   ]);
+}
+
+/** Rejects references to assets that do not belong to the job in the URL (prevents cross-job writes). */
+export async function assertAssetInJob(db: Db, jobId: string, assetId: string): Promise<void> {
+  const { rows } = await db.query(
+    'SELECT 1 FROM asset WHERE id = $1 AND job_id = $2 AND NOT deleted',
+    [assetId, jobId],
+  );
+  if (!rows.length) throw new HttpError(422, 'UNKNOWN_ASSET', 'asset does not belong to this job');
+}
+
+export async function assertPhotoInJob(db: Db, jobId: string, photoId: string): Promise<void> {
+  const { rows } = await db.query(
+    'SELECT 1 FROM photo WHERE id = $1 AND job_id = $2 AND NOT deleted',
+    [photoId, jobId],
+  );
+  if (!rows.length) throw new HttpError(422, 'UNKNOWN_PHOTO', 'photo does not belong to this job');
 }

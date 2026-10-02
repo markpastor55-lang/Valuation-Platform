@@ -154,7 +154,7 @@ process is required, are open `[REVIEW: LEGAL]` `[REVIEW: API_STANDARDS]`.
 | AC-01 | One job with one or many assets, shown on a permission-aware map                                                                                                           | TC-JOB-001…002, TC-ROLE-007…008, PERF-02                      | L2, L6, L7, L11 | `apps/api/test/*.test.ts` (jobs, assets, map feed); `packages/domain/test/permissions*.test.ts`; map UI E2E added at MVP  |
 | AC-02 | Changing purpose, type, jurisdiction or scope changes fields and sections without losing data                                                                              | TC-FLD-001…008                                                | L1, L2, L6, L7  | `packages/domain/test/requirements.test.ts`; `apps/api/test/*.test.ts` (selection); selection UI E2E at MVP               |
 | AC-03 | Works offline; syncs without duplicate assets/photos                                                                                                                       | TC-SYNC-001…007, PERF-01                                      | L1, L2, L6, L11 | `packages/domain/test/sync.test.ts`; sync endpoint tests in `apps/api/test/*.test.ts` and airplane-mode E2E at MVP        |
-| AC-04 | Rates traceable to inputs, units, formula, version; override only with reason                                                                                              | TC-CALC-001…009, TC-UNIT-001…006                              | L1, L2          | `packages/domain/test/calc*.test.ts`, `units*.test.ts`; `apps/api/test/*.test.ts` (calculations)                          |
+| AC-04 | Rates traceable to inputs, units, formula, version; override only with reason                                                                                              | TC-CALC-001…009, TC-UNIT-001…006                              | L1, L2          | `packages/domain/test/calculations.test.ts`, `units*.test.ts`; `apps/api/test/*.test.ts` (calculations)                   |
 | AC-05 | AI photo extraction never writes accepted facts without human confirmation                                                                                                 | TC-AI-001…004, TC-ROLE-005                                    | L1, L2          | `packages/domain/test/ai*.test.ts`; API tests when model integration lands (Pilot)                                        |
 | AC-06 | No issue with blocking validations, absent certification or incomplete QA                                                                                                  | TC-WF-001…006, TC-VAL-001…004, TC-ROLE-003…004                | L1, L2, L7      | `packages/domain/test/workflow.test.ts`, `validation*.test.ts`; `apps/api/test/*.test.ts` (certification, QA, issue)      |
 | AC-07 | Issued PDF, invoice and email record reproducible from immutable audit snapshot                                                                                            | TC-PDF-001…006, TC-AUD-001…005, TC-MIG-002                    | L1, L2, L3, L8  | `packages/domain/test/audit.test.ts`; `apps/api/test/*.test.ts` (PDF, invoice, email, audit)                              |
@@ -180,7 +180,7 @@ before any release; **P3** tracked, nightly.
 | TC-FLD-007 | Rule set, template or clause in `placeholder`/`draft` `reviewStatus` rejected by production configuration loading (G1)                                                                                                             | L1/L2 | P1  |
 | TC-FLD-008 | API selection change persists, emits `job.selection_changed` with before/after and diff, returns new sections in the same response                                                                                                 | L2    | P1  |
 
-### 3.2 Date logic (DATE) — `packages/domain/test/dates*.test.ts`, `validation*.test.ts`
+### 3.2 Date logic (DATE) — `packages/domain/test/core.test.ts`, `validation*.test.ts`
 
 | ID          | Description                                                                                                                                                                                                 | Level | Pri |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | --- |
@@ -203,7 +203,7 @@ before any release; **P3** tracked, nightly.
 | TC-UNIT-005 | Property-based round trip for every supported unit within 1e-9 relative; linear ft ↔ m (0.3048) for sketch dimensions | L1    | P2  |
 | TC-UNIT-006 | Negative, NaN and Infinity inputs rejected with typed error                                                           | L1    | P1  |
 
-### 3.4 Valuation calculations (CALC) — `packages/domain/test/calc*.test.ts`, `apps/api/test/*.test.ts`
+### 3.4 Valuation calculations (CALC) — `packages/domain/test/calculations.test.ts`, `apps/api/test/*.test.ts`
 
 | ID          | Description                                                                                                                                                                                          | Level | Pri |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | --- |
@@ -317,7 +317,7 @@ before any release; **P3** tracked, nightly.
 | TC-PDF-005 | Visual golden images per template section; working sketches excluded from client report but retained in audit record            | L8    | P2  |
 | TC-PDF-006 | Invoice and email-delivery records regenerate from the snapshot; email only to approved recipients; delivery updates idempotent | L2    | P1  |
 
-### 3.14 Connector policy (CONN) — `packages/domain/test/connector*.test.ts`, adapter contract suites
+### 3.14 Connector policy (CONN) — `packages/domain/test/integration.test.ts`, adapter contract suites
 
 | ID          | Description                                                                                                                                                          | Level | Pri |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | --- |

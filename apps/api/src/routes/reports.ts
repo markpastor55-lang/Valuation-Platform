@@ -640,6 +640,13 @@ export function registerReportRoutes(r: Router): void {
           'SYSTEM_ONLY',
           'delivery callbacks come from the email integration',
         );
+      await authorizeOrThrow(
+        ctx,
+        principal,
+        'email.send',
+        { orgId: principal.orgId },
+        { type: 'email_delivery', id: params.id },
+      );
       return ctx.db.transaction(async (tx) => {
         const { rows } = await tx.query<{ job_id: string; org_id: string; status: string }>(
           'SELECT job_id, org_id, status FROM email_delivery WHERE id = $1 FOR UPDATE',

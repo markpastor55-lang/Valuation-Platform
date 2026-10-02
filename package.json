@@ -15,7 +15,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test"
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run docs:check",
+    "docs:generate": "pnpm --filter @vp/api exec tsx --conditions=source scripts/generate-docs.ts && prettier --write docs/spec/generated docs/spec/02-personas-and-permissions.md --log-level warn",
+    "docs:check": "pnpm run docs:generate && git diff --exit-code -- docs/spec/generated docs/spec/02-personas-and-permissions.md"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

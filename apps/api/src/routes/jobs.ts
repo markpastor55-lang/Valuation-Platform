@@ -153,7 +153,6 @@ async function jobView(ctx: AppContext, db: Db, principal: Principal, job: JobRo
   const wf = workflowContextOf(agg, principal, {
     validation,
     engagementDocumentCount: await engagementDocumentCount(db, agg),
-    reason: 'preview of available transitions',
   });
   return {
     id: job.id,

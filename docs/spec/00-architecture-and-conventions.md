@@ -8,14 +8,14 @@ this document, this document wins until it is formally changed.
 
 ## 1. Guardrails restated as engineering rules
 
-| # | Guardrail | Engineering rule | Enforced in |
-|---|-----------|------------------|-------------|
-| G1 | No claim of automatic "API compliance" | Templates, clauses and rule sets carry a `reviewStatus`; nothing ships to production in `placeholder`/`draft` status. UI copy never says "compliant". | `packages/domain/src/report`, `config` |
-| G2 | Human valuer determines and certifies value | Certification can only be signed by a `human` actor who is the job's responsible valuer, with MFA. AI actors cannot sign, approve, accept or issue. | `workflow/certification.ts`, `auth` |
-| G3 | External data provenance | Every external datum stores source, retrieval time, effective date, licence/usage basis and verification status. Missing provenance is a blocking validation. | `core/provenance.ts`, `validation` |
-| G4 | Versioned templates and rules | Rule sets, templates and clauses are versioned by jurisdiction, purpose, client and effective date; approval is separate from authorship and audited. | `config/rule-set.ts`, `report/template.ts` |
-| G5 | Professional judgement retained | Assumptions, special assumptions, limitations, conflicts, independence, material uncertainty, reliance, confidentiality and intended use are first-class records. | `config/fields.ts` |
-| G6 | AASB 13 (not "AASB 113") | Financial-reporting logic references **AASB 13 Fair Value Measurement** and is configurable. | `calc/fair-value.ts` |
+| #   | Guardrail                                   | Engineering rule                                                                                                                                                  | Enforced in                                |
+| --- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| G1  | No claim of automatic "API compliance"      | Templates, clauses and rule sets carry a `reviewStatus`; nothing ships to production in `placeholder`/`draft` status. UI copy never says "compliant".             | `packages/domain/src/report`, `config`     |
+| G2  | Human valuer determines and certifies value | Certification can only be signed by a `human` actor who is the job's responsible valuer, with MFA. AI actors cannot sign, approve, accept or issue.               | `workflow/certification.ts`, `auth`        |
+| G3  | External data provenance                    | Every external datum stores source, retrieval time, effective date, licence/usage basis and verification status. Missing provenance is a blocking validation.     | `core/provenance.ts`, `validation`         |
+| G4  | Versioned templates and rules               | Rule sets, templates and clauses are versioned by jurisdiction, purpose, client and effective date; approval is separate from authorship and audited.             | `config/rule-set.ts`, `report/template.ts` |
+| G5  | Professional judgement retained             | Assumptions, special assumptions, limitations, conflicts, independence, material uncertainty, reliance, confidentiality and intended use are first-class records. | `config/fields.ts`                         |
+| G6  | AASB 13 (not "AASB 113")                    | Financial-reporting logic references **AASB 13 Fair Value Measurement** and is configurable.                                                                      | `calc/fair-value.ts`                       |
 
 Unresolved legal, professional-standard, data-licensing and accounting interpretations are marked
 in the docs with **`[REVIEW: <role>]`** where `<role>` is one of the specialist reviewer roles in §6.
@@ -44,78 +44,83 @@ in the docs with **`[REVIEW: <role>]`** where `<role>` is one of the specialist 
 └────────────────────────────┘                 └───────────────────────────────────────┘
 ```
 
-* **`@vp/domain`** (`packages/domain`) is a pure TypeScript library with no I/O. It is shared by
+- **`@vp/domain`** (`packages/domain`) is a pure TypeScript library with no I/O. It is shared by
   the API, the mobile app and the web portal so that requirement resolution, validation,
   calculations, geometry, permission checks and workflow guards behave identically online and
   offline.
-* **`@vp/api`** (`apps/api`) persists data, enforces authentication, calls the domain library
+- **`@vp/api`** (`apps/api`) persists data, enforces authentication, calls the domain library
   for every decision and renders PDFs deterministically from immutable snapshots.
-* **Mobile** and **web** clients are later iterations (see `13-backlog.md`); they consume the same
+- **Mobile** and **web** clients are later iterations (see `13-backlog.md`); they consume the same
   domain library.
 
 ### Key decisions (ADR summary)
 
-| ADR | Decision | Rationale | Status |
-|-----|----------|-----------|--------|
-| ADR-001 | TypeScript monorepo (pnpm workspaces) | One language across mobile, web and API; shared domain library | Accepted |
-| ADR-002 | React Native (Expo, bare workflow if needed) for iOS/Android | Single codebase, camera/location/offline support, OTA updates controlled by release process | Proposed — confirm in decision D5 |
-| ADR-003 | PostgreSQL 16 + SQL migrations with checksums | Migration-controlled schema, strong constraints, triggers for append-only audit | Accepted |
-| ADR-004 | Offline store: SQLite with SQLCipher on device; operation-based sync with client UUIDs | Idempotent replay, conflict-aware field-level merge | Accepted |
-| ADR-005 | Configuration-driven requirements (rule sets) instead of hard-coded forms | Purpose × property type × scope × jurisdiction drives fields, sections and warnings | Accepted |
-| ADR-006 | Hash-chained audit events (SHA-256 over canonical JSON) per stream | Tamper evidence; reproducible issue snapshots | Accepted |
-| ADR-007 | PDF generated server-side from snapshot with deterministic renderer | Issued PDF reproducible byte-for-byte from the audit snapshot | Accepted |
-| ADR-008 | Australian-hosted deployment option (e.g. AWS ap-southeast-2 / Azure Australia East) | Data residency expectations of clients | Proposed — confirm in decision D6 |
+| ADR     | Decision                                                                               | Rationale                                                                                   | Status                            |
+| ------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------- |
+| ADR-001 | TypeScript monorepo (pnpm workspaces)                                                  | One language across mobile, web and API; shared domain library                              | Accepted                          |
+| ADR-002 | React Native (Expo, bare workflow if needed) for iOS/Android                           | Single codebase, camera/location/offline support, OTA updates controlled by release process | Proposed — confirm in decision D5 |
+| ADR-003 | PostgreSQL 16 + SQL migrations with checksums                                          | Migration-controlled schema, strong constraints, triggers for append-only audit             | Accepted                          |
+| ADR-004 | Offline store: SQLite with SQLCipher on device; operation-based sync with client UUIDs | Idempotent replay, conflict-aware field-level merge                                         | Accepted                          |
+| ADR-005 | Configuration-driven requirements (rule sets) instead of hard-coded forms              | Purpose × property type × scope × jurisdiction drives fields, sections and warnings         | Accepted                          |
+| ADR-006 | Hash-chained audit events (SHA-256 over canonical JSON) per stream                     | Tamper evidence; reproducible issue snapshots                                               | Accepted                          |
+| ADR-007 | PDF generated server-side from snapshot with deterministic renderer                    | Issued PDF reproducible byte-for-byte from the audit snapshot                               | Accepted                          |
+| ADR-008 | Australian-hosted deployment option (e.g. AWS ap-southeast-2 / Azure Australia East)   | Data residency expectations of clients                                                      | Proposed — confirm in decision D6 |
 
 ## 3. Identifier conventions
 
-| Concept | Convention | Examples |
-|---------|------------|----------|
-| Entity IDs | UUID v4/v7 strings, generated by the client for offline-created records | `0190f5d2-…` |
-| Field IDs | `<group>.<camelCaseName>` | `instruction.basisOfValue`, `land.area`, `fr.fairValueHierarchyLevel` |
-| Section IDs | `snake_case` | `sales_evidence`, `fair_value`, `restricted_access` |
-| Requirement rule IDs | `REQ-<AREA>-<NNN>` | `REQ-PUR-MV-001`, `REQ-PT-IND-001` |
-| Selection rule IDs | `SEL-<NNN>` | `SEL-001` (insurance + vacant land) |
-| Validation rule codes | `VAL-<CATEGORY>-<NNN>` | `VAL-DATE-004`, `VAL-AREA-002` |
-| Geometry issue codes | `GEO-<NAME>` | `GEO-OVERLAP`, `GEO-SCALE-UNVERIFIED` |
-| Formula IDs | `<domain>.<name>` + integer version | `land.rate_per_m2@1` |
-| Audit actions | `<entity>.<past_tense_verb>` | `job.created`, `certification.signed`, `report.issued` |
-| Permissions | `<resource>.<verb>` | `qa.approve`, `calculation.override` |
-| Dates | Calendar dates as ISO `YYYY-MM-DD` (`LocalDate`); instants as ISO-8601 UTC | `2026-06-30`, `2026-10-02T03:12:00Z` |
-| Money | AUD, stored as integer cents in the database; domain uses dollars rounded to cents | |
-| Areas | Square metres (`m2`) canonical; conversions recorded with original unit | |
-| Ratios | Decimal fractions (`0.055` = 5.5 %) | cap rates, yields, incentives |
+| Concept               | Convention                                                                         | Examples                                                              |
+| --------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Entity IDs            | UUID v4/v7 strings, generated by the client for offline-created records            | `0190f5d2-…`                                                          |
+| Field IDs             | `<group>.<camelCaseName>`                                                          | `instruction.basisOfValue`, `land.area`, `fr.fairValueHierarchyLevel` |
+| Section IDs           | `snake_case`                                                                       | `sales_evidence`, `fair_value`, `restricted_access`                   |
+| Requirement rule IDs  | `REQ-<AREA>-<NNN>`                                                                 | `REQ-PUR-MV-001`, `REQ-PT-IND-001`                                    |
+| Selection rule IDs    | `SEL-<NNN>`                                                                        | `SEL-001` (insurance + vacant land)                                   |
+| Validation rule codes | `VAL-<CATEGORY>-<NNN>`                                                             | `VAL-DATE-004`, `VAL-AREA-002`                                        |
+| Geometry issue codes  | `GEO-<NAME>`                                                                       | `GEO-OVERLAP`, `GEO-SCALE-UNVERIFIED`                                 |
+| Formula IDs           | `<domain>.<name>` + integer version                                                | `land.rate_per_m2@1`                                                  |
+| Audit actions         | `<entity>.<past_tense_verb>`                                                       | `job.created`, `certification.signed`, `report.issued`                |
+| Permissions           | `<resource>.<verb>`                                                                | `qa.approve`, `calculation.override`                                  |
+| Dates                 | Calendar dates as ISO `YYYY-MM-DD` (`LocalDate`); instants as ISO-8601 UTC         | `2026-06-30`, `2026-10-02T03:12:00Z`                                  |
+| Money                 | AUD, stored as integer cents in the database; domain uses dollars rounded to cents |                                                                       |
+| Areas                 | Square metres (`m2`) canonical; conversions recorded with original unit            |                                                                       |
+| Ratios                | Decimal fractions (`0.055` = 5.5 %)                                                | cap rates, yields, incentives                                         |
 
 ## 4. Selection vocabulary
 
 ### Jurisdictions
+
 `NSW`, `VIC`, `QLD`, `WA`, `SA`, `TAS`, `ACT`, `NT`
 
 ### Report purposes
-| Code | Meaning |
-|------|---------|
-| `MARKET_VALUE` | Market value (mortgage security is a *client template* variant, not a separate purpose) |
-| `CGT_RETROSPECTIVE` | Capital gains tax / retrospective valuation |
-| `FAMILY_LAW` | Expert valuation for family-law proceedings |
-| `FINANCIAL_REPORTING` | Fair value for financial reporting (AASB 13) |
-| `RENTAL_ASSESSMENT` | Market rent assessment / determination |
-| `INSURANCE_REPLACEMENT` | Insurance replacement / reinstatement cost |
+
+| Code                    | Meaning                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `MARKET_VALUE`          | Market value (mortgage security is a _client template_ variant, not a separate purpose) |
+| `CGT_RETROSPECTIVE`     | Capital gains tax / retrospective valuation                                             |
+| `FAMILY_LAW`            | Expert valuation for family-law proceedings                                             |
+| `FINANCIAL_REPORTING`   | Fair value for financial reporting (AASB 13)                                            |
+| `RENTAL_ASSESSMENT`     | Market rent assessment / determination                                                  |
+| `INSURANCE_REPLACEMENT` | Insurance replacement / reinstatement cost                                              |
 
 ### Inspection scopes
-The brief lists *Desktop* and *Restricted access / kerbside* alongside purposes; they are modelled
+
+The brief lists _Desktop_ and _Restricted access / kerbside_ alongside purposes; they are modelled
 as **scopes**, because any purpose can (subject to rules) be performed at any scope.
 
-| Code | Meaning |
-|------|---------|
-| `FULL` | Full internal and external inspection |
-| `KERBSIDE` | External-only inspection from the street / boundary |
-| `RESTRICTED` | Partial access: some areas not inspected |
-| `DESKTOP` | No physical inspection |
+| Code         | Meaning                                             |
+| ------------ | --------------------------------------------------- |
+| `FULL`       | Full internal and external inspection               |
+| `KERBSIDE`   | External-only inspection from the street / boundary |
+| `RESTRICTED` | Partial access: some areas not inspected            |
+| `DESKTOP`    | No physical inspection                              |
 
 ### Property types
+
 `VACANT_LAND`, `RESIDENTIAL`, `COMMERCIAL_OFFICE`, `COMMERCIAL_RETAIL`, `INDUSTRIAL`,
 `SPECIALISED_MIXED_USE`
 
 ### Asset mode
+
 `SINGLE`, `PORTFOLIO`
 
 ## 5. Roles and permissions
@@ -127,26 +132,26 @@ to approve templates and rule sets).
 The permission matrix is defined in code (`packages/domain/src/auth/permissions.ts`) and the
 generated table is in `generated/permission-matrix.md`. Separation-of-duties rules:
 
-* `certification.sign` — only the job's responsible valuer, as a human actor, with MFA.
-* `qa.approve` — never the responsible valuer, unless a documented self-approval exception
+- `certification.sign` — only the job's responsible valuer, as a human actor, with MFA.
+- `qa.approve` — never the responsible valuer, unless a documented self-approval exception
   authorised by a different user holding `qa.self_approval_exception` exists.
-* `template.approve` / `ruleset.approve` — never the author of that version.
-* `CLIENT_READONLY` sees only issued reports and invoices for its own client entities.
-* Restricted portfolios require explicit membership even for organisation-wide roles.
+- `template.approve` / `ruleset.approve` — never the author of that version.
+- `CLIENT_READONLY` sees only issued reports and invoices for its own client entities.
+- Restricted portfolios require explicit membership even for organisation-wide roles.
 
 ## 6. Specialist reviewer roles (`[REVIEW: …]` tags)
 
-| Tag | Reviewer |
-|-----|----------|
-| `API_STANDARDS` | Nominated API/IVS standards owner (Certified Practising Valuer) |
-| `FAMILY_LAW` | Family-law practitioner (legal review of expert-report wording) |
-| `TAX` | Tax adviser (CGT/ATO alignment) |
-| `ACCOUNTING` | Accounting/AASB 13 specialist |
-| `PRIVACY` | Privacy officer (APPs, PIA) |
-| `SECURITY` | Cyber-security reviewer |
-| `DATA_LICENSING` | Data-licensing / procurement reviewer |
-| `QUANTITY_SURVEYOR` | Quantity surveyor / insurance-valuation specialist |
-| `LEGAL` | General legal counsel (terms, liability, reliance wording) |
+| Tag                 | Reviewer                                                        |
+| ------------------- | --------------------------------------------------------------- |
+| `API_STANDARDS`     | Nominated API/IVS standards owner (Certified Practising Valuer) |
+| `FAMILY_LAW`        | Family-law practitioner (legal review of expert-report wording) |
+| `TAX`               | Tax adviser (CGT/ATO alignment)                                 |
+| `ACCOUNTING`        | Accounting/AASB 13 specialist                                   |
+| `PRIVACY`           | Privacy officer (APPs, PIA)                                     |
+| `SECURITY`          | Cyber-security reviewer                                         |
+| `DATA_LICENSING`    | Data-licensing / procurement reviewer                           |
+| `QUANTITY_SURVEYOR` | Quantity surveyor / insurance-valuation specialist              |
+| `LEGAL`             | General legal counsel (terms, liability, reliance wording)      |
 
 ## 7. Job lifecycle
 
@@ -164,20 +169,28 @@ draft ──acceptEngagement──▶ active ──submitForQa──▶ submitte
 Records are editable only in `draft`, `active` and `returned`. Submission locks the content and
 records the snapshot hash; approval and issue verify that the snapshot has not changed.
 
-## 8. Audit action vocabulary (initial)
+## 8. Audit action vocabulary
 
-`job.created`, `job.selection_changed`, `job.engagement_accepted`, `job.assigned`, `job.cancelled`,
-`asset.created`, `asset.updated`, `field.updated`, `datasource.used`, `photo.captured`,
-`photo.privacy_flagged`, `photo.redacted`, `ai.suggestion_created`, `ai.suggestion_accepted`,
-`ai.suggestion_edited`, `ai.suggestion_rejected`, `evidence.sale_added`, `evidence.rental_added`,
-`calculation.run`, `calculation.overridden`, `sketch.version_created`, `calibration.created`,
-`calibration.confirmed`, `measurement.approved`, `validation.run`, `validation.acknowledged`,
-`certification.signed`, `job.submitted`, `qa.started`, `qa.finding_raised`, `qa.finding_responded`,
-`qa.finding_closed`, `qa.self_approval_exception_authorised`, `qa.approved`, `qa.returned`,
-`report.draft_generated`, `report.issued`, `invoice.created`, `email.queued`, `email.sent`,
-`email.delivery_updated`, `template.version_created`, `template.version_approved`,
-`ruleset.version_approved`, `legal_hold.applied`, `legal_hold.released`, `auth.denied`,
-`sync.conflict_detected`, `sync.conflict_resolved`.
+Actions emitted by the iteration-1 API (see `06-data-model-and-audit.md` for when each is emitted):
+
+`job.created`, `job.selection_changed`, `job.assigned`, `job.engagement_accepted`, `job.submitted`,
+`job.cancelled`, `job.amendment_opened`, `asset.created`, `field.updated`, `evidence.sale_added`,
+`evidence.rental_added`, `evidence.commentary_added`, `risk.flag_recorded`, `calculation.run`,
+`calculation.overridden`, `sketch.version_created`, `calibration.created`, `calibration.confirmed`,
+`measurement.approved`, `photo.captured`, `photo.privacy_flagged`, `photo.redacted`,
+`ai.suggestion_created`, `ai.suggestion_accepted`, `ai.suggestion_edited`, `ai.suggestion_rejected`,
+`validation.run`, `validation.acknowledged`, `certification.signed`, `qa.started`,
+`qa.checklist_answered`, `qa.finding_raised`, `qa.finding_responded`, `qa.finding_closed`,
+`qa.self_approval_exception_authorised`, `qa.returned`, `qa.approved`, `report.draft_generated`,
+`report.issued`, `report.accessed`, `invoice.created`, `email.queued`, `email.sent`,
+`email.delivery_updated`, `template.version_created`, `template.review_recorded`,
+`template.version_approved`, `ruleset.version_approved`, `recipient.approved`, `legal_hold.applied`,
+`sync.operation_applied`, `sync.conflict_detected`, `auth.denied`.
+
+Planned (later iterations): `asset.updated`, `datasource.used`, `datasource.lookup_failed`,
+`datasource.fallback_task_created`, `datasource.verified`, `datasource.config_changed`,
+`ruleset.version_created`, `legal_hold.released`, `sync.conflict_resolved`, `user.membership_changed`,
+`retention.*` and `incident.*` events proposed in `04` and `11`.
 
 ## 9. Repository layout
 

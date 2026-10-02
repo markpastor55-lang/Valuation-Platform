@@ -278,4 +278,69 @@ API rejects violations with `auth.denied`, even if a client presents the action.
 | Two valuers        | Each is `VALUER` + `QA_REVIEWER` and reviews the other's jobs. Both are `STANDARDS_OWNER`, so each approves the other's versions.                                                                                                            |
 | Five or more staff | Separate allocator, finance and administrator. At least two `QA_REVIEWER`s and two `STANDARDS_OWNER`s.                                                                                                                                       |
 
-<!-- PERMISSION-MATRIX -->
+## Permission matrix
+
+The matrix below is generated from `packages/domain/src/auth/permissions.ts` (the code that enforces it) by
+`pnpm docs:generate`; CI fails if it is stale. Holding a grant is necessary but not sufficient: `authorize()` also
+applies organisation, restricted-portfolio, assignment, client-scope and separation-of-duties rules (SoD-01–SoD-06
+above). Persona task tables earlier in this document are indicative; where they differ, this matrix is authoritative.
+
+<!-- PERMISSION-MATRIX:START -->
+
+Organisation-wide roles: ADMINISTRATOR, STANDARDS_OWNER, ALLOCATOR, FINANCE. Other roles act only on jobs they are assigned to or whose portfolio they belong to. Restricted portfolios require membership for every role. 👤 = human actor only; 🔐 = MFA required.
+
+| Permission                   | ADMINISTRATOR | STANDARDS_OWNER | ALLOCATOR | VALUER | FIELD_INSPECTOR | QA_REVIEWER | FINANCE | CLIENT_READONLY | Human only | MFA |
+| ---------------------------- | ------------- | --------------- | --------- | ------ | --------------- | ----------- | ------- | --------------- | ---------- | --- |
+| `org.manage`                 | ✓             |                 |           |        |                 |             |         |                 |            |     |
+| `user.manage`                | ✓             |                 |           |        |                 |             |         |                 |            | 🔐  |
+| `datasource.manage`          | ✓             |                 |           |        |                 |             |         |                 |            |     |
+| `template.edit`              |               | ✓               |           |        |                 |             |         |                 |            |     |
+| `template.approve`           |               | ✓               |           |        |                 |             |         |                 | 👤         | 🔐  |
+| `ruleset.edit`               |               | ✓               |           |        |                 |             |         |                 |            |     |
+| `ruleset.approve`            |               | ✓               |           |        |                 |             |         |                 | 👤         | 🔐  |
+| `job.create`                 |               |                 | ✓         |        |                 |             |         |                 |            |     |
+| `job.read`                   | ✓             |                 | ✓         | ✓      | ✓               | ✓           | ✓       |                 |            |     |
+| `job.update`                 |               |                 | ✓         | ✓      |                 |             |         |                 |            |     |
+| `job.allocate`               |               |                 | ✓         |        |                 |             |         |                 |            |     |
+| `job.cancel`                 | ✓             |                 | ✓         |        |                 |             |         |                 |            |     |
+| `engagement.accept`          |               |                 | ✓         | ✓      |                 |             |         |                 | 👤         |     |
+| `asset.edit`                 |               |                 | ✓         | ✓      | ✓               |             |         |                 |            |     |
+| `inspection.capture`         |               |                 |           | ✓      | ✓               |             |         |                 |            |     |
+| `photo.capture`              |               |                 |           | ✓      | ✓               |             |         |                 |            |     |
+| `photo.redact`               |               |                 |           | ✓      | ✓               |             |         |                 |            |     |
+| `photo.view_unredacted`      |               |                 |           | ✓      |                 | ✓           |         |                 |            |     |
+| `evidence.edit`              |               |                 |           | ✓      |                 |             |         |                 |            |     |
+| `calculation.run`            |               |                 |           | ✓      |                 |             |         |                 |            |     |
+| `calculation.override`       |               |                 |           | ✓      |                 |             |         |                 | 👤         |     |
+| `sketch.edit`                |               |                 |           | ✓      | ✓               |             |         |                 |            |     |
+| `measurement.approve`        |               |                 |           | ✓      |                 |             |         |                 | 👤         |     |
+| `ai.decide`                  |               |                 |           | ✓      | ✓               |             |         |                 | 👤         |     |
+| `validation.acknowledge`     |               |                 |           | ✓      |                 |             |         |                 | 👤         |     |
+| `certification.sign`         |               |                 |           | ✓      |                 |             |         |                 | 👤         | 🔐  |
+| `qa.review`                  |               |                 |           |        |                 | ✓           |         |                 | 👤         |     |
+| `qa.approve`                 |               |                 |           |        |                 | ✓           |         |                 | 👤         | 🔐  |
+| `qa.self_approval_exception` | ✓             |                 |           |        |                 |             |         |                 | 👤         | 🔐  |
+| `report.generate_draft`      |               |                 |           | ✓      |                 | ✓           |         |                 |            |     |
+| `report.issue`               | ✓             |                 |           | ✓      |                 |             |         |                 | 👤         | 🔐  |
+| `report.read_issued`         | ✓             |                 | ✓         | ✓      |                 | ✓           | ✓       | ✓               |            |     |
+| `invoice.manage`             |               |                 |           |        |                 |             | ✓       |                 |            |     |
+| `invoice.read`               | ✓             |                 | ✓         |        |                 |             | ✓       | ✓               |            |     |
+| `email.send`                 |               |                 |           | ✓      |                 |             | ✓       |                 |            |     |
+| `audit.read`                 | ✓             |                 |           |        |                 | ✓           |         |                 |            |     |
+| `legal_hold.manage`          | ✓             |                 |           |        |                 |             |         |                 |            | 🔐  |
+| `retention.manage`           | ✓             |                 |           |        |                 |             |         |                 |            | 🔐  |
+
+### Workflow transitions
+
+| Action           | From                    | To        | Permission           | Audit action              |
+| ---------------- | ----------------------- | --------- | -------------------- | ------------------------- |
+| acceptEngagement | draft                   | active    | `engagement.accept`  | `job.engagement_accepted` |
+| submitForQa      | active, returned        | submitted | `certification.sign` | `job.submitted`           |
+| startReview      | submitted               | in_review | `qa.review`          | `qa.started`              |
+| returnToValuer   | in_review               | returned  | `qa.review`          | `qa.returned`             |
+| approve          | in_review               | approved  | `qa.approve`         | `qa.approved`             |
+| issue            | approved                | issued    | `report.issue`       | `report.issued`           |
+| openAmendment    | issued                  | active    | `job.update`         | `job.amendment_opened`    |
+| cancel           | draft, active, returned | cancelled | `job.cancel`         | `job.cancelled`           |
+
+<!-- PERMISSION-MATRIX:END -->

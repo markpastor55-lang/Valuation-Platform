@@ -55,8 +55,9 @@ IDs (`TC-…`, `PERF-…`) refer to `12-test-plan.md`. Decisions D1–D7 are bri
     (dev headers for local/test only, OIDC JWT for deployed environments); job, asset,
     requirements, field, evidence, sketch, validation, certification, QA, issue, PDF and audit
     endpoints; deterministic PDF rendering; invoice and email-delivery records with stub
-    transports.
-  - CI workflow (format, lint, typecheck, tests).
+    transports; issue-snapshot reproduction endpoint; offline sync endpoint for assets and photos;
+    append-only/immutability triggers and legal-hold guard; generated OpenAPI 3.1 contract.
+  - CI workflow (format, lint, typecheck, tests, build, generated-docs check, dependency audit).
 - **Not delivered:** mobile app (Expo), web portal, live third-party integrations, e-signature
   provider, AI model integration, object storage, production infrastructure.
 - **Exit criteria:** CI gates pass; spec sections in **Draft for review**; L1/L2 tests exist for

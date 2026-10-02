@@ -25,7 +25,13 @@ import { z } from 'zod';
 import type { Db } from '../db/db.js';
 import { HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
-import { authorizeJob, touchJob, type JobRow } from '../repo/jobs.js';
+import {
+  assertAssetInJob,
+  assertPhotoInJob,
+  authorizeJob,
+  touchJob,
+  type JobRow,
+} from '../repo/jobs.js';
 import { audit, jobStream } from '../services/audit.js';
 import { writeField } from '../services/fields.js';
 import { InstantSchema, JobParams, PointSchema, Uuid, compact } from './schemas.js';
@@ -453,6 +459,7 @@ export function registerInspectionRoutes(r: Router): void {
           forUpdate: true,
         });
         assertEditable(job.status);
+        await assertAssetInJob(tx, job.id, body.assetId);
         const existing = await tx.query<{ id: string }>(
           'SELECT id FROM photo WHERE asset_id = $1 AND sha256 = $2 AND NOT deleted',
           [body.assetId, body.sha256],
@@ -526,6 +533,15 @@ export function registerInspectionRoutes(r: Router): void {
         });
         assertEditable(job.status);
         const photo = await loadPhoto(tx, job, params.photoId);
+        if (body.action === 'redact') {
+          await assertPhotoInJob(tx, job.id, body.redactedPhotoId);
+          if (body.redactedPhotoId === photo.id)
+            throw new HttpError(
+              422,
+              'INVALID_REDACTION',
+              'the redacted derivative must be a separate image',
+            );
+        }
         const next =
           body.action === 'flag'
             ? flagPhotoPrivacy(photo, body.flags)
@@ -578,6 +594,8 @@ export function registerInspectionRoutes(r: Router): void {
           forUpdate: true,
         });
         assertEditable(job.status);
+        await assertAssetInJob(tx, job.id, body.assetId);
+        if (body.photoId) await assertPhotoInJob(tx, job.id, body.photoId);
         const suggestion = createAiSuggestion(
           compact({
             ...body,
