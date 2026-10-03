@@ -58,9 +58,12 @@ const EXTRA_BLOCKS: Partial<Record<SectionId, TemplateBlock[]>> = {
   restricted_access: [ft('restricted_access'), clause('restricted-limitation')],
   desktop_data_register: [ft('desktop_data_register'), clause('desktop-limitation')],
   expert_compliance: [ft('expert_compliance'), clause('expert-declaration')],
-  tax_context: [ft('tax_context'), clause('retrospective-cutoff')],
+  tax_context: [ft('tax_context')],
+  retrospective: [ft('retrospective'), clause('retrospective-cutoff')],
   location: [ft('location'), { type: 'map' }],
-  areas: [ft('areas'), { type: 'area_schedule' }, { type: 'sketch' }, clause('area-disclaimer')],
+  // Sketches are working notes: the seed template reports measured areas, not the drawing.
+  areas: [ft('areas'), { type: 'area_schedule' }, clause('area-disclaimer')],
+  market: [{ type: 'market_commentary' }],
   sales_evidence: [{ type: 'sales_table' }],
   rental_evidence: [{ type: 'rental_table' }],
   valuation_approach: [

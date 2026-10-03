@@ -58,31 +58,33 @@ These apply to every API-backed feature. Each feature lists only its own additio
 
 ### 1.3 Feature index
 
-| ID   | Feature                                                     | Epic             | Stories                                                              | Release                                                      | Status in this repository |
-| ---- | ----------------------------------------------------------- | ---------------- | -------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
-| F-01 | Job creation and allocation (single and portfolio)          | E-01             | S-025, S-035, S-039, S-082                                           | MVP (bulk import Pilot)                                      | Partially implemented     |
-| F-02 | Engagement acceptance and conflict check                    | E-01             | S-015, S-035                                                         | MVP                                                          | Partially implemented     |
-| F-03 | Selection and dynamic requirements                          | E-02             | S-002, S-003, S-004, S-037, S-085, S-086                             | MVP (FL, CGT products Pilot)                                 | Implemented in domain/API |
-| F-04 | Property data capture, provenance and data-source licensing | E-03             | S-005, S-038, S-039, S-075                                           | MVP (licensed imports Pilot)                                 | Partially implemented     |
-| F-05 | Planning and hazard adapters with manual fallback           | E-04             | S-022, S-040, S-073, S-074, S-093                                    | MVP planning; Pilot hazards                                  | Partially implemented     |
-| F-06 | Permission-aware map                                        | E-01             | S-036, S-083                                                         | MVP                                                          | Partially implemented     |
-| F-07 | Mobile offline inspection and sync                          | E-05             | S-020, S-032, S-041, S-042, S-043, S-066, S-083                      | MVP (route planning Pilot)                                   | Partially implemented     |
-| F-08 | Photo capture, quality checks and privacy redaction         | E-06             | S-019, S-044, S-045, S-046                                           | MVP                                                          | Partially implemented     |
-| F-09 | AI photo suggestions (accept / edit / reject)               | E-06             | S-018, S-068, S-069                                                  | Pilot                                                        | Implemented in domain/API |
-| F-10 | Areas & Sketch (import, calibrate, draw, schedule, approve) | E-07             | S-011, S-012, S-013, S-026, S-047, S-048, S-049, S-069               | MVP (AI outlines Pilot)                                      | Implemented in domain/API |
-| F-11 | Sales evidence and adjustments                              | E-08             | S-007, S-026, S-050, S-075                                           | MVP                                                          | Implemented in domain/API |
-| F-12 | Rental evidence                                             | E-08             | S-008, S-050                                                         | MVP                                                          | Implemented in domain/API |
-| F-13 | Traced calculations and overrides                           | E-08             | S-005, S-006, S-051                                                  | MVP                                                          | Implemented in domain/API |
-| F-14 | Replacement cost (insurance)                                | E-08             | S-009, S-076, S-098                                                  | MVP if in D3; Pilot; Production                              | Partially implemented     |
-| F-15 | Fair value (AASB 13) support                                | E-08             | S-010, S-097                                                         | MVP if in D3; Production export                              | Partially implemented     |
-| F-16 | Market commentary modules with date guards                  | E-09             | S-052                                                                | MVP                                                          | Partially implemented     |
-| F-17 | Validation and acknowledgements                             | E-10             | S-014, S-053                                                         | MVP                                                          | Implemented in domain/API |
-| F-18 | Certification and submission for QA                         | E-11             | S-054, S-070                                                         | MVP (e-signature Pilot)                                      | Implemented in domain/API |
-| F-19 | QA review and self-approval exceptions                      | E-12             | S-015, S-027, S-055                                                  | MVP                                                          | Implemented in domain/API |
-| F-20 | Report issue (PDF, invoice, email) and reproduction         | E-13, E-14       | S-021, S-028, S-029, S-056, S-057, S-058, S-071, S-072, S-084, S-099 | MVP (amendments, live email Pilot; client portal Production) | Implemented in domain/API |
-| F-21 | Template and rule-set governance                            | E-02, E-13, E-15 | S-003, S-021, S-056, S-059, S-092                                    | MVP                                                          | Partially implemented     |
-| F-22 | Audit trail and security events                             | E-15             | S-017, S-063, S-095                                                  | MVP (SIEM Production)                                        | Implemented in domain/API |
-| F-23 | Legal hold and retention                                    | E-15             | S-077, S-080                                                         | Pilot                                                        | Partially implemented     |
+| ID   | Feature                                                                           | Epic             | Stories                                                              | Release                                                      | Status in this repository |
+| ---- | --------------------------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
+| F-01 | Job creation and allocation (single and portfolio)                                | E-01             | S-025, S-035, S-039, S-082                                           | MVP (bulk import Pilot)                                      | Partially implemented     |
+| F-02 | Engagement acceptance and conflict check                                          | E-01             | S-015, S-035                                                         | MVP                                                          | Partially implemented     |
+| F-03 | Selection and dynamic requirements                                                | E-02             | S-002, S-003, S-004, S-037, S-085, S-086                             | MVP (FL, CGT products Pilot)                                 | Implemented in domain/API |
+| F-04 | Property data capture, provenance and data-source licensing                       | E-03             | S-005, S-038, S-039, S-075                                           | MVP (licensed imports Pilot)                                 | Partially implemented     |
+| F-05 | Planning and hazard adapters with manual fallback                                 | E-04             | S-022, S-040, S-073, S-074, S-093                                    | MVP planning; Pilot hazards                                  | Partially implemented     |
+| F-06 | Permission-aware map                                                              | E-01             | S-036, S-083                                                         | MVP                                                          | Partially implemented     |
+| F-07 | Mobile offline inspection and sync                                                | E-05             | S-020, S-032, S-041, S-042, S-043, S-066, S-083                      | MVP (route planning Pilot)                                   | Partially implemented     |
+| F-08 | Photo capture, quality checks and privacy redaction                               | E-06             | S-019, S-044, S-045, S-046                                           | MVP                                                          | Partially implemented     |
+| F-09 | AI photo suggestions (accept / edit / reject)                                     | E-06             | S-018, S-068, S-069                                                  | Pilot                                                        | Implemented in domain/API |
+| F-10 | Areas & Sketch (import, calibrate, draw, schedule, approve)                       | E-07             | S-011, S-012, S-013, S-026, S-047, S-048, S-049, S-069               | MVP (AI outlines Pilot)                                      | Implemented in domain/API |
+| F-11 | Sales evidence and adjustments                                                    | E-08             | S-007, S-026, S-050, S-075                                           | MVP                                                          | Implemented in domain/API |
+| F-12 | Rental evidence                                                                   | E-08             | S-008, S-050                                                         | MVP                                                          | Implemented in domain/API |
+| F-13 | Traced calculations and overrides                                                 | E-08             | S-005, S-006, S-051                                                  | MVP                                                          | Implemented in domain/API |
+| F-14 | Replacement cost (insurance)                                                      | E-08             | S-009, S-076, S-098                                                  | MVP if in D3; Pilot; Production                              | Partially implemented     |
+| F-15 | Fair value (AASB 13) support                                                      | E-08             | S-010, S-097                                                         | MVP if in D3; Production export                              | Partially implemented     |
+| F-16 | Market commentary library by property type and location, with date guards         | E-09             | S-052, S-109, S-110, S-111, S-112                                    | MVP (the firm's own library content Pilot)                   | Implemented in domain/API |
+| F-17 | Validation and acknowledgements                                                   | E-10             | S-014, S-053                                                         | MVP                                                          | Implemented in domain/API |
+| F-18 | Certification and submission for QA                                               | E-11             | S-054, S-070                                                         | MVP (e-signature Pilot)                                      | Implemented in domain/API |
+| F-19 | QA review and self-approval exceptions                                            | E-12             | S-015, S-027, S-055                                                  | MVP                                                          | Implemented in domain/API |
+| F-20 | Report issue (PDF, invoice, email) and reproduction                               | E-13, E-14       | S-021, S-028, S-029, S-056, S-057, S-058, S-071, S-072, S-084, S-099 | MVP (amendments, live email Pilot; client portal Production) | Implemented in domain/API |
+| F-21 | Template and rule-set governance                                                  | E-02, E-13, E-15 | S-003, S-021, S-056, S-059, S-092                                    | MVP                                                          | Partially implemented     |
+| F-22 | Audit trail and security events                                                   | E-15             | S-017, S-063, S-095                                                  | MVP (SIEM Production)                                        | Implemented in domain/API |
+| F-23 | Legal hold and retention                                                          | E-15             | S-077, S-080                                                         | Pilot                                                        | Partially implemented     |
+| F-24 | Work in progress and job/property search                                          | E-01             | S-102, S-106                                                         | MVP                                                          |
+| F-25 | Licensed property data (CoreLogic / Cotality), sample mode and state map services | E-03, E-01       | S-103, S-104, S-105, S-106, S-107                                    | MVP (live data when keys and licence are supplied)           |
 
 ## 2. Feature specifications
 
@@ -91,7 +93,7 @@ These apply to every API-backed feature. Each feature lists only its own additio
 **Status:** Partially implemented. Job, asset and assignment endpoints exist. W-01/W-02 UI, CSV/XLSX import, geocoding, duplicate detection, credential eligibility and appointment booking are planned. · E-01 · S-025 (Done), S-035, S-039, S-082 · J-01 · W-01, W-02, M-02
 
 **User story**
-As an allocator, I want to create a job with one or many assets and assign a responsible valuer, inspectors and an independent QA reviewer, so that each instruction is recorded once and the work is allocated accountably.
+As an allocator, I want to create a job with one or many assets and assign a responsible valuer and an independent QA reviewer (and field inspectors, where the firm uses them; optional, 01 D12), so that each instruction is recorded once and the work is allocated accountably.
 
 **Acceptance criteria**
 
@@ -109,12 +111,12 @@ As an allocator, I want to create a job with one or many assets and assign a res
 
 **Data fields**
 
-- Catalogue: `instruction.clientEntity`, `instruction.instructingParty` (personal), `instruction.intendedUsers`, `instruction.intendedUse`, `instruction.basisOfValue`, `instruction.interestValued`, `instruction.feeBasis`, `instruction.dueDate`, `instruction.engagementDocuments`, `instruction.responsibleValuer`, `instruction.reviewer`, `dates.instruction`, `location.address`, `location.coordinates`, `location.geocodeConfidence`, `location.titleReference`, `location.lga`, `portfolio.aggregationBasis`, `portfolio.summarySchedule`.
+- Catalogue (REQ-BASE-001, 01 D9): `instruction.clientEntity` (the client is the instructing party), `instruction.intendedUsers`, `instruction.intendedUse`, `instruction.basisOfValue`, `instruction.interestValued`, `instruction.engagementDocuments`, `location.address`, `location.titleReference`, `location.lga` (council; recommended), `location.geocodeConfidence`, `portfolio.aggregationBasis`, `portfolio.summarySchedule`. System-filled (`entry: 'system'`, read-only for the valuer): `instruction.responsibleValuer`, `instruction.reviewer`, `instruction.dueDate`, `dates.instruction`, `location.coordinates`. Still catalogued but no longer requested per job: `instruction.instructingParty` (personal), `instruction.feeBasis` (the fee is the job's `feeCents`).
 - Record `job`: `reference` (3–40 characters), `clientId`, `portfolioId`; `selection` {`jurisdiction`, `purpose`, `propertyType`, `scope`, `mode`}; `responsibleValuerId`, `reviewerId`, `inspectorIds`, `feeCents` (integer ≥ 0).
 - Record `asset`: `id` (client UUID), `label` (1–200 characters), `address.formatted`, `latitude`, `longitude`, `geocodeConfidence` (0–1).
 
 **Validation**
-`VAL-REQ-001` covers the REQ-BASE-001 instruction fields and the REQ-MODE-PF-001 portfolio fields. `VAL-REQ-002` covers the recommended fields (`instruction.feeBasis`, `instruction.dueDate`, `instruction.reviewer`, `location.coordinates`). `VAL-SEL-001` and `VAL-SEL-002` apply SEL-001…SEL-009 to the initial selection. `VAL-PROV-001` applies when geocoded location data lacks provenance. Proposed: `VAL-LOC-001` and `VAL-ASSET-001` (§3.2).
+`VAL-REQ-001` covers the REQ-BASE-001 instruction fields and the REQ-MODE-PF-001 portfolio fields. `VAL-REQ-002` covers the recommended fields (`instruction.dueDate`, `instruction.reviewer`, `instruction.ownership`, `location.lga`, `location.coordinates`, `assumptions.general`, `assumptions.limitations`). `VAL-SEL-001` and `VAL-SEL-002` apply SEL-001…SEL-009 to the initial selection. `VAL-PROV-001` applies when geocoded location data lacks provenance. Proposed: `VAL-LOC-001` and `VAL-ASSET-001` (§3.2).
 
 **Permissions**
 
@@ -140,7 +142,7 @@ UI states _(planned)_: no geocode match, duplicate asset, import row errors, no 
 - `apps/api/test/jobs-and-sync.test.ts` › "enforces single-asset mode and supports portfolio jobs"; "hides restricted-portfolio jobs from non-members".
 - `apps/api/test/security.test.ts` › "allocators cannot make the reviewer the responsible valuer".
 - `packages/domain/test/permissions.test.ts` › "assignment-scoped roles need an assignment or portfolio membership"; "restricted portfolios require membership even for organisation-wide roles".
-- TC-JOB-001, TC-ROLE-001, TC-ROLE-008, TC-AUD-004, PERF-04. **Gap:** 1,000-asset portfolio (TC-JOB-001 scale); import row validation; duplicate detection; eligibility filter; W-01/W-02 E2E (L7).
+- TC-JOB-001, TC-ROLE-001, TC-ROLE-008, TC-AUD-004, PERF-04. **Gap:** 1,000-asset portfolio (TC-JOB-001 scale); import row validation; duplicate detection; eligibility filter; W-01/W-02 E2E (L7). Job creation sets `dates.instruction` (`instructedOn`, default today in the jurisdiction) and `instruction.dueDate` (`dueDate`); changing them after creation has no endpoint yet.
 
 ### F-02 — Engagement acceptance and conflict check
 
@@ -163,7 +165,7 @@ As a responsible valuer, I want to check for conflicts, declare my independence 
 
 **Data fields**
 
-- Catalogue: `instruction.conflictCheck` (`no_conflict`, `conflict_disclosed_managed`, `conflict_declined`), `instruction.conflictDisclosure`, `instruction.responsibleValuer`, `instruction.engagementDocuments`, `instruction.intendedUsers`, `instruction.intendedUse`, `instruction.reliance`, `instruction.confidentiality`, `instruction.feeBasis`, `instruction.dueDate`, `fl.independenceDeclaration` (`FAMILY_LAW` only).
+- Catalogue: `instruction.conflictCheck` (`no_conflict`, `conflict_disclosed_managed`, `conflict_declined`), `instruction.conflictDisclosure`, `instruction.responsibleValuer`, `instruction.engagementDocuments`, `instruction.intendedUsers`, `instruction.intendedUse`, `instruction.dueDate`, `fl.independenceDeclaration` (`FAMILY_LAW` only). Reliance, confidentiality and standard limitations come from the firm's approved template clauses (seed `reliance-core`, `limitations-core`) `[REVIEW: LEGAL]`, not per-job fields; `instruction.reliance`, `instruction.confidentiality` and `instruction.feeBasis` stay in the catalogue but are no longer requested (01 D9).
 - Record `document`: `kind` (`engagement`), `filename`, `sha256`, `size_bytes`, `storage_key`, `uploaded_by`, `uploaded_at`.
 - Proposed (§3.3): `instruction.independenceDeclaration`, `instruction.competenceConfirmed`, `instruction.clientAcceptance`.
 
@@ -200,7 +202,7 @@ As a responsible valuer, I want my choice of jurisdiction, purpose, property typ
 **Acceptance criteria**
 
 1. Given rule set `au-core 2026.1-draft`, the resolver returns a requirement set for all 1,152 purpose × type × scope × jurisdiction combinations, and per asset in `PORTFOLIO` mode.
-2. Purpose rules add their fields: REQ-PUR-MV-001: `valuation.highestAndBestUse` … `evidence.sales`; REQ-PUR-CGT-001: the `cgt.*` fields and `dates.retrospectiveDataCutOff`; REQ-PUR-FL-001: the `fl.*` fields; REQ-PUR-FR-001: the `fr.*` fields; REQ-PUR-RENT-001: the `rent.*` fields; REQ-PUR-INS-001: the `ins.*` fields; property-type rules REQ-PT-* add theirs the same way.
+2. Purpose rules add their fields: REQ-PUR-MV-001: the valuation core, `valuation.marketability`, `market.local` and `evidence.sales`; REQ-PUR-CGT-001: the valuation core, `cgt.taxEvent`, `market.local` and `evidence.sales` (no tax-agent field: the client instructs); REQ-PUR-FL-001: the `fl.*` fields; REQ-PUR-FR-001: the `fr.*` fields; REQ-PUR-RENT-001: the `rent.*` fields; REQ-PUR-INS-001: the `ins.*` fields; property-type rules REQ-PT-* add theirs the same way.
 3. Scope rules: `DESKTOP` (REQ-SCOPE-DESK-001) requires the `desktop.*` fields and `scope.escalationDecision`, and no longer requires `dates.inspection`; `KERBSIDE` and `RESTRICTED` add `scope.areasNotInspected`, `scope.obstructionNotes`, `scope.internalConditionAssumption` and the escalation decision; `proceed_with_justification` adds `scope.escalationJustification` (REQ-SCOPE-ESC-001).
 4. Conditional rules apply from captured values: REQ-OCC-001, REQ-INT-001, REQ-APP-CAP-001, REQ-APP-DCF-001, REQ-APP-SUM-001 and REQ-BASE-002.
 5. When `PATCH /selection` is called with a reason of at least 5 characters, then: the response returns the `diff` {`newlyRequired`, `noLongerRequired`, `retainedValues`}, the new `sections` and the `selectionIssues`; the template is re-selected for the new selection; `job.selection_changed` records before, after and the diff counts.
@@ -210,12 +212,14 @@ As a responsible valuer, I want my choice of jurisdiction, purpose, property typ
 9. `PORTFOLIO → SINGLE` with more than one asset returns `422 SINGLE_ASSET_MODE`. From `submitted` onward, selection is read-only (`409 RECORD_LOCKED`).
 10. _(planned)_ Purpose and scope can be overridden per asset (A-16). A jurisdiction change needs a reason.
 11. _(planned)_ Offline, the resolver runs from a cached rule-set version. If that version is not cached, the change is blocked with "Rule set not available offline".
-12. Specialist wording attached to purposes stays under review: `FAMILY_LAW` `[REVIEW: FAMILY_LAW]`, `CGT_RETROSPECTIVE` `[REVIEW: TAX]`, `FINANCIAL_REPORTING` `[REVIEW: ACCOUNTING]`, `INSURANCE_REPLACEMENT` `[REVIEW: QUANTITY_SURVEYOR]`.
+12. Specialist wording attached to purposes stays under review: `FAMILY_LAW` `[REVIEW: FAMILY_LAW]`, `CGT` `[REVIEW: TAX]`, `FINANCIAL_REPORTING` `[REVIEW: ACCOUNTING]`, `INSURANCE_REPLACEMENT` `[REVIEW: QUANTITY_SURVEYOR]`; retrospective valuations `[REVIEW: API_STANDARDS]`.
+13. Retrospective is derived from the dates, never selected (01 D8) `[REVIEW: API_STANDARDS]`: when `dates.valuation` is earlier than `dates.inspection` (or `dates.instruction` without an inspection), for any purpose, the resolver returns `retrospective: true` and REQ-RETRO-001 requires `retro.evidenceBasis`, recommends `dates.retrospectiveDataCutOff` and `retro.chronology`, and adds the `retrospective` section and `W-RETRO-HINDSIGHT`. SEL-007 warns when a retrospective job has a physical inspection. Changing a date can therefore change the requirements without a selection change.
+14. The resolved fields are grouped on input tabs (`INPUT_TABS`: Job, Property, Inspection, Sales & market, Valuation, Review; 01 D10). Every report section belongs to exactly one tab; `inputTabForField` gives a field's tab.
 
 **Data fields**
 
 - Record `job` selection: `jurisdiction` (NSW…NT), `purpose` (6 codes), `propertyType` (6 codes), `scope` (4 codes), `mode` (`SINGLE`, `PORTFOLIO`), `rule_set_version_id`, `template_version_id`; request `reason`.
-- Catalogue: every field referenced by a REQ-* rule, notably `scope.escalationDecision`, `scope.escalationJustification` and `dates.retrospectiveDataCutOff`.
+- Catalogue: every field referenced by a REQ-* rule, notably `scope.escalationDecision`, `scope.escalationJustification`, `cgt.taxEvent`, `retro.evidenceBasis`, `retro.chronology`, `retro.sourceArchive` and `dates.retrospectiveDataCutOff`.
 
 **Validation**
 `VAL-SEL-001`, `VAL-SEL-002`, `VAL-REQ-001`, `VAL-REQ-002`, `VAL-SCOPE-001` `[REVIEW: API_STANDARDS]`, `VAL-TPL-001` (at issue).
@@ -237,8 +241,10 @@ Common errors, plus `422 SINGLE_ASSET_MODE`, `409 NO_RULE_SET` (no effective app
 - `packages/domain/test/requirements.test.ts` › "resolves every purpose × property type × scope × jurisdiction combination"; the "purpose drives requirements", "scope drives requirements", "selection rules" and "conditional requirements" groups; "changing purpose updates requirements and sections without losing captured data"; "selects the approved version effective on the date".
 - `apps/api/test/jobs-and-sync.test.ts` › "changing purpose updates requirements and sections without losing captured data".
 - `packages/domain/test/report.test.ts` › "never renders data retained from a previous selection".
-- `packages/domain/test/validation.test.ts` › "blocks incompatible selections".
-- TC-FLD-001…008. **Gap:** an explicit A → B → A round-trip test (TC-FLD-005); the re-pin audit (TC-FLD-006 at L2); `VAL-SEL-002` has no test that references the code; M-03 E2E.
+- `packages/domain/test/validation.test.ts` › "blocks incompatible selections"; "treats a CGT valuation dated at inspection as current"; "treats a family law valuation dated before inspection as retrospective".
+- `packages/domain/test/requirements.test.ts` › "CGT adds the CGT event; the client instructs, so there is no tax-agent field"; "derives a retrospective valuation from the dates, for any purpose".
+- `packages/domain/test/input-tabs.test.ts` › "places every report section in exactly one tab"; "gives every catalogued field a tab".
+- TC-FLD-001…010, TC-DATE-008. **Gap:** an explicit A → B → A round-trip test (TC-FLD-005); the re-pin audit (TC-FLD-006 at L2); `VAL-SEL-002` has no test that references the code; M-03 E2E.
 
 ### F-04 — Property data capture with provenance and data-source licensing
 
@@ -255,10 +261,12 @@ As a valuer, I want every datum I capture or import to carry its source, retriev
 4. External or client-supplied data missing `sourceId`, `retrievedAt`, `effectiveDate` or `licenceBasis` triggers `VAL-PROV-001`, which is blocking at every stage.
 5. Unverified comparable evidence triggers `VAL-PROV-002` (warning).
 6. A source whose licence prohibits reproduction, or has expired, triggers `VAL-PROV-003`: the data is blocked from the report `[REVIEW: DATA_LICENSING]`. Data past the source's `freshnessDays` triggers `VAL-STALE-002`.
-7. Personal-information fields are masked in logs and restricted in exports: `instruction.instructingParty`, `instruction.ownership`, `occupancy.evidence`, `occupancy.leaseSummary`, `tenancy.schedule`, `cgt.instructingAdviser`, `fl.parties`, `fl.proceedingNumber` `[REVIEW: PRIVACY]`.
+7. Personal-information fields are masked in logs and restricted in exports: `instruction.instructingParty`, `instruction.ownership`, `occupancy.evidence`, `occupancy.leaseSummary`, `tenancy.schedule`, `fl.parties`, `fl.proceedingNumber` `[REVIEW: PRIVACY]`.
 8. Areas entered in other units convert to m², and the original value and unit are kept (A-07). Composite acres-roods-perches are accepted.
 9. _(planned)_ Data-source registry. Each source records: kind; licence basis (`licensed`, `open_licence`, `client_supplied`, `public_view_only`, `internal`); `permitsStorage`, `permitsReportReproduction`, `permitsBulkUse`, `expiresOn`, attribution; `freshnessDays` and status. A source without a licence record cannot be enabled (W-19). Public tiles and portals are never treated as granting bulk-data rights (brief §8).
-10. _(planned)_ A person (never AI) marks a value verified (`datasource.verified`). Values captured by a Field Inspector stay "inspector-captured" until the valuer confirms them (A-25).
+10. _(planned)_ A person (never AI) marks a value verified (`datasource.verified`). Where a firm uses a separate Field Inspector (optional, 01 D12), values they capture stay "inspector-captured" until the valuer confirms them (A-25).
+11. Fields marked `entry: 'system'` in the catalogue (responsible valuer, QA reviewer, due date, instruction date, coordinates) are filled by the platform and shown read-only; clients never offer them as inputs (01 D9). The preview refuses a typed value and `PUT /fields` returns `422 SYSTEM_FIELD`; job creation and assignment set them.
+12. Values looked up from the property data provider arrive as suggestions with provenance and are saved only when the valuer accepts them through `PUT /fields` (F-25, 01 D15).
 
 **Data fields**
 
@@ -268,7 +276,7 @@ As a valuer, I want every datum I capture or import to carry its source, retriev
 - Record `data_source`: as domain `DataSource`.
 
 **Validation**
-`VAL-PROV-001`, `VAL-PROV-002`, `VAL-PROV-003`, `VAL-STALE-002`, `VAL-REQ-001`, `VAL-REQ-002`, `VAL-AREA-004` (footprint against `land.area`). Date rules: `VAL-DATE-001`, `VAL-DATE-002`, `VAL-DATE-003`, `VAL-DATE-008`, `VAL-DATE-009`.
+`VAL-PROV-001`, `VAL-PROV-002`, `VAL-PROV-003`, `VAL-STALE-002`, `VAL-REQ-001`, `VAL-REQ-002`, `VAL-AREA-004` (footprint against `land.area`). Date rules: `VAL-DATE-001`, `VAL-DATE-002`, `VAL-DATE-003`, `VAL-DATE-009` (`VAL-DATE-008` was withdrawn, 01 D8).
 
 **Permissions**
 `job.update` for job-level fields. `asset.edit` (ALLOCATOR, VALUER, FIELD_INSPECTOR) for asset-level fields. `datasource.manage` (ADMINISTRATOR) for the registry. Proposed: `datasource.lookup`, `datasource.verify`, `datasource.configure` and `fact.confirm` (§3.1).
@@ -290,7 +298,7 @@ Common errors, plus `422 UNKNOWN_FIELD`; `422 ASSET_REQUIRED` (asset-level field
 - `packages/domain/test/validation.test.ts` › "blocks incomplete provenance and warns on unverified evidence"; "blocks data whose licence does not permit reproduction"; "warns on stale external data".
 - `packages/domain/test/requirements.test.ts` › "validates values against field definitions".
 - `packages/domain/test/units.test.ts` › "converts old-title acres-roods-perches".
-- TC-VAL-002, TC-DATE-004, TC-DATE-007, TC-UNIT-001…006, TC-MIG-002. **Gap:** registry endpoints; personal-information masking in logs (11 T-30); verification by a human only; `VAL-DATE-008` and `VAL-DATE-009` have no tests that reference the codes.
+- TC-VAL-002, TC-DATE-004, TC-DATE-007, TC-UNIT-001…006, TC-MIG-002. **Gap:** registry endpoints; personal-information masking in logs (11 T-30); verification by a human only; `VAL-DATE-009` has no test that references the code.
 
 ### F-05 — Planning and hazard adapters with manual fallback
 
@@ -355,6 +363,7 @@ As a valuer or allocator, I want to see the single and portfolio assets I may ac
 6. _(planned)_ Navigation handoff passes only the destination address or coordinates to the device's maps app.
 7. _(planned)_ Provider attribution is shown. Tile caching follows the provider licence (Q-09, Q-10, R-02) `[REVIEW: DATA_LICENSING]`.
 8. PERF-02: for 1,000 assets, feed p95 < 500 ms and first clustered render < 2 s (proposed targets).
+9. `GET /v1/jobs/{jobId}/map` gives one job's map: its state government map service (viewer link and, where published, a basemap with attribution), the subject properties and any sales with coordinates (F-25).
 
 **Data fields**
 Catalogue: `location.coordinates`, `location.address`, `location.geocodeConfidence`. Record `asset`: `latitude`, `longitude`, `risk_level`. Record `job`: `status`, `purpose`, `reference`.
@@ -384,7 +393,7 @@ Common errors (401, 400 for a malformed `jobId`). UI states _(planned)_: locatio
 **Status:** Partially implemented. The domain sync planner exists (idempotency, field-level merge, photo de-duplication, lock check), with `/v1/sync` for asset and photo operations and the risk-flag endpoint. The mobile app (M-01, M-06, M-07, M-13), checklists, dictation, conflict resolution and sync of other entities are planned. · E-05 · S-020 (Done), S-032, S-041, S-042, S-043, S-066, S-083 · J-04 · M-01, M-06, M-13
 
 **User story**
-As a field inspector, I want to inspect with no connectivity and have my work sync later without duplicates or silent overwrites, so that nothing is lost or doubled (AC-03).
+As a valuer inspecting on site (or a field inspector, where the firm uses one; optional, 01 D12), I want to inspect with no connectivity and have my work sync later without duplicates or silent overwrites, so that nothing is lost or doubled (AC-03).
 
 **Acceptance criteria**
 
@@ -440,7 +449,7 @@ A rejected sync operation is reported per operation in a 200 response, not as an
 **Status:** Partially implemented. Implemented: photo registration with SHA-256 de-duplication per asset; client-reported quality flags; the privacy endpoint (flag, redact, consent, exclude); report-eligibility rules; domain quality metrics (blur, low light, dHash). Planned: camera UI (M-07), redaction editor (M-08), unredacted-view logging, object storage and EXIF stripping. · E-06 · S-019 (Done), S-044, S-045, S-046 · J-04 · M-07, M-08
 
 **User story**
-As a field inspector, I want to capture sequenced, captioned photos with quality warnings, and to flag and redact sensitive content, so that report photos are usable and personal information is protected.
+As a valuer inspecting on site (or a field inspector, where the firm uses one; optional, 01 D12), I want to capture sequenced, captioned photos with quality warnings, and to flag and redact sensitive content, so that report photos are usable and personal information is protected.
 
 **Acceptance criteria**
 
@@ -496,7 +505,7 @@ As a valuer, I want AI to suggest room types and visible attributes from my phot
 5. **Reject** (optional reason) writes no fact and records `ai.suggestion_rejected`. Decisions are final: deciding again returns `409 GUARD_FAILED`.
 6. Confidence never auto-accepts (A-11). AI and system actors cannot decide: the route accepts human actors only (`ACTOR_NOT_PERMITTED`), and the domain enforces SoD-06 (`HUMAN_ACTOR_REQUIRED`). There is no "accept all" (UX-12).
 7. Pending suggestions never appear in the report, in totals or in validation inputs. `VAL-AI-001` blocks submission and issue while any suggestion is undecided.
-8. _(planned)_ A fact accepted by a FIELD_INSPECTOR stays "inspector-captured" until the valuer confirms it (A-25; proposed `fact.confirm`, `VAL-AI-003`).
+8. _(planned)_ Where a firm uses a separate FIELD_INSPECTOR (optional, 01 D12), a fact they accept stays "inspector-captured" until the valuer confirms it (A-25; proposed `fact.confirm`, `VAL-AI-003`).
 9. _(planned)_ If the source photo is redacted or excluded, pending suggestions are invalidated and accepted facts are flagged for re-check. Facts that conflict across photos raise a conflict for the valuer (proposed `VAL-AI-002`).
 10. _(planned)_ The feature stays off until the PIA and the processor's data-processing agreement cover AI processing location and retention (Q-16, R-08) `[REVIEW: PRIVACY]` `[REVIEW: LEGAL]`. Use of AI is disclosed through clause `ai-assistance`, currently a placeholder `[REVIEW: API_STANDARDS]`.
 
@@ -532,10 +541,10 @@ Common errors, plus `403 AI_SERVICE_ONLY`, `403 ACTOR_NOT_PERMITTED` (both recor
 
 ### F-10 — Areas & Sketch: import, calibrate, draw, schedule, approve
 
-**Status:** Implemented in domain/API. Implemented: sketch versions with boundaries; two-point and stated-scale calibration; human scale confirmation; the area schedule with deductions, overlap and plausibility checks; approval bound to the schedule hash; freezing at issue. Planned: the M-10–M-12 canvas UI, source-plan upload, AI outlines and the perspective-correction UI. · E-07 · S-011, S-012, S-013, S-026 (Done), S-047, S-048, S-049, S-069 · J-06 · M-10, M-11, M-12
+**Status:** Implemented in domain/API. Implemented: sketch versions with boundaries; two-point and stated-scale calibration; human scale confirmation; the area schedule with deductions, overlap and plausibility checks; approval bound to the schedule hash; freezing at issue; the sketch as working notes by default, with area checks only for schedules the report relies on (01 D11; the preview implements the notes sketch and "Use as building area"). Planned: the M-10–M-12 canvas UI, source-plan upload, AI outlines and the perspective-correction UI. · E-07 · S-011, S-012, S-013, S-026 (Done), S-047, S-048, S-049, S-069 · J-06 · M-10, M-11, M-12
 
 **User story**
-As a valuer, I want to import or photograph a plan, calibrate it, draw or confirm closed boundaries, choose the measurement basis and approve the area schedule, so that every reported m² traces to its source, sketch version and approver (AC-08).
+As a valuer, I want to sketch the improvements as working notes and state the building area, and, where the report relies on a measured schedule, to import or photograph a plan, calibrate it, draw or confirm closed boundaries, choose the measurement basis and approve the area schedule, so that every reported m² traces to its source, sketch version and approver (AC-08).
 
 **Acceptance criteria**
 
@@ -546,15 +555,17 @@ As a valuer, I want to import or photograph a plan, calibrate it, draw or confir
 5. The schedule for each version contains: one row per component: level, label, `componentType`, basis, gross, deductions, net, perimeter, `dimensionSource`, confidence (high, medium, low), included in total, measured by and at, sketch version and calibration ids; level totals, `totalNetM2`, `totalIncludedM2`; issues, `reportable` and `scheduleHash`. The schedule is deterministic.
 6. Geometry checks: overlaps are counted once, using the union, and raise `GEO-OVERLAP`; deductions are subtracted from their parent, and `GEO-DEDUCTION-OUTSIDE` and `GEO-DEDUCTION-PARTIAL` flag problems; other checks: `GEO-OPEN-SHAPE`, `GEO-INVALID-POLYGON`, `GEO-SCALE-MISSING`, `GEO-PENDING-REVIEW`, `GEO-IMPLAUSIBLE-DIMENSION`, `GEO-IMPLAUSIBLE-AREA`, `GEO-SUPPLIED-VARIANCE` (over 5 %), `GEO-FLOOR-TOTAL-MISMATCH`, `GEO-CONVENTION-BASIS-MISMATCH`, `GEO-NO-COMPONENTS`.
 7. `POST /sketch-versions/{id}/approve` works only on the latest version (`409 STALE_VERSION` otherwise), only for a human, and only for a reportable schedule (`409 GUARD_FAILED` lists the blocking GEO codes otherwise). The approval is bound to `scheduleHash` and records `measurement.approved`.
-8. Any edit after approval creates a new version. Areas show "Unverified", and `VAL-AREA-002` blocks until the new version is approved.
-9. `includeInClientReport` excludes working sketches from the client PDF while keeping them in the audit record. The appendix shows the approved sketch, legend, north point (`northBearingDeg`), scale status, schedule and clause `area-disclaimer` (placeholder) `[REVIEW: API_STANDARDS]`.
+8. Any edit after approval creates a new version. For a schedule the report relies on, areas show "Unverified", and `VAL-AREA-002` blocks until the new version is approved.
+9. The sketch is working notes by default (01 D11). The seed template has no `sketch` block, and `includeInClientReport` defaults to `false`. Where the `areas` section is required, the report shows the schedule table and clause `area-disclaimer` (placeholder) `[REVIEW: API_STANDARDS]`. A firm template may add a `sketch` block; the drawing (legend, north point from `northBearingDeg`, scale status) then appears only for versions with `includeInClientReport = true`, and excluded sketches stay in the audit record.
 10. At issue, the sketch version and schedule used are frozen (`guard_sketch_update` trigger) and stored in the issue snapshot.
 11. Perspective correction (homography) is labelled "Assistive — not a surveyed measurement" and is never presented as surveyed.
 12. Measurement conventions (`res-living`, `res-under-main-roof`, `comm-nla`, `retail-gla`, `ind-gba`, `gfa`) are firm-nominated drafts (A-26) `[REVIEW: API_STANDARDS]`. Third-party method text is referenced, not reproduced `[REVIEW: DATA_LICENSING]`.
+13. `VAL-AREA-001`…`004` apply only to schedules the report relies on: the asset's `improvements.areaSchedule` names the sketch (`useForReport`), or the rules require `improvements.areaSchedule` for the asset (e.g. `INSURANCE_REPLACEMENT`, `INDUSTRIAL`, `SPECIALISED_MIXED_USE`). A sketch kept as notes is not checked and needs no approval.
+14. Residential jobs require `improvements.buildingArea` (m², Inspection tab) instead of an area schedule (REQ-PT-RES-001; REQ-APP-SUM-001 for summation). The valuer can copy the sketch total into it ("Use as building area").
 
 **Data fields**
 
-- Catalogue: `improvements.areaSchedule`, `improvements.measurementBasis` (GFA, GBA, GLA, NLA, BUILDING_AREA, SITE_COVERAGE, OTHER), `improvements.floorAreas`, `improvements.lettableArea`, `improvements.warehouseArea`, `improvements.officeArea`, `improvements.siteCoverage`, `improvements.hardstand`, `land.area`.
+- Catalogue: `improvements.buildingArea` (m²), `improvements.areaSchedule`, `improvements.measurementBasis` (GFA, GBA, GLA, NLA, BUILDING_AREA, SITE_COVERAGE, OTHER), `improvements.floorAreas`, `improvements.lettableArea`, `improvements.warehouseArea`, `improvements.officeArea`, `improvements.siteCoverage`, `improvements.hardstand`, `land.area`.
 - Sketch request: `sketchId`, `units`, `sourcePlanId`, `calibration`, `boundaries`, `basis`, `conventionId`, `northBearingDeg`, `suppliedAreas` {`label`, `areaM2`, `level`, `source`}, `includeInClientReport`, `changeSummary`, `useForReport`.
 - Records `sketch_version`, `scale_calibration` and `measurement_approval` (append-only).
 
@@ -562,7 +573,7 @@ As a valuer, I want to import or photograph a plan, calibrate it, draw or confir
 `VAL-AREA-001`, `VAL-AREA-002`, `VAL-AREA-003`, `VAL-AREA-004`, and the GEO codes above. Proposed: `VAL-AREA-005`.
 
 **Permissions**
-`sketch.edit` (VALUER, FIELD_INSPECTOR) to draw and calibrate. `measurement.approve` (VALUER, human) to confirm the scale and approve. FIELD_INSPECTOR cannot approve.
+`sketch.edit` (VALUER; FIELD_INSPECTOR where the firm uses one) to draw and calibrate. `measurement.approve` (VALUER, human) to confirm the scale and approve. FIELD_INSPECTOR cannot approve.
 
 **Audit events**
 `sketch.version_created`, `calibration.created`, `calibration.confirmed`, `measurement.approved`, and `ai.suggestion_*` for outlines. A void-on-edit event is proposed in §3.4.
@@ -579,7 +590,9 @@ Common errors, plus `422 SKETCH_INCOMPLETE`; `422 SOURCE_PLAN_REQUIRED`; `422 UN
 - `packages/domain/test/area-schedule.test.ts` › "flags overlapping components and never double-counts them"; "requires a scale for traced plans and labels areas unverified until confirmed"; "approves a reportable schedule, binding the approval to its hash"; "refuses approval by non-humans, of non-reportable schedules or mismatched versions"; "creates new versions with lineage and requires a change summary".
 - `apps/api/test/lifecycle.test.ts` › "draws, measures and approves the improvement areas".
 - `packages/domain/test/validation.test.ts` › "requires an approved schedule matching the current hash"; "blocks non-reportable schedules and implausible site coverage".
-- TC-GEO-001…011, TC-UNIT-005. **Gap:** recalibration history at L2 (TC-GEO-007); sketch frozen after issue (TC-WF-005); working-sketch exclusion from the PDF (TC-PDF-005); `VAL-AREA-003` has no test that references the code; L6/L7 canvas, including the non-dragging alternative (UX-02).
+- `packages/domain/test/report.test.ts` › "reports measured areas but never the sketch drawing where the rules need a schedule".
+- `apps/preview/test/journey.test.ts` › "keeps the sketch as notes: not checked, not reported, total copied on request".
+- TC-GEO-001…012, TC-UNIT-005. **Gap:** recalibration history at L2 (TC-GEO-007); sketch frozen after issue (TC-WF-005); `includeInClientReport` exclusion with a template that has a `sketch` block (TC-PDF-005); a domain-level test for an unlinked notes sketch (TC-GEO-012); `VAL-AREA-003` has no test that references the code; L6/L7 canvas, including the non-dragging alternative (UX-02).
 
 ### F-11 — Sales evidence and adjustments
 
@@ -593,7 +606,7 @@ As a valuer, I want to record comparable sales with provenance, comparability an
 1. When `POST /sales` is called with: `assetId` (of this job), `address`, `contractDate`, optional `settlementDate`, `price` > 0, `interest`, `propertyType`; optional `landAreaM2`, `buildingAreaM2`, `zoning`; `provenance` (origin `external_source`, `client_supplied` or `manual_entry`), `comparability` (superior, comparable, inferior); `adjustments[]` {`factor`, `kind` (percent or absolute), `value`, `rationale` ≥ 3 characters}; `analysisBasis` (`land_rate`, `building_rate`, `price`), optional `postValuationDateUse` {`reason` ≥ 5}. then the sale is stored, and the land, building and adjusted rates are computed with `land.rate_per_m2@1`, `improvements.rate_per_m2@1`, `improvements.added_value_rate@1`, `comparison.adjusted_rate@1` and `comparison.adjusted_price@1`. Each calculation is stored with its trace hash, and `evidence.sale_added` and `calculation.run` are recorded.
 2. Adjustments never change the raw inputs. Gross and net adjustment totals are shown.
 3. Evidence warnings: outlier rates (Tukey fences): `VAL-CALC-001`; adopted value outside the adjusted indications: `VAL-CALC-002`; fewer comparables than the configured minimum: `VAL-EVID-001`; sale older than the configured window: `VAL-STALE-001`; unverified evidence: `VAL-PROV-002`. Incomplete provenance is blocking (`VAL-PROV-001`).
-4. For `CGT_RETROSPECTIVE`, a sale after `dates.retrospectiveDataCutOff`: without `postValuationDateUse` triggers `VAL-DATE-005` (blocking); with a stated check-only use triggers `VAL-DATE-006` (warning). `[REVIEW: TAX]`
+4. For a retrospective valuation (any purpose; derived from the dates, 01 D8), a sale after the information cut-off (`dates.retrospectiveDataCutOff`, or the valuation date when none is recorded): without `postValuationDateUse` triggers `VAL-DATE-005` (blocking); with a stated check-only use triggers `VAL-DATE-006` (warning). `[REVIEW: TAX]` `[REVIEW: API_STANDARDS]`
 5. A licence that prohibits reproduction allows the sale in analysis only. It reaches the report only in the permitted form (`VAL-PROV-003`) `[REVIEW: DATA_LICENSING]`.
 6. _(planned)_ The comparables map has a table equivalent. Licensed import records attribution (S-075). Edit and soft-delete are audited (UX-20).
 
@@ -798,48 +811,60 @@ The F-04 field errors. Planned endpoints return `422 INVALID_ARGUMENT` for inval
 - `packages/domain/test/requirements.test.ts` › "financial reporting requires AASB 13 inputs including hierarchy level and sensitivity".
 - TC-CALC-007, TC-FLD-002. **Gap:** `VAL-FR-001` has no test that references the code; no API route; disclosure export.
 
-### F-16 — Market commentary modules with date guards
+### F-16 — Market commentary library by property type and location, with date guards
 
-**Status:** Partially implemented. Implemented: per-job dated commentary modules (national, state, local) with as-at date, author and sourced provenance, and the `VAL-DATE-004` retrospective guard. Planned: the reusable library (W-08) and a research cut-off guard for every purpose. · E-09 · S-052 · J-07 · W-08
+**Status:** Implemented in domain/API: the library and matching (`packages/domain/src/evidence/commentary-library.ts`), the demonstration library (`sample-commentary-library.ts`), `VAL-MKT-001`, `VAL-STALE-003` and the `VAL-DATE-004` retrospective guard, the `market_commentary` report block, the `commentary_module` table (migration 0007) and the library and job commentary endpoints (07 §6.6). The browser preview has the Market commentary card. Planned: the card in the web portal and mobile app (S-052), a library screen with draft edit and withdrawal (S-110), retiring versions (S-111), the firm's own commentary (S-112) and a research cut-off guard for every purpose. · E-09 · S-052, S-109, S-110, S-111, S-112 · J-07, J-12 · W-08, W-18
 
 **User story**
-As a valuer, I want to assemble national, state and local market commentary with its date, source and author, so that commentary fits the valuation date and never relies on hindsight in retrospective work.
+As a valuer, I want national, state and local market commentary from the firm's approved library, matched to the property type and location as at the valuation date, that I use with one tap and then tailor, so that every report has consistent commentary with its date, sources and author, and retrospective work never relies on hindsight (01 D17).
+
+As a standards owner, I want to write dated library paragraphs that a second standards owner approves, so that valuers are offered only reviewed commentary.
 
 **Acceptance criteria**
 
-1. `POST /commentary` {`level` (national, state, local), `assetId`?, `asAtDate`, `text` (≥ 10 characters), `sources[]` (provenance)} stores the module with `authoredBy` and `authoredAt`, and records `evidence.commentary_added`.
-2. `MARKET_VALUE`, `CGT_RETROSPECTIVE` and `FAMILY_LAW` require `market.local`. `CGT_RETROSPECTIVE` recommends `market.state`.
-3. For `CGT_RETROSPECTIVE`, a module whose `asAtDate` is after the retrospective valuation date or information cut-off triggers `VAL-DATE-004`, blocking at draft, submit and issue. A module dated exactly on the valuation date is accepted `[REVIEW: TAX]`.
-4. _(planned)_ For any purpose, a module dated after `dates.researchCutOff` is blocked (proposed `VAL-DATE-010`).
-5. Sources of external origin need full provenance (`VAL-PROV-001`). Sources whose licence restricts reproduction trigger `VAL-PROV-003` `[REVIEW: DATA_LICENSING]`.
-6. _(planned)_ Library modules are authored under `template.edit`, filtered by jurisdiction, property type and purpose, and versioned and approved. A job inserts a pinned copy, which it can then edit.
+1. `MARKET_VALUE`, `CGT` and `FAMILY_LAW` require `market.national`, `market.state` and `market.local`. `FINANCIAL_REPORTING` and `RENTAL_ASSESSMENT` recommend them. Other purposes do not request them (01 D17, which replaces the D9 position that only local commentary was required).
+2. A standards owner writes a library paragraph with `POST /v1/commentary-library` (`template.edit`): level; title; state (state and local paragraphs); suburbs, towns or councils (local only); property types (omitted for an overview); as-at date; text (at least 80 characters); and at least one source with full provenance from a registered data source. It is saved as a `draft` and as the paragraph's next version, and keeps the level and state of earlier versions. Problems return `422 INVALID_COMMENTARY` with the list. Audited `commentary.version_created`.
+3. A different standards owner approves the draft with MFA (`template.approve`). The author is refused (`403 SEPARATION_OF_DUTIES`). Only a draft can be approved (`409 IMMUTABLE_RECORD`). An approved version cannot be edited or deleted, only retired, and a retired version is frozen (database trigger); a new view is a new version. Audited `commentary.version_approved`.
+4. `GET /v1/jobs/{jobId}/commentary/suggestions` offers, for each level, the latest approved version of each paragraph that matches the property type, the state, and the asset's suburb or council, dated on or before the valuation date (else the inspection date, else today). The overview comes first, then paragraphs written for the property type. Each level has a heading, the text, the as-at date (the oldest paragraph's), its age in months, the topics to cover and notes for gaps, dated commentary or a missing property-type paragraph. Nothing is saved.
+5. `POST /v1/jobs/{jobId}/commentary/apply` {`assetId`, `levels`} (`evidence.edit`, editable job) recomputes the suggestions on the server. In one transaction it writes each level's text to its field with library provenance (`ds-commentary-library`, a `sourceRef` naming the paragraph versions, verified by the valuer), and adds a dated `market_commentary` record with the paragraphs' sources and `library[]` refs. If a chosen level has no paragraph, the request fails with `422 NO_LIBRARY_COMMENTARY` and nothing is written.
+6. `POST /v1/jobs/{jobId}/commentary` {`level`, `assetId`?, `asAtDate`, `text` (≥ 10 characters), `sources[]`} still records commentary the valuer writes, with `authoredBy` and `authoredAt`, and `evidence.commentary_added`.
+7. The current record is the latest for each level (and asset, for local commentary); earlier records stay on file. For a retrospective valuation (any purpose; 01 D8), a current record dated after the valuation date or information cut-off triggers `VAL-DATE-004` (blocking at draft, submit and issue). A record dated on the valuation date is accepted `[REVIEW: TAX]`.
+8. `VAL-STALE-003` warns when the current record is dated more than 6 months (national, state) or 4 months (local) before the valuation date. `VAL-MKT-001` warns when commentary is under 300 characters and lists the topics for the level and property type. Both can be acknowledged with a reason `[REVIEW: API_STANDARDS]`.
+9. The `market_commentary` template block prints each level under its own heading ("National market", "State market — <state>", "Local market — <suburb>"), one paragraph per paragraph of text, then "Commentary as at <date>. Sources: <sources>." from the current record. Missing required commentary prints `[Not provided]` and blocks a final report (`TPL-MISSING-REQUIRED`) (09 §1.4).
+10. Sources of external origin need full provenance (`VAL-PROV-001`). Sources whose licence restricts reproduction trigger `VAL-PROV-003`; quoting provider figures needs a licence that permits it `[REVIEW: DATA_LICENSING]`.
+11. The preview's Market commentary card on the Sales & market tab shows each level with **Use**, **Use all** or **Replace my text**, the paragraph titles and as-at date, notes, "Read the firm's text" and the "Cover:" topics. _(planned)_ The same card in the web portal and mobile app (S-052).
+12. _(planned)_ A library screen to list, write, edit, withdraw and approve versions (S-110); retiring a version (S-111); the firm's own commentary replacing the demonstration library, which is placeholder text (S-112).
+13. _(planned)_ For any purpose, commentary dated after `dates.researchCutOff` is blocked (proposed `VAL-DATE-010`). The research cut-off is no longer requested per job (01 D9), so this applies only where it is recorded.
 
 **Data fields**
-Catalogue: `market.national`, `market.state`, `market.local`, `dates.valuation`, `dates.retrospectiveDataCutOff`, `dates.researchCutOff`, `cgt.contemporaneousEvidence`. Record `market_commentary`: `level`, `assetId`, `asAtDate`, `text`, `authoredBy`, `authoredAt`, `sources`.
+Catalogue: `market.national`, `market.state`, `market.local`, `dates.valuation`, `dates.inspection`, `dates.retrospectiveDataCutOff`, `dates.researchCutOff`, `location.address`, `location.lga`, `retro.evidenceBasis`. Record `market_commentary`: `level`, `assetId`, `asAtDate`, `text`, `authoredBy`, `authoredAt`, `sources`, `library[{ moduleId, version }]`. Record `commentary_module`: `moduleId`, `version`, `level`, `title`, `jurisdiction`, `localities`, `propertyTypes`, `asAtDate`, `text`, `sources`, `status` (draft, approved, retired), `authoredBy`, `authoredAt`, `approvedBy`, `approvedAt`. Data sources: `ds-commentary-library` (every organisation); `ds-demo-research` and `ds-public-releases` (demonstration only).
 
 **Validation**
-`VAL-DATE-004` `[REVIEW: TAX]`, `VAL-PROV-001`, `VAL-PROV-003`, `VAL-REQ-001`, `VAL-REQ-002`. Proposed: `VAL-DATE-010`.
+`VAL-MKT-001`, `VAL-STALE-003`, `VAL-DATE-004` `[REVIEW: TAX]`, `VAL-PROV-001`, `VAL-PROV-003`, `VAL-REQ-001`, `VAL-REQ-002`; composition `TPL-MISSING-REQUIRED`. Library paragraphs: `commentaryModuleProblems` plus registered sources (`422 INVALID_COMMENTARY`). Proposed: `VAL-DATE-010`.
 
 **Permissions**
-`evidence.edit` (VALUER) for job commentary. W-08 lists `job.update`; see §3.6. `template.edit` (STANDARDS_OWNER) for the library _(planned)_.
+`evidence.edit` (VALUER, assigned) to use or write job commentary. `job.read` for suggestions and to list the library. `template.edit` (STANDARDS_OWNER) to list and write the library. `template.approve` (STANDARDS_OWNER, human, MFA, never the author) to approve it.
 
 **Audit events**
-`evidence.commentary_added`. Library versions would use `template.version_created` and `template.version_approved` if the library is modelled as template content.
+`commentary.version_created` and `commentary.version_approved` (organisation stream); `evidence.commentary_added`, with the level, as-at date and `library[]` in its metadata when taken from the library; `field.updated` for the `market.*` text; `auth.denied` for refusals.
 
 **Offline behaviour**
-W-08 is online only. Commentary text can be edited offline on tablet as job fields (`market.*`).
+Suggestions and the library are online only. The `market.*` text can be edited offline on tablet as job fields. The dated record is created online, when the library commentary is used.
 
 **Error states**
-Common errors, plus `422 INVALID_REFERENCE` (unknown `assetId`), `400 BAD_REQUEST` (text too short, date not ISO) and `409 RECORD_LOCKED`.
+Common errors, plus `422 INVALID_COMMENTARY`, `422 NO_LIBRARY_COMMENTARY`, `422 UNKNOWN_ASSET`, `409 IMMUTABLE_RECORD` (approving a version that is not a draft), `409 CONFLICT` (two drafts of one paragraph saved at once), `409 RECORD_LOCKED` and `400 BAD_REQUEST` (text too long, date not ISO). `POST /commentary` also returns `422 INVALID_REFERENCE` (unknown `assetId`) and `400 BAD_REQUEST` (text under 10 characters).
 
 **Tests**
 
+- `packages/domain/test/commentary.test.ts` › "matches national, state and local paragraphs to the property type and suburb"; "gives a retrospective valuation the commentary of its day, never later"; "flags commentary that is dated for the valuation date"; "reports gaps instead of guessing when nothing fits"; "offers only approved paragraphs"; "keeps the demonstration library valid and full enough for every demo suburb"; "finds the suburb and council for an address"; "requires national, state and local commentary for value reports"; "asks for brief commentary to be expanded, naming the topics for the property type"; "flags dated commentary and ignores superseded records"; "prints each level under its own heading with the as-at date and sources"; "marks missing required commentary and blocks a final report".
+- `apps/api/test/commentary.test.ts` › "is seeded with the approved demonstration library"; "a standards owner writes a draft; another standards owner approves it"; "refuses paragraphs with problems and lists them"; "never changes an approved version (database guard)"; "only standards owners write the library; clients cannot read it"; "suggests the approved paragraphs for the property type, state and suburb"; "applies the library commentary: fields, dated records, audit and the report"; "gives a retrospective valuation only the commentary of its day"; "refuses a level the library has no commentary for, and changes nothing"; "applies only for the assigned valuer on an editable job".
+- `apps/preview/test/journey.test.ts` › "offers national, state and local commentary for the property type and suburb"; "gives the retrospective CGT job the commentary of its valuation date"; "puts the firm commentary into the seeded issued report".
 - `packages/domain/test/validation.test.ts` › "blocks commentary dated after the cut-off".
-- TC-DATE-002. **Gap:** API test for `/commentary` and its audit event; same-day boundary; library; research cut-off guard.
+- TC-DATE-002, TC-COM-001…015. **Gap:** an API test for the manual `POST /commentary` route and its audit event (TC-COM-001); the research cut-off guard; W-08 in the web portal and mobile app, with accessibility checks.
 
 ### F-17 — Validation and acknowledgements
 
-**Status:** Implemented in domain/API: a 41-rule catalogue across the draft, submit and issue stages, persisted validation runs, and warning acknowledgement with a reason. The W-10 panel is planned. · E-10 · S-014 (Done), S-053 · J-08 · W-10
+**Status:** Implemented in domain/API: a 40-rule catalogue across the draft, submit and issue stages, persisted validation runs, and warning acknowledgement with a reason. The W-10 panel is planned. · E-10 · S-014 (Done), S-053 · J-08 · W-10
 
 **User story**
 As a valuer, I want to run validation at any time, see blocking issues and warnings with codes and field links, and acknowledge warnings with a reason, so that I resolve problems before submission and my reasons are recorded.
@@ -878,18 +903,18 @@ Common errors, plus `404 NOT_FOUND` (no current finding for that code and path),
 
 - `packages/domain/test/validation.test.ts` › "has unique, well-formed codes"; "never makes blocking rules acknowledgeable"; "has no findings at submit stage"; "flags certification and QA only at issue stage"; "blocks on missing mandatory fields and warns on recommended ones"; "uses the jurisdiction calendar date for \"today\""; "lets a valuer acknowledge warnings with a reason, never blocking findings".
 - `apps/api/test/lifecycle.test.ts` › "validates cleanly once warnings are acknowledged with reasons".
-- TC-VAL-001…004, TC-DATE-004…006. **Gap:** TC-VAL-004 asks for a pass and a fail fixture per rule, but no test references `VAL-AREA-003`, `VAL-DATE-008`, `VAL-DATE-009`, `VAL-FR-001`, `VAL-INS-001`, `VAL-PHOTO-002`, `VAL-RENT-001` or `VAL-SEL-002` by code; TZ matrix (TC-DATE-006); W-10 E2E.
+- TC-VAL-001…004, TC-DATE-004…006. **Gap:** TC-VAL-004 asks for a pass and a fail fixture per rule, but no test references `VAL-AREA-003`, `VAL-DATE-009`, `VAL-FR-001`, `VAL-INS-001`, `VAL-PHOTO-002`, `VAL-RENT-001` or `VAL-SEL-002` by code; TZ matrix (TC-DATE-006); W-10 E2E.
 
 ### F-18 — Certification and submission for QA
 
-**Status:** Implemented in domain/API: template-driven certification content and a typed attestation by the responsible valuer (human, MFA), bound to the content snapshot hash, followed by locked submission. Planned: e-signature (S-070, Pilot), co-signatory statements, a credential register with expiry, and the W-11 UI. · E-11 · S-015 (Done), S-054, S-070 · J-08 · W-11
+**Status:** Implemented in domain/API: template-driven certification content and a typed attestation by the responsible valuer (human, MFA), bound to the content snapshot hash, followed by locked submission; the valuer's own profile (sign-off signature, API member number, QLD registration / WA licence, 01 D13), printed on the certification. Planned: e-signature (S-070, Pilot), co-signatory statements, verification of membership and registration numbers, and the W-11 UI. · E-11 · S-015 (Done), S-054, S-070 · J-08 · W-11
 
 **User story**
 As the responsible valuer, I want to sign a template-driven certification for exactly the content I have reviewed, and then submit it for QA, so that only I can certify my valuation and later changes invalidate my signature.
 
 **Acceptance criteria**
 
-1. `POST /certification` takes: `valuer` {`fullName`, `credentials` (at least one), `registration`?}; `inspectionScopeStatement`, `valuationDate`, `basisOfValue`; `amount` {`value` > 0, `kind`: value, market_rent or sum_insured}; `independenceStatement`, `conflictsStatement`, `assumptions`, `specialAssumptions`; `limitations` (at least one), `standardsReliedOn` (at least one); `attestationText` (≥ 20 characters). It stores a certification with the current snapshot hash, the attestation hash and the clause version ids from the template's `certification-core` clauses, and records `certification.signed`.
+1. `POST /certification` takes: `inspectionScopeStatement`, `valuationDate`, `basisOfValue`; `amount` {`value` > 0, `kind`: value, market_rent or sum_insured}; `independenceStatement`, `conflictsStatement`, `assumptions`, `specialAssumptions`; `limitations` (at least one), `standardsReliedOn` (at least one); `attestationText` (≥ 20 characters). It stores a certification with the current snapshot hash, the attestation hash and the clause version ids from the template's `certification-core` clauses, and records `certification.signed`. The valuer identity (full name, designations, API member number, the registration for the job's state where one is needed, signature fingerprint) is copied from the signer's saved profile; a `valuer` object in the request is ignored.
 2. Only the job's responsible valuer, as a human actor with the MFA claim, can sign. Anyone else gets `403` (`SEPARATION_OF_DUTIES`, `HUMAN_REQUIRED` or `MFA_REQUIRED`) and `auth.denied` is recorded (SoD-01).
 3. If `valuationDate` differs from `dates.valuation`, `422 CERTIFICATION_MISMATCH` is returned. At submit and issue, `VAL-CERT-002` blocks if the certified amount, basis of value or valuation date no longer matches the adopted figures and dates in the report.
 4. Incomplete content returns `409 GUARD_FAILED` listing the issues. Examples: no approved clause versions, no limitations, a non-positive amount.
@@ -897,37 +922,44 @@ As the responsible valuer, I want to sign a template-driven certification for ex
 6. `POST /submit` (`certification.sign`, responsible valuer) requires zero blocking findings, zero unacknowledged warnings and a current certification. On success: the job moves `active`/`returned` → `submitted`; the snapshot hash is recorded and content is locked; `job.submitted` is recorded.
 7. Placeholder or draft clauses block production issue (G1, `VAL-TPL-002`). Certification wording is `[REVIEW: API_STANDARDS]` `[REVIEW: LEGAL]`; the family-law declaration is `[REVIEW: FAMILY_LAW]`.
 8. Software and AI never sign (SoD-06). _(planned)_ E-signature records method `e_signature` and a `providerRef` `[REVIEW: LEGAL]`.
-9. _(planned)_ Further checks: co-signatories sign their own statements (A-12, Q-03); credentials must be current for the jurisdiction (proposed `VAL-CERT-003`).
+9. Signing is refused with `422 PROFILE_INCOMPLETE` (`details.problems`) while the signer's profile has problems, no signature, or, for a QLD or WA job, no registration for that state or one that has expired on the state's current date. `VAL-CERT-003` blocks submit and issue of a QLD or WA certification without that registration. _(planned)_ Co-signatories sign their own statements (A-12, Q-03).
 10. Issuing without a certification is blocked by `VAL-CERT-001`. A prospective valuation date needs a special assumption (`VAL-DATE-001`).
+11. On the Review tab the valuer has one action, **Sign and send to QA**, which signs the certification and submits in one step (01 D12; implemented in the preview, planned for mobile/web). The API keeps the two calls (`POST /certification`, `POST /submit`), so each guard above still applies.
+12. Valuer profile (01 D13): `GET /v1/me/profile` returns the caller's own profile (defaulting to their display name and credentials before the first save), its problems, whether it is ready to sign, and for QLD and WA whether the registration is in order. `PUT /v1/me/profile` saves it: only for the caller (there is no user id in the path), only for holders of `certification.sign` (valuers), human, with MFA. Name and at least one designation are required; the API member number is 3–20 letters, digits or hyphens; registrations are recorded only for QLD and WA, one each, with an optional expiry date. Problems return `422 INVALID_PROFILE` with `details.problems`.
+13. The sign-off signature is drawn or uploaded as a PNG (`data:image/png;base64,`, at most 200,000 characters, bytes must decode as a PNG that can be embedded in a PDF) or typed. Leaving it out of `PUT` keeps the saved one; `null` removes it. The audit event `profile.updated` records the signature's kind and SHA-256, never the image.
+14. The issued PDF shows the API member number and the state registration (labelled e.g. "Queensland registered valuer number") in the certification block, then the signature: the drawn image scaled to fit 180 × 60 pt, or the typed name in italics, with a signature line, "Signature of <name>" and the SHA-256 fingerprint. The signature used at signing is kept by its hash (`valuer_signature`, append-only), so changing the profile later does not change a signed certification or an issued report, and the issue snapshot carries the image so reproduction stays byte for byte.
 
 **Data fields**
 
 - Catalogue: `dates.valuation`, `instruction.basisOfValue`, `valuation.adoptedValue`, `rent.adoptedMarketRent`, `ins.sumInsured`, `assumptions.general`, `assumptions.special`, `assumptions.limitations`, `assumptions.materialUncertainty`, `instruction.conflictCheck`.
-- Record `certification`: the content above, plus `signedAt`, `snapshotHash` and `signature` {`method`, `attestationText`, `attestationHash`, `providerRef`}.
+- Record `certification`: the content above, plus `signedAt`, `snapshotHash` and `signature` {`method`, `attestationText`, `attestationHash`, `providerRef`}; `valuer` {`userId`, `fullName`, `credentials`, `apiMemberNumber`?, `registration`? {`jurisdiction`, `number`}, `signatureSha256`?}.
+- Record `valuer_profile`: `fullName`, `credentials`, `apiMemberNumber`, `registrations` [{`jurisdiction` QLD or WA, `number`, `expiresOn`?}], `signature` {`kind` drawn or typed, `value`, `updatedAt`}. Record `valuer_signature`: `userId`, `sha256`, `kind`, `value`.
 
 **Validation**
-`VAL-CERT-001`, `VAL-CERT-002`, `VAL-TPL-002`, `VAL-DATE-001`, and every submit-stage rule. Proposed: `VAL-CERT-003`.
+`VAL-CERT-001`, `VAL-CERT-002`, `VAL-CERT-003`, `VAL-TPL-002`, `VAL-DATE-001`, and every submit-stage rule. Profile checks: `profileProblems` and `signingProblems` (`packages/domain/src/workflow/valuer-profile.ts`).
 
 **Permissions**
-`certification.sign` (VALUER; human only; MFA; responsible valuer only). It also gates `submitForQa`.
+`certification.sign` (VALUER; human only; MFA; responsible valuer only). It also gates `submitForQa` and, without a job scope, `PUT /v1/me/profile` (own profile only). `GET /v1/me/profile` needs only an authenticated person.
 
 **Audit events**
-`certification.signed`, `job.submitted`, `auth.denied`.
+`certification.signed` (with the signature fingerprint and the registration printed), `job.submitted`, `profile.updated` (**org** stream), `auth.denied`.
 
 **Offline behaviour**
 Online only, because MFA step-up is required. W-11 is disabled offline with the reason (UX-09). Submission requires no pending sync operations or conflicts.
 
 **Error states**
-Common errors, plus `403 SEPARATION_OF_DUTIES`, `HUMAN_REQUIRED`, `MFA_REQUIRED`; `422 CERTIFICATION_MISMATCH`; `409 GUARD_FAILED`, with submit failures such as "N blocking validation(s) unresolved", "N warning(s) not acknowledged", "certification has not been signed", "content changed after certification; re-certify"; `409 INVALID_TRANSITION`; `409 RECORD_LOCKED`.
+Common errors, plus `403 SEPARATION_OF_DUTIES`, `HUMAN_REQUIRED`, `MFA_REQUIRED`; `422 CERTIFICATION_MISMATCH`; `422 PROFILE_INCOMPLETE` (signing); `422 INVALID_PROFILE` (profile update); `409 GUARD_FAILED`, with submit failures such as "N blocking validation(s) unresolved", "N warning(s) not acknowledged", "certification has not been signed", "content changed after certification; re-certify"; `409 INVALID_TRANSITION`; `409 RECORD_LOCKED`.
 
 **Tests**
 
 - `packages/domain/test/workflow.test.ts` › "is signed by the responsible valuer with MFA and binds to the snapshot"; "can never be signed by software, AI, another user or without MFA"; "rejects incomplete certification content"; "cannot submit with blocking validations, unacknowledged warnings or no certification"; "requires re-certification when content changes after signing"; "locks content once submitted".
 - `apps/api/test/lifecycle.test.ts` › "only the responsible valuer, with MFA, can certify; then submit locks the job".
+- `apps/api/test/profile.test.ts` › "returns the caller’s own profile with registration status per state"; "only valuers update a profile, with MFA, and only their own"; "refuses incomplete profiles and signatures that are not PNG images"; "saves a drawn signature and audits its fingerprint, not the image"; "refuses to sign until the valuer’s profile has their QLD registration"; "issues a PDF showing the API member number, registration and signature"; "reproduces the issued PDF from the snapshot".
+- `packages/domain/test/wip-profile-integrations.test.ts` › valuer profile and state registration.
 - `packages/domain/test/permissions.test.ts` › "allows the responsible valuer to sign and denies other valuers"; "requires MFA and a human for certification".
 - `packages/domain/test/validation.test.ts` › "passes when the certificate matches the report"; "blocks a certified amount, date or basis that differs from the report".
 - `apps/api/test/security.test.ts` › "verifies tokens against the issuer keys and maps amr to MFA".
-- TC-ROLE-004, TC-WF-002, TC-VAL-001. **Gap:** co-signatories; e-signature; expired credentials (J-08 E6); placeholder clauses blocking signing in production (J-08 E4); late sync between validation and signing (J-08 E1).
+- TC-ROLE-004, TC-WF-002, TC-VAL-001. **Gap:** co-signatories; e-signature; expired designations other than QLD/WA registrations (J-08 E6); placeholder clauses blocking signing in production (J-08 E4); late sync between validation and signing (J-08 E1).
 
 ### F-19 — QA review and self-approval exceptions
 
@@ -937,6 +969,8 @@ Common errors, plus `403 SEPARATION_OF_DUTIES`, `HUMAN_REQUIRED`, `MFA_REQUIRED`
 As an independent QA reviewer, I want to work through a checklist, raise findings with severity, and return or approve the job against the exact submitted snapshot, so that no report is issued without a recorded independent review.
 
 **Acceptance criteria**
+
+QA starts only after the responsible valuer signs and sends the job to QA (`submitted`). The QA view is not an input tab and appears only from then on (05 §2.1, 01 D12).
 
 1. `POST /qa/start` by an assigned user with `qa.review` first checks that current content equals the submitted snapshot (`409 SNAPSHOT_MISMATCH` otherwise). It then moves `submitted → in_review`, records the reviewed snapshot hash and `qa.started`. Findings from a previous returned round carry forward.
 2. `POST /qa/checklist` {`itemId`, `response` (yes, no, na), `note`?} records `qa.checklist_answered`. A "no" needs a note and blocks approval. Only the assigned reviewer may answer (`403 NOT_REVIEWER`).
@@ -991,7 +1025,7 @@ As the responsible valuer, I want to issue an approved job as a versioned, water
 1. `GET /report/draft.pdf` (`report.generate_draft`) renders a PDF watermarked DRAFT. It is not stored and not for reliance. `report.draft_generated` is recorded with the PDF hash.
 2. `POST /issue` {`recipients` (1–20 emails), `invoiceDescription`} (`report.issue`; human; MFA; a VALUER only as the responsible valuer) requires all of the following: the job is `approved`, content is unchanged since approval, and the QA outcome is approved; issue-stage validation is clean; the certification is current; a template is selected (`409 NO_TEMPLATE`); a fee is recorded (`422 FEE_REQUIRED`); the organisation's ABN is recorded for the tax invoice (`422 SUPPLIER_ABN_REQUIRED`) `[REVIEW: TAX]`; every recipient is on the client's approved list (`422 UNAPPROVED_RECIPIENTS`, with `details.unapproved`); the composed report has no problems, such as placeholder clauses or a draft template (`409 REPORT_NOT_ISSUABLE`, with `problems`).
 3. In one transaction: report version n + 1 is stored: snapshot `issue-snapshot@1` (renderer version, issue time and date, content hash, report data, template, render assets, invoice, email payloads), snapshot hash, PDF bytes and PDF SHA-256; the previous issued version is marked `superseded`; an invoice is created (GST rate from configuration, integer cents); one `email_delivery` per recipient is queued with its payload hash; the job moves to `issued`; `report.issued`, `invoice.created` and one `email.queued` per recipient are recorded.
-4. The PDF carries the report ID and version watermark. It includes the certification, redacted photos only, maps with provider attribution, evidence tables, the approved sketch and schedule if included, and audit metadata (snapshot hash, template and rule-set versions, QA approver, any exception).
+4. The PDF carries the report ID and version watermark. It includes the certification, redacted photos only, maps with provider attribution, evidence tables, the area schedule where the report relies on one (the sketch drawing only if the template has a `sketch` block and the version is marked for the client report), and audit metadata (snapshot hash, template and rule-set versions, QA approver, any exception).
 5. Rendering does no network I/O, embeds all fonts and takes metadata times from the snapshot. The same snapshot gives identical bytes (ADR-007).
 6. `POST /reports/{id}/reproduce` (`job.read`) re-renders the PDF, invoice and email payloads from the stored snapshot and returns the stored and reproduced hashes with a match flag for each.
 7. The delivery callback `POST /email-deliveries/{id}/status` accepts only a system principal (`403 SYSTEM_ONLY`). Status `sent` records `email.sent`; any other status records `email.delivery_updated`. Updates are idempotent. _(planned)_ Signed webhooks (T-23).
@@ -1004,7 +1038,7 @@ As the responsible valuer, I want to issue an approved job as a versioned, water
 
 **Data fields**
 
-- Catalogue: `dates.issue`, `instruction.feeBasis`, `instruction.clientEntity`, `instruction.intendedUsers`.
+- Catalogue: `dates.issue`, `instruction.clientEntity`, `instruction.intendedUsers`. (`instruction.feeBasis` is no longer requested per job; the invoice uses `feeCents`, 01 D9.)
 - Record `job`: `feeCents`.
 - Record `report`: `id`, `version`, `status` (issued, superseded), `snapshot`, `snapshot_hash`, `pdf`, `pdf_sha256`, `template_version_id`, `issued_by`, `issued_at`.
 - Records `invoice`, `email_delivery` (`recipient`, `payload_hash`, `status`) and `approved_recipient` (`client_id`, `email`, `revoked_at`).
@@ -1166,6 +1200,95 @@ Common errors, plus `409 IMMUTABLE_RECORD` (deletion under hold) and `400 BAD_RE
 - `apps/api/test/persistence.test.ts` › "blocks deleting a job under legal hold"; "only administrators can apply legal holds".
 - **Gap:** release; overlapping holds; object-lock; retention dry run and purge; there are no TC IDs for retention in 12 (proposed TC-RET-001…005, §3.7).
 
+### F-24 — Work in progress and job/property search
+
+**Status:** Implemented in domain/API: WIP stages and due states (`packages/domain/src/workflow/wip.ts`), `GET /v1/jobs` with search, stage, valuer and status filters, and `GET /v1/property-search`. The W-23 screen is planned (mobile/web). · E-01 · S-102, S-106 · J-14 · W-23, M-01
+
+**User story**
+As a valuer or allocator, I want to see every job I can work on with its stage and due state, most urgent first, and find any job or property with one search, so that nothing is missed and I do not hunt through lists (01 D14).
+
+**Acceptance criteria**
+
+1. `GET /v1/jobs` returns, for every job the caller may read, the original fields (`id`, `reference`, `status`, `selection`, `responsibleValuerId`) plus `stage`, `due`, `clientName`, `addresses`, `valuerName`, `dueDate` and `inspectionDate`, with top-level `today`, `counts` (per stage) and `overdue`.
+2. The stage is derived, never set by hand: `draft` → New instructions; `active` → To inspect, or In progress once the inspection date is today or earlier; `returned` → Returned by QA; `submitted`/`in_review` → With QA; `approved` → Ready to issue; `issued` → Issued; `cancelled` → Cancelled.
+3. The due state is overdue, due today, due soon (within 2 days), on track, done (issued or cancelled) or none (no due date). Jobs are sorted overdue first, then by due date, then by reference.
+4. `q` matches when every word appears in the reference, client, addresses, valuer, purpose, property type, state or stage. `stage`, `valuerId` and `status` filter the list. Counts are taken after the search and before the stage filter.
+5. "Today" is the date in Australia/Sydney (no per-organisation time zone yet; the product owner may change this).
+6. Visibility is unchanged: restricted-portfolio jobs are hidden from non-members (in the list, the counts and search); non-organisation-wide roles see only jobs they are assigned to or whose portfolio they belong to; clients see no unissued jobs.
+7. `GET /v1/property-search?q=` (2–200 characters) returns the caller's matching jobs (up to 25, as in the list) and the provider's property matches (F-25). With property data off it returns jobs only plus the status; a provider problem is returned as `propertyDataProblem` and never hides the jobs.
+8. _(planned)_ W-23 shows stage chips with counts, the overdue count, filters and one search box (05 J-14).
+
+**Data fields**
+Record `job`: `reference`, `status`, `responsible_valuer_id`, selection. Catalogue: `instruction.dueDate`, `dates.inspection`, `location.address` (formatted addresses). Record `client`: `name`. Record `app_user`: `display_name`.
+
+**Validation**
+Query schema only: `q` ≤ 200 characters; `stage` one of the eight stages; `valuerId` a UUID.
+
+**Permissions**
+`job.read`, applied per job (same rules as job detail). `GET /v1/property-search` also checks `job.read` for the organisation, so CLIENT_READONLY gets `403`.
+
+**Audit events**
+None. Reads are not audited; filtering is silent.
+
+**Offline behaviour**
+_(planned)_ The WIP list is cached read-only on mobile; search of the provider is online only.
+
+**Error states**
+Common errors, plus `400 BAD_REQUEST` (unknown stage, query too short or too long).
+
+**Tests**
+
+- `apps/api/test/wip.test.ts` › "lists jobs with stage, due state and WIP fields, most urgent first"; "searches by address, reference, client and state"; "filters by stage, status and responsible valuer"; "hides restricted-portfolio jobs from non-members, in the list and in search".
+- `apps/api/test/property-data.test.ts` › "property search returns provider matches and existing jobs".
+- `packages/domain/test/wip-profile-integrations.test.ts` › WIP stages, due states and search.
+- **Gap:** W-23 UI and accessibility; pagination beyond the newest 500 jobs (07 §7).
+
+### F-25 — Licensed property data (CoreLogic / Cotality), sample mode and state map services
+
+**Status:** Implemented in domain/API: the provider-neutral contract and suggestions (`integration/property-data.ts`), sample data (`integration/sample-property-data.ts`), state map services (`integration/state-maps.ts`), the CoreLogic connector (`apps/api/src/integrations/corelogic.ts`) and the property data, comparable search, status and job map endpoints. **CoreLogic API keys have not been supplied**, so live data is not configured anywhere; development and test use sample data. M-14 and M-15 are planned (mobile/web). · E-03, E-01 · S-103, S-104, S-105, S-106, S-107 · J-14 · M-14, M-15, W-04
+
+**User story**
+As a valuer, I want property facts, sales history and nearby sales from the licensed property data provider offered as suggestions I check and accept, an automated estimate as a cross-check, and my state's government map for the property, so that I spend less time typing without losing attribution or control (01 D15).
+
+**Acceptance criteria**
+
+1. The provider is chosen from configuration: CoreLogic when `CORELOGIC_CLIENT_ID` and `CORELOGIC_CLIENT_SECRET` are both supplied; otherwise sample data in development and test, or off in production. `PROPERTY_DATA_MODE` (`corelogic`, `sample`, `off`) overrides; `sample` is refused in production. `GET /v1/integrations/status` returns the state (`connected`, `sample`, `not_configured`) with the reason ("CoreLogic API keys not supplied") and the state map services.
+2. `POST /v1/jobs/{jobId}/assets/{assetId}/property-data` (`asset.edit`; the asset must belong to the job) matches the asset's address (or uses the given `propertyId`) and returns the attributes, field suggestions, sales history and, for callers with `valuation.edit` when the estimate's source is active, the automated estimate with the notice "a cross-check only, never the valuation".
+3. Each suggestion carries provenance: `origin: external_source`, `sourceId`, `sourceRef`, `retrievedAt`, `effectiveDate`, `licenceBasis`, `verification: unverified`, `capturedBy`. Judgement values (condition, quality) are never suggested.
+4. Lookups and searches write nothing to the job. The valuer accepts a suggestion through `PUT /fields` with its provenance marked `verified` (F-04), and adds a candidate sale through `POST /sales` (F-11).
+5. `POST /v1/jobs/{jobId}/assets/{assetId}/comparables/search` (`evidence.edit`) takes `radiusKm` 0.5–10 (default 2), `months` 3–36 (default 12) and `limit` 1–20 (default 10), and returns candidates within the radius and period, each with an unverified `SaleComparable`.
+6. Every lookup and search records `property_data.retrieved` in the job stream with the provider, source, property id and counts, never data values.
+7. The provider's data source must be registered and active for the organisation, else `409 DATA_SOURCE_NOT_REGISTERED` before any provider call. The seed registers `ds-corelogic`, `ds-corelogic-avm`, `ds-sample-property-data` and `ds-sample-avm`.
+8. Sample data and automated estimates have `permitsReportReproduction: false`; once relied on, `VAL-PROV-003` blocks issue `[REVIEW: DATA_LICENSING]`.
+9. Every CoreLogic call goes through the connector policy (timeout, retries, rate limit, circuit breaker). The token (OAuth 2.0 client credentials) is cached until shortly before expiry and refreshed once on a `401`. Failures return `502 PROPERTY_DATA_UNAVAILABLE` with `failure` and `fallback: manual_entry`. Keys and response bodies are never logged or returned.
+10. `GET /v1/jobs/{jobId}/map` (`job.read`) returns the state's map service, the subject properties with coordinates, sales with coordinates (none yet: sales do not store them, and a note says so) and notes.
+11. _(planned)_ M-14 and M-15 (05 J-14); sale coordinates (S-107); live data once the licence is confirmed, the endpoint paths are checked and keys are supplied (S-105).
+
+**Data fields**
+Suggested catalogue fields: `land.area`, `land.areaSource`, `location.titleReference`, `location.lga`, `planning.zone`, `improvements.yearBuilt`, `improvements.dwellingType`, `improvements.accommodation`, `improvements.buildingArea`. Record `data_source` (registry). Domain types `PropertyMatch`, `PropertyAttributes`, `ProviderSale`, `AutomatedEstimate`, `FieldSuggestion`, `StateMapService`.
+
+**Validation**
+`VAL-PROV-001` (incomplete provenance on accepted values), `VAL-PROV-002` (unverified evidence), `VAL-PROV-003` (sample data or estimates relied on), `VAL-STALE-002` (past the source's freshness). Request schemas: `propertyId` 1–64 characters; search bounds above.
+
+**Permissions**
+`job.read` (status, search, map); `asset.edit` (lookup); `valuation.edit` additionally to see the automated estimate; `evidence.edit` (comparable search). Proposed `datasource.lookup` (§3.1) would replace `asset.edit` for lookups.
+
+**Audit events**
+`property_data.retrieved`; accepting values and sales emits `field.updated` and `evidence.sale_added`.
+
+**Offline behaviour**
+Online only. Accepted values and sales sync like any other edit.
+
+**Error states**
+Common errors, plus `503 PROPERTY_DATA_NOT_CONFIGURED`; `502 PROPERTY_DATA_UNAVAILABLE`; `409 DATA_SOURCE_NOT_REGISTERED`; `422 NO_PROPERTY_MATCH`; `422 SUBJECT_LOCATION_REQUIRED`; `422 UNKNOWN_ASSET`.
+
+**Tests**
+
+- `apps/api/test/property-data.test.ts` › CoreLogic provider with a stubbed fetch: "requests a client-credentials token and sends it as a bearer token"; "caches the token until shortly before it expires"; "refreshes the token once and retries when the API answers 401"; "retries a 500 and then succeeds"; "does not retry rejected credentials and never puts secrets in the error"; "maps attributes, sales, comparables and the automated estimate defensively"; "maps a timeout to 502 with the manual-entry fallback and no secrets"; "requires the CoreLogic data source to be registered for the organisation".
+- `apps/api/test/property-data.test.ts` › "answers 503 with the reason and still searches jobs"; "suggests fields with provenance and saves nothing until the valuer accepts"; "withholds the automated estimate from people without valuation rights"; "finds comparable sales, adds one as evidence, and VAL-PROV-003 then blocks issue"; "shows the job on its state map service"; "defaults to CoreLogic only when both keys are supplied".
+- `packages/domain/test/wip-profile-integrations.test.ts` › suggestions, sample provider and state map services.
+- **Gap:** live CoreLogic responses (no keys; paths unverified); circuit-breaker half-open probe through the API; M-14/M-15 UI.
+
 ## 3. Gaps and proposed additions
 
 Each item below needs a change to the named source: the code (then `pnpm docs:generate`), 00, or 12. Until that change is made, the item must not be used as an existing name.
@@ -1192,8 +1315,7 @@ Each item below needs a change to the named source: the code (then `pnpm docs:ge
 | `VAL-SYNC-001`  | blocking · submit               | Unresolved sync conflicts exist on the job (UX-10)                                                                                                   | F-07       |
 | `VAL-INSP-001`  | warning · submit, issue         | Inspection finished with checklist gaps; a reason is recorded per gap (J-04 step 11)                                                                 | F-07       |
 | `VAL-AREA-005`  | blocking · draft, submit, issue | Calibration check dimension deviates beyond tolerance (default 2 %) without recalibration or reason (J-06 E2). Matching code `GEO-CALIBRATION-CHECK` | F-10       |
-| `VAL-CERT-003`  | blocking · submit, issue        | The signing valuer's credentials are expired or not current for the asset jurisdiction (J-08 E6) `[REVIEW: API_STANDARDS]`                           | F-18       |
-| `VAL-DATE-010`  | blocking · draft, submit, issue | Commentary or evidence dated after `dates.researchCutOff` (any purpose; J-07 step 8)                                                                 | F-16       |
+| `VAL-DATE-010`  | blocking · draft, submit, issue | Commentary or evidence dated after `dates.researchCutOff` (any purpose; J-07 E6)                                                                     | F-16       |
 | `VAL-AI-002`    | blocking · submit, issue        | Accepted facts conflict within one area (J-05 E4)                                                                                                    | F-09       |
 | `VAL-AI-003`    | warning · submit, issue         | An inspector-accepted fact has not been confirmed by the valuer (A-25)                                                                               | F-09       |
 | `VAL-AI-004`    | warning · submit, issue         | An accepted fact's source photo was later redacted or excluded (J-05 E3)                                                                             | F-09       |
@@ -1214,7 +1336,6 @@ Each item below needs a change to the named source: the code (then `pnpm docs:ge
 | Provenance origin `site_capture`                                                                                       | `DataOrigin` value            | F-08       | Used in 05 J-04 step 9; missing from `core/provenance.ts`                      |
 | Legal hold `matterReference`, `requestingParty`, `reviewDate`, `releaseReason`; scopes `asset`, `user`, `organisation` | record attributes             | F-23       | J-13 and 11 §5.3                                                               |
 | Data-source `rateLimit`, `cachingRights`, `rawPayloadRetentionDays`                                                    | record attributes             | F-04, F-05 | 04 §5.5, RC-15                                                                 |
-| Commentary library module (`id`, `version`, scope, `asAtDate`, author, approval)                                       | record                        | F-16       | W-08 library                                                                   |
 
 ### 3.4 Audit actions
 
@@ -1244,7 +1365,7 @@ The following are new proposals, not in 00 §8. Each needs a 00 revision before 
 - **F-09:** fact confirmation.
 - **F-11, F-12:** edit and soft-delete of sales and rentals.
 - **F-15:** fair-value derivation and sensitivity.
-- **F-16:** commentary library.
+- **F-16:** edit or withdraw a commentary library draft, and retire an approved version (S-110, S-111).
 - **F-19:** self-approval exception request; reviewer reassignment.
 - **F-20:** invoice management (send, credit note, accounting export); recipient revocation.
 - **F-21:** rule-set version creation.
@@ -1257,7 +1378,7 @@ The following are new proposals, not in 00 §8. Each needs a 00 revision before 
 2. **QA severity and disposition names.** The code uses severities `critical`, `major`, `minor`, `observation` and dispositions `resolved`, `accepted`, `withdrawn`. J-09 proposes `CRITICAL`, `MAJOR`, `MINOR`, `ADVISORY` and `ACCEPTED_AS_IS`, with the final list deferred to spec 06. Align 05 with the code values (also used in 07).
 3. **Blocked selections.** J-03 E1 says a blocked combination saves nothing. `PATCH /selection` saves it, returns `selectionIssues`, and relies on `VAL-SEL-001` to block later.
 4. **Issue permissions.** J-10 says an allocator with `report.issue` and `email.send` can issue. The matrix grants `report.issue` only to ADMINISTRATOR and VALUER, and the issue route does not check `email.send`.
-5. **Commentary permission.** W-08 requires `job.update`; the API uses `evidence.edit`.
+5. **Commentary permission.** Fixed: W-08 now lists `evidence.edit`, which the API uses (05 §2.2).
 6. **Sync audit events.** Assets and photos created through `/v1/sync` emit only `sync.operation_applied`, not `asset.created` or `photo.captured`. Decide whether to emit both.
 7. **Legal hold scopes.** The API supports job, client and portfolio. 11 §5.3 also lists organisation, asset and user.
 8. **Record attributes.** Record attributes here are cited from the API schemas and migrations. `06-data-model-and-audit.md` is the normative data model; any difference should be resolved there.
@@ -1265,13 +1386,17 @@ The following are new proposals, not in 00 §8. Each needs a 00 revision before 
 10. **WALE by area.** TC-CALC-005 includes WALE by area; the registry has only `income.wale@1` (by income).
 11. **Provenance name.** TC-CONN-005 and 12 §1.7 say `manual` provenance; the code uses `manual_entry`, or `client_supplied` for document-based fallback.
 12. **Co-signatories.** SoD-07 (co-signatory exclusion) cannot be enforced, because the code has no co-signatory model.
+13. **Sketch default.** Fixed: `includeInClientReport` and `useForReport` both default to `false`, so a sketch is working notes unless the valuer links it to the report (01 D11, 10 G10-13).
+14. **System-filled fields.** Fixed: the API writes the responsible valuer and QA reviewer on create and assign, `location.coordinates` from the asset location, and `dates.instruction` and `instruction.dueDate` from the create request (`instructedOn`, `dueDate`); `PUT /fields` rejects all of them with `422 SYSTEM_FIELD`. Remaining gap: no endpoint changes the instruction or due date after creation (F-01, F-04).
 
 ### 3.7 Test catalogue additions (proposed for 12)
 
-| Proposed ID    | Description                                                                                                                                                                                                              | Level | Pri |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- | --- |
-| TC-ENG-001…003 | Conflict search matching; outcome rules disable acceptance; re-check required after instruction change                                                                                                                   | L1/L2 | P1  |
-| TC-RET-001…005 | Hold blocks deletion and retention; overlapping holds; release by a different user; dry-run → approval → purge; stream checkpoint keeps chain verifiable                                                                 | L2/L3 | P1  |
-| TC-COM-001     | Commentary route stores author and date and emits `evidence.commentary_added`; same-day boundary                                                                                                                         | L2    | P2  |
-| TC-PHOTO-004   | API de-duplication by hash; privacy actions audited; redacted derivative used in PDF                                                                                                                                     | L2/L8 | P1  |
-| TC-VAL-005     | One passing and one failing fixture for each catalogue code not referenced by a test today (`VAL-AREA-003`, `VAL-DATE-008`, `VAL-DATE-009`, `VAL-FR-001`, `VAL-INS-001`, `VAL-PHOTO-002`, `VAL-RENT-001`, `VAL-SEL-002`) | L1    | P1  |
+| Proposed ID    | Description                                                                                                                                                                                              | Level | Pri |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | --- |
+| TC-ENG-001…003 | Conflict search matching; outcome rules disable acceptance; re-check required after instruction change                                                                                                   | L1/L2 | P1  |
+| TC-RET-001…005 | Hold blocks deletion and retention; overlapping holds; release by a different user; dry-run → approval → purge; stream checkpoint keeps chain verifiable                                                 | L2/L3 | P1  |
+| TC-PHOTO-004   | API de-duplication by hash; privacy actions audited; redacted derivative used in PDF                                                                                                                     | L2/L8 | P1  |
+| TC-VAL-005     | One passing and one failing fixture for each catalogue code not referenced by a test today (`VAL-AREA-003`, `VAL-DATE-009`, `VAL-FR-001`, `VAL-INS-001`, `VAL-PHOTO-002`, `VAL-RENT-001`, `VAL-SEL-002`) | L1    | P1  |
+
+TC-COM-001 (the manual commentary route) has moved into 12 §3.16 with the other market commentary
+tests.

@@ -4,6 +4,7 @@ import {
   JURISDICTIONS,
   PROPERTY_TYPES,
   REPORT_PURPOSES,
+  type Provenance,
 } from '@vp/domain';
 import { z } from 'zod';
 
@@ -41,6 +42,23 @@ export const ProvenanceInput = z.object({
   effectiveDate: LocalDateSchema.optional(),
   licenceBasis: z.string().optional(),
   verification: z.enum(['unverified', 'verified', 'disputed']).default('unverified'),
+});
+
+/** Provenance for evidence and commentary sources (external, client-supplied or typed in). */
+export const EvidenceProvenance = ProvenanceInput.extend({
+  origin: z.enum(['external_source', 'client_supplied', 'manual_entry']),
+});
+
+/** The capturing user attests verification, so verified data records who verified it and when. */
+export const provenanceOf = (
+  p: z.infer<typeof EvidenceProvenance>,
+  userId: string,
+  now: string,
+): Provenance => ({
+  ...compact(p),
+  ...(p.verification === 'verified' ? { verifiedBy: userId, verifiedAt: now } : {}),
+  capturedBy: userId,
+  capturedAt: now,
 });
 
 export const AssetInput = z.object({

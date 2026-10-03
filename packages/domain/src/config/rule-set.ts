@@ -27,6 +27,11 @@ export interface RuleCondition {
   readonly jurisdictions?: readonly Jurisdiction[];
   readonly modes?: readonly AssetMode[];
   readonly fields?: readonly FieldCondition[];
+  /**
+   * Matches retrospective (or current) valuations. Derived from the dates, never selected:
+   * see `retrospectiveStatus`.
+   */
+  readonly retrospective?: boolean;
 }
 
 export interface RuleWarning {
@@ -76,7 +81,7 @@ export interface RuleSetVersion {
 
 const VALUE_PURPOSES: readonly ReportPurpose[] = [
   'MARKET_VALUE',
-  'CGT_RETROSPECTIVE',
+  'CGT',
   'FAMILY_LAW',
   'FINANCIAL_REPORTING',
 ];
@@ -88,6 +93,9 @@ const VALUATION_CORE = [
   'valuation.reconciliation',
   'valuation.adoptedValue',
 ] as const;
+
+/** National, state and local commentary, offered from the firm's library by property type and location. */
+const MARKET_COMMENTARY = ['market.national', 'market.state', 'market.local'] as const;
 
 /**
  * Australian core rule set — **draft**. This is the starting configuration for the
@@ -103,16 +111,16 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
   fieldCatalogueVersion: 1,
   authoredBy: 'system-seed',
   notes:
-    'Seed configuration authored from the product brief. Requires API_STANDARDS approval; purpose rules carry their own specialist-review tags.',
+    'Seed configuration authored from the product brief, revised after product owner review (unreleased draft): fewer per-job inputs, CGT as a purpose with retrospective rules derived from the dates, and the sketch kept as working notes. Requires API_STANDARDS approval; purpose rules carry their own specialist-review tags.',
   rules: [
     // ── Base: every job ──────────────────────────────────────────────────────
     {
       id: 'REQ-BASE-001',
-      description: 'Instruction, engagement, key dates, location and assumptions for every job',
+      description:
+        'Instruction, key dates and location for every job. The client is the instructing party; reliance, confidentiality and standard limitations come from approved template clauses, not per-job inputs.',
       when: {},
       require: [
         'instruction.clientEntity',
-        'instruction.instructingParty',
         'instruction.intendedUsers',
         'instruction.intendedUse',
         'instruction.basisOfValue',
@@ -120,23 +128,19 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'instruction.conflictCheck',
         'instruction.responsibleValuer',
         'instruction.engagementDocuments',
-        'instruction.reliance',
-        'instruction.confidentiality',
         'dates.instruction',
         'dates.valuation',
         'location.address',
         'location.titleReference',
-        'location.lga',
-        'assumptions.general',
-        'assumptions.limitations',
       ],
       recommend: [
-        'instruction.feeBasis',
         'instruction.dueDate',
         'instruction.reviewer',
         'instruction.ownership',
+        'location.lga',
         'location.coordinates',
-        'dates.researchCutOff',
+        'assumptions.general',
+        'assumptions.limitations',
       ],
       sections: [
         'instructions',
@@ -239,32 +243,19 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
       require: [
         ...VALUATION_CORE,
         'valuation.marketability',
-        'valuation.riskCommentary',
-        'market.local',
+        ...MARKET_COMMENTARY,
         'evidence.sales',
       ],
-      recommend: ['valuation.crossCheckApproach', 'market.state', 'market.national'],
+      recommend: ['valuation.crossCheckApproach', 'valuation.riskCommentary'],
       sections: ['market', 'hbu', 'sales_evidence', 'valuation_approach', 'reconciliation', 'risk'],
       specialistReview: ['API_STANDARDS'],
     },
     {
       id: 'REQ-PUR-CGT-001',
       description:
-        'Capital gains tax / retrospective valuation (aligned to ATO minimum report content)',
-      when: { purposes: ['CGT_RETROSPECTIVE'] },
-      require: [
-        ...VALUATION_CORE,
-        'cgt.taxEvent',
-        'cgt.instructingAdviser',
-        'dates.retrospectiveDataCutOff',
-        'cgt.informationCutOffStatement',
-        'cgt.chronology',
-        'cgt.sourceArchive',
-        'cgt.contemporaneousEvidence',
-        'market.local',
-        'evidence.sales',
-      ],
-      recommend: ['market.state'],
+        'Capital gains tax valuation. The client (often the tax agent) instructs; whether it is retrospective follows from the dates (REQ-RETRO-001).',
+      when: { purposes: ['CGT'] },
+      require: [...VALUATION_CORE, 'cgt.taxEvent', ...MARKET_COMMENTARY, 'evidence.sales'],
       sections: [
         'tax_context',
         'market',
@@ -274,12 +265,22 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'reconciliation',
       ],
       specialistReview: ['TAX', 'API_STANDARDS'],
+    },
+    {
+      id: 'REQ-RETRO-001',
+      description:
+        'Retrospective valuation (any purpose): the valuation date is before the inspection date, so the basis of the historical assessment must be stated.',
+      when: { retrospective: true },
+      require: ['retro.evidenceBasis'],
+      recommend: ['dates.retrospectiveDataCutOff', 'retro.chronology'],
+      sections: ['retrospective'],
+      specialistReview: ['API_STANDARDS'],
       warnings: [
         {
-          code: 'W-CGT-HINDSIGHT',
+          code: 'W-RETRO-HINDSIGHT',
           message:
-            'Only information known or reasonably foreseeable at the valuation date may be relied on; later evidence is flagged.',
-          review: 'TAX',
+            'Retrospective valuation: rely only on information known or reasonably foreseeable at the valuation date. Later sales are flagged.',
+          review: 'API_STANDARDS',
         },
       ],
     },
@@ -300,7 +301,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'fl.independenceDeclaration',
         'fl.reasons',
         'fl.declaration',
-        'market.local',
+        ...MARKET_COMMENTARY,
         'evidence.sales',
       ],
       recommend: ['fl.conferenceOrJointStatement'],
@@ -340,7 +341,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'fr.sensitivityAnalysis',
         'fr.disclosureSchedule',
       ],
-      recommend: ['market.local', 'evidence.sales'],
+      recommend: [...MARKET_COMMENTARY, 'evidence.sales'],
       sections: ['fair_value', 'market', 'hbu', 'valuation_approach', 'reconciliation'],
       specialistReview: ['ACCOUNTING', 'API_STANDARDS'],
       formulas: ['fv.sensitivity'],
@@ -365,7 +366,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'rent.adoptedMarketRent',
         'evidence.rentals',
       ],
-      recommend: ['market.local'],
+      recommend: [...MARKET_COMMENTARY],
       sections: ['market', 'rental_evidence', 'rental_determination'],
       specialistReview: ['API_STANDARDS'],
       formulas: ['income.effective_rent', 'income.rent_rate_per_m2'],
@@ -432,24 +433,109 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
     },
     {
       id: 'REQ-PT-RES-001',
-      description: 'Residential dwelling description and areas',
+      description:
+        'Residential dwelling description. The building area is entered directly (the sketch is working notes and is not reported).',
       when: { propertyTypes: ['RESIDENTIAL'] },
       require: [
         'improvements.dwellingType',
         'improvements.accommodation',
-        'improvements.areaSchedule',
-        'improvements.measurementBasis',
+        'improvements.buildingArea',
         'improvements.yearBuilt',
         'improvements.construction',
         'improvements.condition',
       ],
       recommend: [
-        'improvements.effectiveAge',
         'improvements.renovations',
         'improvements.fixturesFinishes',
         'improvements.outdoorImprovements',
       ],
-      sections: ['improvements', 'areas'],
+      sections: ['improvements'],
+    },
+    {
+      id: 'REQ-PT-UNIT-001',
+      description:
+        'Unit, apartment or townhouse: the lot, its internal area (usually from the strata plan) and the building it is in.',
+      when: { propertyTypes: ['RESIDENTIAL_UNIT'] },
+      require: [
+        'strata.titleType',
+        'unit.unitType',
+        'improvements.accommodation',
+        'unit.internalArea',
+        'improvements.parking',
+        'improvements.yearBuilt',
+        'improvements.construction',
+        'improvements.condition',
+      ],
+      recommend: [
+        'unit.level',
+        'unit.internalAreaSource',
+        'unit.outdoorArea',
+        'unit.storage',
+        'unit.unitsInComplex',
+        'unit.buildingAmenities',
+        'unit.aspect',
+        'improvements.renovations',
+        'improvements.fixturesFinishes',
+      ],
+      sections: ['improvements', 'strata'],
+      formulas: ['improvements.rate_per_m2', 'comparison.adjusted_rate'],
+    },
+    {
+      id: 'REQ-PT-UNIT-002',
+      description:
+        'Unit valuation analytics: occupancy, with zoning and the site of the complex as context (no land valuation of the lot).',
+      when: {
+        purposes: [...VALUE_PURPOSES, 'RENTAL_ASSESSMENT'],
+        propertyTypes: ['RESIDENTIAL_UNIT'],
+      },
+      require: ['occupancy.status'],
+      recommend: ['planning.zone', 'land.area', 'land.environmental'],
+      sections: ['planning', 'occupancy'],
+    },
+    {
+      id: 'REQ-STRATA-001',
+      description:
+        'Strata, community or stratum title (any property type): the scheme, the lot entitlement, levies and known building defects.',
+      when: {
+        fields: [
+          { fieldId: 'strata.titleType', in: ['strata_title', 'community_title', 'stratum_title'] },
+        ],
+      },
+      require: [
+        'strata.planNumber',
+        'strata.lotNumber',
+        'strata.unitEntitlement',
+        'strata.ownersCorporation',
+        'strata.adminLevy',
+        'strata.capitalWorksLevy',
+        'strata.buildingDefects',
+      ],
+      recommend: ['strata.specialLevies', 'strata.byLaws', 'strata.ownersCorporationCertificate'],
+      sections: ['strata'],
+      warnings: [
+        {
+          code: 'W-STRATA-RECORDS',
+          message:
+            'Check the owners corporation certificate or strata report for special levies, building defects (including combustible cladding) and disputes before relying on the value.',
+          review: 'API_STANDARDS',
+        },
+      ],
+    },
+    {
+      id: 'REQ-STRATA-002',
+      description: 'Company title: the company, shares held and restrictions on sale or lending.',
+      when: { fields: [{ fieldId: 'strata.titleType', equals: 'company_title' }] },
+      require: ['strata.companyTitleDetails'],
+      recommend: ['strata.ownersCorporationCertificate'],
+      sections: ['strata'],
+      warnings: [
+        {
+          code: 'W-COMPANY-TITLE',
+          message:
+            'Company title can restrict who may buy and lend; state any restrictions and how they affect value.',
+          review: 'LEGAL',
+        },
+      ],
     },
     {
       id: 'REQ-PT-COM-001',
@@ -466,7 +552,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'improvements.construction',
         'improvements.condition',
       ],
-      recommend: ['improvements.yearBuilt'],
+      recommend: ['strata.titleType', 'improvements.yearBuilt'],
       sections: ['improvements', 'areas'],
     },
     {
@@ -511,7 +597,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'improvements.functionalObsolescence',
         'planning.useCompliance',
       ],
-      recommend: ['improvements.cranes'],
+      recommend: ['strata.titleType', 'improvements.cranes'],
       sections: ['improvements', 'areas', 'planning'],
     },
     {
@@ -642,7 +728,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
       id: 'REQ-APP-SUM-001',
       description: 'Summation approach inputs',
       when: { fields: [{ fieldId: 'valuation.approaches', includes: 'summation' }] },
-      require: ['land.area', 'improvements.areaSchedule'],
+      require: ['land.area', 'improvements.buildingArea'],
       sections: ['cost_approach'],
     },
     {
@@ -753,7 +839,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
     {
       id: 'SEL-007',
       description: 'Retrospective valuation with a current inspection',
-      when: { purposes: ['CGT_RETROSPECTIVE'], scopes: ['FULL', 'KERBSIDE', 'RESTRICTED'] },
+      when: { retrospective: true, scopes: ['FULL', 'KERBSIDE', 'RESTRICTED'] },
       severity: 'warning',
       message:
         'The inspection records present condition: document known differences between the inspection date and the valuation date.',
@@ -765,6 +851,15 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
       severity: 'warning',
       message:
         'Specialised assets generally require inspection; record why desktop scope is suitable.',
+    },
+    {
+      id: 'SEL-010',
+      description: 'Insurance assessment for a unit',
+      when: { purposes: ['INSURANCE_REPLACEMENT'], propertyTypes: ['RESIDENTIAL_UNIT'] },
+      severity: 'warning',
+      message:
+        'Strata buildings are usually insured by the owners corporation or body corporate. Confirm whether the instruction covers the whole scheme or only the lot owner’s improvements.',
+      review: 'QUANTITY_SURVEYOR',
     },
     {
       id: 'SEL-009',

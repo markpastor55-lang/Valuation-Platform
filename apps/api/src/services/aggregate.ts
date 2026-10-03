@@ -526,6 +526,8 @@ export function reportDataOf(
     sales: agg.sales,
     saleAnalyses: agg.saleAnalyses,
     rentals: agg.rentals,
+    // dated commentary records: the report prints each level's as-at date and sources
+    commentary: agg.commentary,
     calculations: agg.calculations,
     areaSchedules: agg.schedules,
     sketches: agg.reportingSketches.map((s) => ({

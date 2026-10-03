@@ -145,7 +145,8 @@ export function registerInspectionRoutes(r: Router): void {
         .optional(),
       includeInClientReport: z.boolean().optional(),
       changeSummary: z.string().min(3),
-      useForReport: z.boolean().default(true),
+      /** Link the sketch's schedule to the report (it is then checked and must be approved). */
+      useForReport: z.boolean().default(false),
     }),
     handler: async ({ ctx, principal, params, body }) =>
       ctx.db.transaction(async (tx) => {
@@ -277,7 +278,8 @@ export function registerInspectionRoutes(r: Router): void {
             ...(body.suppliedAreas
               ? { suppliedAreas: body.suppliedAreas.map((s) => compact(s)) }
               : {}),
-            includeInClientReport: body.includeInClientReport ?? true,
+            // Sketches are working notes unless the valuer chooses to include the drawing
+            includeInClientReport: body.includeInClientReport ?? false,
             changeSummary: body.changeSummary,
             createdBy: principal.userId,
             createdAt: now,

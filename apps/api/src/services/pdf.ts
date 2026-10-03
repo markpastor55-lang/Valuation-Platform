@@ -6,12 +6,13 @@ import {
   degrees,
   rgb,
   type PDFFont,
+  type PDFImage,
   type PDFPage,
   type RGB,
 } from 'pdf-lib';
 
 /** Bumped whenever rendering output changes; stored in issue snapshots. */
-export const RENDERER_VERSION = 'pdf-renderer@2';
+export const RENDERER_VERSION = 'pdf-renderer@3';
 
 export interface SketchDrawing {
   readonly boundaries: readonly {
@@ -34,7 +35,41 @@ export interface RenderAssets {
     readonly lat: number;
     readonly lng: number;
   }[];
+  /**
+   * The certifying valuer's signature, keyed by its fingerprint (`signatureSha256`): a PNG data
+   * URL for drawn signatures, the typed name otherwise. Absent in snapshots issued before
+   * pdf-renderer@3.
+   */
+  readonly signatures?: Readonly<
+    Record<string, { readonly kind: 'drawn' | 'typed'; readonly value: string }>
+  >;
 }
+
+export const PNG_DATA_URL_PREFIX = 'data:image/png;base64,';
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+/** Decodes a `data:image/png;base64,` URL; null unless it is well-formed base64 of PNG bytes. */
+export function decodePngDataUrl(value: string): Uint8Array | null {
+  if (!value.startsWith(PNG_DATA_URL_PREFIX)) return null;
+  const b64 = value.slice(PNG_DATA_URL_PREFIX.length);
+  if (!b64 || b64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) return null;
+  const bytes = new Uint8Array(Buffer.from(b64, 'base64'));
+  return PNG_MAGIC.every((b, i) => bytes[i] === b) ? bytes : null;
+}
+
+/** True when the PNG decodes and can be embedded in a PDF (checked before a signature is saved). */
+export async function isEmbeddablePng(bytes: Uint8Array): Promise<boolean> {
+  try {
+    const doc = await PDFDocument.create({ updateMetadata: false });
+    const img = await doc.embedPng(bytes);
+    return img.width > 0 && img.height > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** Largest size a signature image is drawn at (points). */
+const SIGNATURE_BOX = { width: 180, height: 60 } as const;
 
 const A4: [number, number] = [595.28, 841.89];
 const MARGIN = 50;
@@ -432,7 +467,66 @@ function drawSketch(
   );
 }
 
-function renderBlock(layout: Layout, block: RenderBlock, assets: RenderAssets): void {
+function drawSignature(
+  layout: Layout,
+  sha256: string,
+  caption: string,
+  assets: RenderAssets,
+  images: ReadonlyMap<string, PDFImage>,
+): void {
+  const signature = assets.signatures?.[sha256];
+  const image = images.get(sha256);
+  const height = SIGNATURE_BOX.height;
+  layout.ensure(height + 40);
+  const top = layout.y - 6;
+  if (image) {
+    const scale = Math.min(SIGNATURE_BOX.width / image.width, height / image.height);
+    const w = image.width * scale;
+    const h = image.height * scale;
+    layout.page.drawImage(image, {
+      x: MARGIN,
+      y: top - height + (height - h) / 2,
+      width: w,
+      height: h,
+    });
+  } else if (signature?.kind === 'typed') {
+    const text = layout.clean(signature.value);
+    const natural = layout.fonts.italic.widthOfTextAtSize(text, 22);
+    const size = Math.min(22, (22 * SIGNATURE_BOX.width) / Math.max(natural, 1));
+    layout.page.drawText(text, {
+      x: MARGIN,
+      y: top - height / 2 - size / 3,
+      size,
+      font: layout.fonts.italic,
+      color: BLACK,
+    });
+  } else {
+    layout.page.drawText('Signature recorded with the certification (not available to render)', {
+      x: MARGIN,
+      y: top - height / 2,
+      size: 8,
+      font: layout.fonts.italic,
+      color: GREY,
+    });
+  }
+  layout.y = top - height - 2;
+  layout.page.drawLine({
+    start: { x: MARGIN, y: layout.y },
+    end: { x: MARGIN + SIGNATURE_BOX.width + 20, y: layout.y },
+    thickness: 0.6,
+    color: GREY,
+  });
+  layout.y -= 4;
+  layout.text(caption, { font: layout.fonts.italic, size: 8, color: GREY, gapAfter: 1 });
+  layout.text(`Signature fingerprint (SHA-256) ${sha256}`, { size: 6.5, color: GREY, gapAfter: 8 });
+}
+
+function renderBlock(
+  layout: Layout,
+  block: RenderBlock,
+  assets: RenderAssets,
+  images: ReadonlyMap<string, PDFImage>,
+): void {
   switch (block.kind) {
     case 'heading':
       layout.heading(block.text, block.level);
@@ -454,7 +548,9 @@ function renderBlock(layout: Layout, block: RenderBlock, assets: RenderAssets): 
       layout.newPage();
       return;
     case 'image': {
-      if (block.ref.type === 'sketch') {
+      if (block.ref.type === 'signature') {
+        drawSignature(layout, block.ref.id, block.caption, assets, images);
+      } else if (block.ref.type === 'sketch') {
         const sketch = assets.sketches[block.ref.id];
         layout.box(
           260,
@@ -540,6 +636,22 @@ export async function renderReportPdf(
     italic: await doc.embedFont(StandardFonts.HelveticaOblique),
   };
   const accent = hexToRgb(model.meta.primaryColour);
+  // Drawn signatures are embedded once each, before layout (embedding is asynchronous).
+  const images = new Map<string, PDFImage>();
+  for (const section of model.sections) {
+    for (const block of section.blocks) {
+      if (block.kind !== 'image' || block.ref.type !== 'signature' || images.has(block.ref.id))
+        continue;
+      const signature = assets.signatures?.[block.ref.id];
+      const png = signature?.kind === 'drawn' ? decodePngDataUrl(signature.value) : null;
+      if (!png) continue;
+      try {
+        images.set(block.ref.id, await doc.embedPng(png));
+      } catch {
+        // Unreadable image: the block says so instead of failing the whole report.
+      }
+    }
+  }
   const layout = new Layout(doc, fonts, makeSanitiser(fonts.regular), accent);
 
   // Cover
@@ -560,7 +672,7 @@ export async function renderReportPdf(
   model.sections.forEach((section, i) => {
     if (i > 0) layout.ensure(140);
     layout.heading(section.title, 1);
-    for (const block of section.blocks) renderBlock(layout, block, assets);
+    for (const block of section.blocks) renderBlock(layout, block, assets, images);
     layout.y -= 10;
   });
 

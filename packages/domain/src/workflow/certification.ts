@@ -10,8 +10,12 @@ export interface ValuerIdentity {
   readonly fullName: string;
   /** Professional memberships and designations as held, e.g. "AAPI", "CPV". */
   readonly credentials: readonly string[];
-  /** Statutory registration where the jurisdiction requires it. [REVIEW: API_STANDARDS] */
+  /** Australian Property Institute member number. */
+  readonly apiMemberNumber?: string;
+  /** Statutory registration where the jurisdiction requires it (QLD, WA). [REVIEW: API_STANDARDS] */
   readonly registration?: { readonly jurisdiction: string; readonly number: string };
+  /** Fingerprint of the signature image or typed signature used (see `signatureHash`). */
+  readonly signatureSha256?: string;
 }
 
 /** Template-driven certification content (brief §7). Clause wording comes from approved clause versions. */

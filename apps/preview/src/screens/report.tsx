@@ -1,10 +1,10 @@
 import { Fragment, type JSX } from 'preact';
-import type { RenderBlock } from '@vp/domain';
-import { type Derived, type PreviewState } from '../model.js';
+import { signatureHash, type RenderBlock, type ValuerProfile } from '@vp/domain';
+import { SignatureView } from './profile.js';
+import type { Derived } from '../model.js';
 import { Pill, shortHash } from '../ui.js';
-import { PlanDrawing } from './sketch.js';
 
-function Block(props: { b: RenderBlock; state: PreviewState; d: Derived }): JSX.Element | null {
+function Block(props: { b: RenderBlock; profile: ValuerProfile }): JSX.Element | null {
   const { b } = props;
   switch (b.kind) {
     case 'heading':
@@ -49,31 +49,28 @@ function Block(props: { b: RenderBlock; state: PreviewState; d: Derived }): JSX.
           {b.note && <p class="note">{b.note}</p>}
         </div>
       );
-    case 'image': {
-      if (b.ref.type === 'sketch') {
-        const included = new Set(
-          props.d.schedule.rows.filter((r) => r.includedInTotal).map((r) => r.boundaryId),
+    case 'image':
+      if (b.ref.type === 'signature')
+        return props.profile.signature && signatureHash(props.profile.signature) === b.ref.id ? (
+          <div class="report-signature">
+            <SignatureView profile={props.profile} />
+            <span class="note">{b.caption}</span>
+          </div>
+        ) : (
+          <p class="note">[Signature on file]</p>
         );
-        return (
-          <figure class="sketch-figure" style={{ margin: 0 }}>
-            <PlanDrawing sketch={props.state.sketch} included={included} title={b.caption} />
-            <figcaption>{b.caption}</figcaption>
-          </figure>
-        );
-      }
       return (
         <p class="note">
           [{b.ref.type}: {b.caption}]
         </p>
       );
-    }
     case 'page_break':
       return null;
   }
 }
 
-export function ReportScreen(props: { state: PreviewState; d: Derived }): JSX.Element {
-  const { state, d } = props;
+export function ReportScreen(props: { d: Derived; profile: ValuerProfile }): JSX.Element {
+  const { d } = props;
   const r = d.report;
   const final = r.meta.status === 'final';
   return (
@@ -110,7 +107,7 @@ export function ReportScreen(props: { state: PreviewState; d: Derived }): JSX.El
           <section key={s.sectionId} class="stack">
             <h2>{s.title}</h2>
             {s.blocks.map((b, i) => (
-              <Block key={i} b={b} state={state} d={d} />
+              <Block key={i} b={b} profile={props.profile} />
             ))}
           </section>
         ))}

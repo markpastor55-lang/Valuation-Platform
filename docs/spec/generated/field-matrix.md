@@ -6,14 +6,14 @@ Resolved by `resolveRequirements` from the draft AU core rule set. Conditional r
 
 ## 1. Required-field counts (scope FULL, VIC, single asset)
 
-| Purpose \ Property type           | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
-| --------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| Market value                      | 43          | 42          | 53                  | 53                  | 53         | 41                       |
-| Capital gains tax / retrospective | 48          | 47          | 58                  | 58                  | 58         | 46                       |
-| Family law                        | 52          | 51          | 62                  | 62                  | 62         | 50                       |
-| Financial reporting (fair value)  | 51          | 50          | 61                  | 61                  | 61         | 49                       |
-| Rental assessment                 | 48          | 46          | 48                  | 48                  | 54         | 46                       |
-| Insurance / replacement cost      | ⛔          | 41          | 44                  | 44                  | 49         | 41                       |
+| Purpose \ Property type          | Vacant land | Residential house | Unit, apartment or townhouse (incl. strata) | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
+| -------------------------------- | ----------- | ----------------- | ------------------------------------------- | ------------------- | ------------------- | ---------- | ------------------------ |
+| Market value                     | 38          | 36                | 33                                          | 48                  | 48                  | 48         | 36                       |
+| Capital gains tax (CGT)          | 38          | 36                | 33                                          | 48                  | 48                  | 48         | 36                       |
+| Family law                       | 48          | 46                | 43                                          | 58                  | 58                  | 58         | 46                       |
+| Financial reporting (fair value) | 45          | 43                | 40                                          | 55                  | 55                  | 55         | 43                       |
+| Rental assessment                | 42          | 39                | 37                                          | 42                  | 42                  | 48         | 40                       |
+| Insurance / replacement cost     | ⛔          | 36                | 38                                          | 38                  | 38                  | 43         | 35                       |
 
 ## 2. Fields by purpose and property type (scope FULL, VIC)
 
@@ -21,551 +21,618 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 
 ### Market value (`MARKET_VALUE`)
 
-| Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
-| ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
-| `evidence.rentals`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `evidence.sales`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
-| `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
-| `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.cranes`                 |             |             |                     |                     | r          |                          |
-| `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
-| `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
-| `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
-| `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
-| `improvements.floorAreas`             |             |             | **R**               | **R**               |            |                          |
-| `improvements.functionalObsolescence` |             |             |                     |                     | **R**      |                          |
-| `improvements.grade`                  |             |             | r                   |                     |            |                          |
-| `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
-| `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
-| `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
-| `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
-| `improvements.parking`                |             | **R**       | **R**               | **R**               |            |                          |
-| `improvements.power`                  |             |             |                     |                     | **R**      |                          |
-| `improvements.renovations`            |             | r           |                     |                     |            |                          |
-| `improvements.services`               |             |             | **R**               | **R**               |            |                          |
-| `improvements.siteCoverage`           |             |             |                     |                     | **R**      |                          |
-| `improvements.use`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `improvements.warehouseArea`          |             |             |                     |                     | **R**      |                          |
-| `improvements.yearBuilt`              |             | **R**       | r                   | r                   |            |                          |
-| `income.capRate`                      |             |             | **R**               | **R**               | **R**      |                          |
-| `income.discountRate`                 |             |             | r                   | r                   |            |                          |
-| `income.marketIncome`                 |             |             | **R**               | **R**               | **R**      |                          |
-| `income.terminalYield`                |             |             | r                   | r                   |            |                          |
-| `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
-| `land.access`                         | **R**       |             |                     |                     |            |                          |
-| `land.area`                           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.areaSource`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.developmentPotential`           | **R**       |             |                     |                     |            |                          |
-| `land.dimensions`                     | **R**       |             |                     |                     |            |                          |
-| `land.easements`                      | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.environmental`                  | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.frontage`                       | **R**       |             |                     |                     |            |                          |
-| `land.services`                       | **R**       |             |                     |                     |            |                          |
-| `land.shape`                          | **R**       |             |                     |                     |            |                          |
-| `land.topography`                     | **R**       |             |                     |                     |            |                          |
-| `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
-| `market.local`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `market.national`                     | r           | r           | r                   | r                   | r          | r                        |
-| `market.state`                        | r           | r           | r                   | r                   | r          | r                        |
-| `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
-| `planning.overlays`                   | **R**       | r           | r                   | r                   | r          | r                        |
-| `planning.permissibleUses`            | r           |             |                     |                     |            |                          |
-| `planning.prohibitedUses`             | r           |             |                     |                     |            |                          |
-| `planning.reportDocument`             | r           | r           | r                   | r                   | r          | r                        |
-| `planning.source`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.useCompliance`              |             |             |                     |                     | **R**      |                          |
-| `planning.zone`                       | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `retail.centreMetrics`                |             |             |                     | r                   |            |                          |
-| `retail.footfall`                     |             |             |                     | r                   |            |                          |
-| `retail.frontage`                     |             |             |                     | r                   |            |                          |
-| `retail.tradeArea`                    |             |             |                     | r                   |            |                          |
-| `specialised.allocationMethod`        |             |             |                     |                     |            | **R**                    |
-| `specialised.componentSchedule`       |             |             |                     |                     |            | **R**                    |
-| `specialised.goingConcernBoundary`    |             |             |                     |                     |            | **R**                    |
-| `specialised.licences`                |             |             |                     |                     |            | **R**                    |
-| `specialised.specialistReview`        |             |             |                     |                     |            | **R**                    |
-| `tenancy.incentives`                  |             |             | **R**               | **R**               |            |                          |
-| `tenancy.occupancyRate`               |             |             | **R**               | **R**               |            |                          |
-| `tenancy.outgoings`                   |             |             | **R**               | **R**               |            |                          |
-| `tenancy.passingIncome`               |             |             | **R**               | **R**               |            |                          |
-| `tenancy.schedule`                    |             |             | **R**               | **R**               | r          |                          |
-| `tenancy.wale`                        |             |             | **R**               | **R**               | r          |                          |
-| `valuation.adoptedValue`              | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.approaches`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.crossCheckApproach`        | r           | r           | **R**               | **R**               | **R**      | r                        |
-| `valuation.highestAndBestUse`         | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.marketability`             | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.primaryApproach`           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.reconciliation`            | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.riskCommentary`            | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| Field                                 | Vacant land | Residential house | Unit, apartment or townhouse (incl. strata) | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
+| ------------------------------------- | ----------- | ----------------- | ------------------------------------------- | ------------------- | ------------------- | ---------- | ------------------------ |
+| `assumptions.general`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `evidence.rentals`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `evidence.sales`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.accommodation`          |             | **R**             | **R**                                       |                     |                     |            |                          |
+| `improvements.areaSchedule`           |             |                   |                                             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.clearance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.condition`              |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.construction`           |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.cranes`                 |             |                   |                                             |                     |                     | r          |                          |
+| `improvements.dwellingType`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.fireServices`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.fitout`                 |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.fixturesFinishes`       |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.floorAreas`             |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.functionalObsolescence` |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.grade`                  |             |                   |                                             | r                   |                     |            |                          |
+| `improvements.hardstand`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.lettableArea`           |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.loading`                |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.measurementBasis`       |             |                   |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.officeArea`             |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.outdoorImprovements`    |             | r                 |                                             |                     |                     |            |                          |
+| `improvements.parking`                |             | **R**             | **R**                                       | **R**               | **R**               |            |                          |
+| `improvements.power`                  |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.renovations`            |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.services`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.siteCoverage`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.use`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `improvements.warehouseArea`          |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.yearBuilt`              |             | **R**             | **R**                                       | r                   | r                   |            |                          |
+| `income.capRate`                      |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `income.discountRate`                 |             |                   |                                             | r                   | r                   |            |                          |
+| `income.marketIncome`                 |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `income.terminalYield`                |             |                   |                                             | r                   | r                   |            |                          |
+| `instruction.dueDate`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.ownership`               | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.reviewer`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.access`                         | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.area`                           | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `land.areaSource`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `land.developmentPotential`           | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.dimensions`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.easements`                      | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `land.environmental`                  | **R**       | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.frontage`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.services`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.shape`                          | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.topography`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.local`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.national`                     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.state`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `planning.permissibleUses`            | r           |                   |                                             |                     |                     |            |                          |
+| `planning.prohibitedUses`             | r           |                   |                                             |                     |                     |            |                          |
+| `planning.reportDocument`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.source`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `planning.useCompliance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `planning.zone`                       | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `retail.centreMetrics`                |             |                   |                                             |                     | r                   |            |                          |
+| `retail.footfall`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.frontage`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.tradeArea`                    |             |                   |                                             |                     | r                   |            |                          |
+| `specialised.allocationMethod`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.componentSchedule`       |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.goingConcernBoundary`    |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.licences`                |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.specialistReview`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `strata.titleType`                    |             |                   | **R**                                       | r                   | r                   | r          |                          |
+| `tenancy.incentives`                  |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.occupancyRate`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.outgoings`                   |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.passingIncome`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.schedule`                    |             |                   |                                             | **R**               | **R**               | r          |                          |
+| `tenancy.wale`                        |             |                   |                                             | **R**               | **R**               | r          |                          |
+| `unit.aspect`                         |             |                   | r                                           |                     |                     |            |                          |
+| `unit.buildingAmenities`              |             |                   | r                                           |                     |                     |            |                          |
+| `unit.internalArea`                   |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.internalAreaSource`             |             |                   | r                                           |                     |                     |            |                          |
+| `unit.level`                          |             |                   | r                                           |                     |                     |            |                          |
+| `unit.outdoorArea`                    |             |                   | r                                           |                     |                     |            |                          |
+| `unit.storage`                        |             |                   | r                                           |                     |                     |            |                          |
+| `unit.unitType`                       |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.unitsInComplex`                 |             |                   | r                                           |                     |                     |            |                          |
+| `valuation.adoptedValue`              | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.approaches`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.crossCheckApproach`        | r           | r                 | r                                           | **R**               | **R**               | **R**      | r                        |
+| `valuation.highestAndBestUse`         | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.marketability`             | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.primaryApproach`           | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.reconciliation`            | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.riskCommentary`            | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 
-### Capital gains tax / retrospective (`CGT_RETROSPECTIVE`)
+### Capital gains tax (CGT) (`CGT`)
 
-| Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
-| ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `cgt.chronology`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `cgt.contemporaneousEvidence`         | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `cgt.informationCutOffStatement`      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `cgt.instructingAdviser`              | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `cgt.sourceArchive`                   | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `cgt.taxEvent`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
-| `dates.retrospectiveDataCutOff`       | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `evidence.rentals`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `evidence.sales`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
-| `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
-| `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.cranes`                 |             |             |                     |                     | r          |                          |
-| `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
-| `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
-| `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
-| `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
-| `improvements.floorAreas`             |             |             | **R**               | **R**               |            |                          |
-| `improvements.functionalObsolescence` |             |             |                     |                     | **R**      |                          |
-| `improvements.grade`                  |             |             | r                   |                     |            |                          |
-| `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
-| `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
-| `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
-| `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
-| `improvements.parking`                |             | **R**       | **R**               | **R**               |            |                          |
-| `improvements.power`                  |             |             |                     |                     | **R**      |                          |
-| `improvements.renovations`            |             | r           |                     |                     |            |                          |
-| `improvements.services`               |             |             | **R**               | **R**               |            |                          |
-| `improvements.siteCoverage`           |             |             |                     |                     | **R**      |                          |
-| `improvements.use`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `improvements.warehouseArea`          |             |             |                     |                     | **R**      |                          |
-| `improvements.yearBuilt`              |             | **R**       | r                   | r                   |            |                          |
-| `income.capRate`                      |             |             | **R**               | **R**               | **R**      |                          |
-| `income.discountRate`                 |             |             | r                   | r                   |            |                          |
-| `income.marketIncome`                 |             |             | **R**               | **R**               | **R**      |                          |
-| `income.terminalYield`                |             |             | r                   | r                   |            |                          |
-| `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
-| `land.access`                         | **R**       |             |                     |                     |            |                          |
-| `land.area`                           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.areaSource`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.developmentPotential`           | **R**       |             |                     |                     |            |                          |
-| `land.dimensions`                     | **R**       |             |                     |                     |            |                          |
-| `land.easements`                      | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.environmental`                  | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.frontage`                       | **R**       |             |                     |                     |            |                          |
-| `land.services`                       | **R**       |             |                     |                     |            |                          |
-| `land.shape`                          | **R**       |             |                     |                     |            |                          |
-| `land.topography`                     | **R**       |             |                     |                     |            |                          |
-| `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
-| `market.local`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `market.state`                        | r           | r           | r                   | r                   | r          | r                        |
-| `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
-| `planning.overlays`                   | **R**       | r           | r                   | r                   | r          | r                        |
-| `planning.permissibleUses`            | r           |             |                     |                     |            |                          |
-| `planning.prohibitedUses`             | r           |             |                     |                     |            |                          |
-| `planning.reportDocument`             | r           | r           | r                   | r                   | r          | r                        |
-| `planning.source`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.useCompliance`              |             |             |                     |                     | **R**      |                          |
-| `planning.zone`                       | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `retail.centreMetrics`                |             |             |                     | r                   |            |                          |
-| `retail.footfall`                     |             |             |                     | r                   |            |                          |
-| `retail.frontage`                     |             |             |                     | r                   |            |                          |
-| `retail.tradeArea`                    |             |             |                     | r                   |            |                          |
-| `specialised.allocationMethod`        |             |             |                     |                     |            | **R**                    |
-| `specialised.componentSchedule`       |             |             |                     |                     |            | **R**                    |
-| `specialised.goingConcernBoundary`    |             |             |                     |                     |            | **R**                    |
-| `specialised.licences`                |             |             |                     |                     |            | **R**                    |
-| `specialised.specialistReview`        |             |             |                     |                     |            | **R**                    |
-| `tenancy.incentives`                  |             |             | **R**               | **R**               |            |                          |
-| `tenancy.occupancyRate`               |             |             | **R**               | **R**               |            |                          |
-| `tenancy.outgoings`                   |             |             | **R**               | **R**               |            |                          |
-| `tenancy.passingIncome`               |             |             | **R**               | **R**               |            |                          |
-| `tenancy.schedule`                    |             |             | **R**               | **R**               | r          |                          |
-| `tenancy.wale`                        |             |             | **R**               | **R**               | r          |                          |
-| `valuation.adoptedValue`              | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.approaches`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.crossCheckApproach`        |             |             | **R**               | **R**               | **R**      |                          |
-| `valuation.highestAndBestUse`         | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.primaryApproach`           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.reconciliation`            | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| Field                                 | Vacant land | Residential house | Unit, apartment or townhouse (incl. strata) | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
+| ------------------------------------- | ----------- | ----------------- | ------------------------------------------- | ------------------- | ------------------- | ---------- | ------------------------ |
+| `assumptions.general`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `cgt.taxEvent`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `evidence.rentals`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `evidence.sales`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.accommodation`          |             | **R**             | **R**                                       |                     |                     |            |                          |
+| `improvements.areaSchedule`           |             |                   |                                             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.clearance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.condition`              |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.construction`           |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.cranes`                 |             |                   |                                             |                     |                     | r          |                          |
+| `improvements.dwellingType`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.fireServices`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.fitout`                 |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.fixturesFinishes`       |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.floorAreas`             |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.functionalObsolescence` |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.grade`                  |             |                   |                                             | r                   |                     |            |                          |
+| `improvements.hardstand`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.lettableArea`           |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.loading`                |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.measurementBasis`       |             |                   |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.officeArea`             |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.outdoorImprovements`    |             | r                 |                                             |                     |                     |            |                          |
+| `improvements.parking`                |             | **R**             | **R**                                       | **R**               | **R**               |            |                          |
+| `improvements.power`                  |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.renovations`            |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.services`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.siteCoverage`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.use`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `improvements.warehouseArea`          |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.yearBuilt`              |             | **R**             | **R**                                       | r                   | r                   |            |                          |
+| `income.capRate`                      |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `income.discountRate`                 |             |                   |                                             | r                   | r                   |            |                          |
+| `income.marketIncome`                 |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `income.terminalYield`                |             |                   |                                             | r                   | r                   |            |                          |
+| `instruction.dueDate`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.ownership`               | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.reviewer`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.access`                         | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.area`                           | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `land.areaSource`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `land.developmentPotential`           | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.dimensions`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.easements`                      | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `land.environmental`                  | **R**       | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.frontage`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.services`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.shape`                          | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.topography`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.local`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.national`                     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.state`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `planning.permissibleUses`            | r           |                   |                                             |                     |                     |            |                          |
+| `planning.prohibitedUses`             | r           |                   |                                             |                     |                     |            |                          |
+| `planning.reportDocument`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.source`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `planning.useCompliance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `planning.zone`                       | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `retail.centreMetrics`                |             |                   |                                             |                     | r                   |            |                          |
+| `retail.footfall`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.frontage`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.tradeArea`                    |             |                   |                                             |                     | r                   |            |                          |
+| `specialised.allocationMethod`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.componentSchedule`       |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.goingConcernBoundary`    |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.licences`                |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.specialistReview`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `strata.titleType`                    |             |                   | **R**                                       | r                   | r                   | r          |                          |
+| `tenancy.incentives`                  |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.occupancyRate`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.outgoings`                   |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.passingIncome`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.schedule`                    |             |                   |                                             | **R**               | **R**               | r          |                          |
+| `tenancy.wale`                        |             |                   |                                             | **R**               | **R**               | r          |                          |
+| `unit.aspect`                         |             |                   | r                                           |                     |                     |            |                          |
+| `unit.buildingAmenities`              |             |                   | r                                           |                     |                     |            |                          |
+| `unit.internalArea`                   |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.internalAreaSource`             |             |                   | r                                           |                     |                     |            |                          |
+| `unit.level`                          |             |                   | r                                           |                     |                     |            |                          |
+| `unit.outdoorArea`                    |             |                   | r                                           |                     |                     |            |                          |
+| `unit.storage`                        |             |                   | r                                           |                     |                     |            |                          |
+| `unit.unitType`                       |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.unitsInComplex`                 |             |                   | r                                           |                     |                     |            |                          |
+| `valuation.adoptedValue`              | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.approaches`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.crossCheckApproach`        |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `valuation.highestAndBestUse`         | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.primaryApproach`           | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.reconciliation`            | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 
 ### Family law (`FAMILY_LAW`)
 
-| Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
-| ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
-| `evidence.rentals`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `evidence.sales`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.conferenceOrJointStatement`       | r           | r           | r                   | r                   | r          | r                        |
-| `fl.court`                            | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.declaration`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.documentsReliedOn`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.expertCodeAcknowledged`           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.independenceDeclaration`          | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.instructionsReceived`             | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.ordersOrQuestions`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.parties`                          | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.proceedingNumber`                 | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.reasons`                          | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fl.singleExpert`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
-| `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
-| `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.cranes`                 |             |             |                     |                     | r          |                          |
-| `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
-| `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
-| `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
-| `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
-| `improvements.floorAreas`             |             |             | **R**               | **R**               |            |                          |
-| `improvements.functionalObsolescence` |             |             |                     |                     | **R**      |                          |
-| `improvements.grade`                  |             |             | r                   |                     |            |                          |
-| `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
-| `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
-| `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
-| `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
-| `improvements.parking`                |             | **R**       | **R**               | **R**               |            |                          |
-| `improvements.power`                  |             |             |                     |                     | **R**      |                          |
-| `improvements.renovations`            |             | r           |                     |                     |            |                          |
-| `improvements.services`               |             |             | **R**               | **R**               |            |                          |
-| `improvements.siteCoverage`           |             |             |                     |                     | **R**      |                          |
-| `improvements.use`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `improvements.warehouseArea`          |             |             |                     |                     | **R**      |                          |
-| `improvements.yearBuilt`              |             | **R**       | r                   | r                   |            |                          |
-| `income.capRate`                      |             |             | **R**               | **R**               | **R**      |                          |
-| `income.discountRate`                 |             |             | r                   | r                   |            |                          |
-| `income.marketIncome`                 |             |             | **R**               | **R**               | **R**      |                          |
-| `income.terminalYield`                |             |             | r                   | r                   |            |                          |
-| `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
-| `land.access`                         | **R**       |             |                     |                     |            |                          |
-| `land.area`                           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.areaSource`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.developmentPotential`           | **R**       |             |                     |                     |            |                          |
-| `land.dimensions`                     | **R**       |             |                     |                     |            |                          |
-| `land.easements`                      | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.environmental`                  | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.frontage`                       | **R**       |             |                     |                     |            |                          |
-| `land.services`                       | **R**       |             |                     |                     |            |                          |
-| `land.shape`                          | **R**       |             |                     |                     |            |                          |
-| `land.topography`                     | **R**       |             |                     |                     |            |                          |
-| `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
-| `market.local`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
-| `planning.overlays`                   | **R**       | r           | r                   | r                   | r          | r                        |
-| `planning.permissibleUses`            | r           |             |                     |                     |            |                          |
-| `planning.prohibitedUses`             | r           |             |                     |                     |            |                          |
-| `planning.reportDocument`             | r           | r           | r                   | r                   | r          | r                        |
-| `planning.source`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.useCompliance`              |             |             |                     |                     | **R**      |                          |
-| `planning.zone`                       | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `retail.centreMetrics`                |             |             |                     | r                   |            |                          |
-| `retail.footfall`                     |             |             |                     | r                   |            |                          |
-| `retail.frontage`                     |             |             |                     | r                   |            |                          |
-| `retail.tradeArea`                    |             |             |                     | r                   |            |                          |
-| `specialised.allocationMethod`        |             |             |                     |                     |            | **R**                    |
-| `specialised.componentSchedule`       |             |             |                     |                     |            | **R**                    |
-| `specialised.goingConcernBoundary`    |             |             |                     |                     |            | **R**                    |
-| `specialised.licences`                |             |             |                     |                     |            | **R**                    |
-| `specialised.specialistReview`        |             |             |                     |                     |            | **R**                    |
-| `tenancy.incentives`                  |             |             | **R**               | **R**               |            |                          |
-| `tenancy.occupancyRate`               |             |             | **R**               | **R**               |            |                          |
-| `tenancy.outgoings`                   |             |             | **R**               | **R**               |            |                          |
-| `tenancy.passingIncome`               |             |             | **R**               | **R**               |            |                          |
-| `tenancy.schedule`                    |             |             | **R**               | **R**               | r          |                          |
-| `tenancy.wale`                        |             |             | **R**               | **R**               | r          |                          |
-| `valuation.adoptedValue`              | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.approaches`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.crossCheckApproach`        |             |             | **R**               | **R**               | **R**      |                          |
-| `valuation.highestAndBestUse`         | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.primaryApproach`           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.reconciliation`            | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| Field                                 | Vacant land | Residential house | Unit, apartment or townhouse (incl. strata) | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
+| ------------------------------------- | ----------- | ----------------- | ------------------------------------------- | ------------------- | ------------------- | ---------- | ------------------------ |
+| `assumptions.general`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `evidence.rentals`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `evidence.sales`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.conferenceOrJointStatement`       | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `fl.court`                            | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.declaration`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.documentsReliedOn`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.expertCodeAcknowledged`           | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.independenceDeclaration`          | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.instructionsReceived`             | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.ordersOrQuestions`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.parties`                          | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.proceedingNumber`                 | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.reasons`                          | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fl.singleExpert`                     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.accommodation`          |             | **R**             | **R**                                       |                     |                     |            |                          |
+| `improvements.areaSchedule`           |             |                   |                                             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.clearance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.condition`              |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.construction`           |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.cranes`                 |             |                   |                                             |                     |                     | r          |                          |
+| `improvements.dwellingType`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.fireServices`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.fitout`                 |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.fixturesFinishes`       |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.floorAreas`             |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.functionalObsolescence` |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.grade`                  |             |                   |                                             | r                   |                     |            |                          |
+| `improvements.hardstand`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.lettableArea`           |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.loading`                |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.measurementBasis`       |             |                   |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.officeArea`             |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.outdoorImprovements`    |             | r                 |                                             |                     |                     |            |                          |
+| `improvements.parking`                |             | **R**             | **R**                                       | **R**               | **R**               |            |                          |
+| `improvements.power`                  |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.renovations`            |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.services`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.siteCoverage`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.use`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `improvements.warehouseArea`          |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.yearBuilt`              |             | **R**             | **R**                                       | r                   | r                   |            |                          |
+| `income.capRate`                      |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `income.discountRate`                 |             |                   |                                             | r                   | r                   |            |                          |
+| `income.marketIncome`                 |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `income.terminalYield`                |             |                   |                                             | r                   | r                   |            |                          |
+| `instruction.dueDate`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.ownership`               | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.reviewer`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.access`                         | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.area`                           | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `land.areaSource`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `land.developmentPotential`           | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.dimensions`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.easements`                      | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `land.environmental`                  | **R**       | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.frontage`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.services`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.shape`                          | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.topography`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.local`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.national`                     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.state`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `planning.permissibleUses`            | r           |                   |                                             |                     |                     |            |                          |
+| `planning.prohibitedUses`             | r           |                   |                                             |                     |                     |            |                          |
+| `planning.reportDocument`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.source`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `planning.useCompliance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `planning.zone`                       | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `retail.centreMetrics`                |             |                   |                                             |                     | r                   |            |                          |
+| `retail.footfall`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.frontage`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.tradeArea`                    |             |                   |                                             |                     | r                   |            |                          |
+| `specialised.allocationMethod`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.componentSchedule`       |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.goingConcernBoundary`    |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.licences`                |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.specialistReview`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `strata.titleType`                    |             |                   | **R**                                       | r                   | r                   | r          |                          |
+| `tenancy.incentives`                  |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.occupancyRate`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.outgoings`                   |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.passingIncome`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.schedule`                    |             |                   |                                             | **R**               | **R**               | r          |                          |
+| `tenancy.wale`                        |             |                   |                                             | **R**               | **R**               | r          |                          |
+| `unit.aspect`                         |             |                   | r                                           |                     |                     |            |                          |
+| `unit.buildingAmenities`              |             |                   | r                                           |                     |                     |            |                          |
+| `unit.internalArea`                   |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.internalAreaSource`             |             |                   | r                                           |                     |                     |            |                          |
+| `unit.level`                          |             |                   | r                                           |                     |                     |            |                          |
+| `unit.outdoorArea`                    |             |                   | r                                           |                     |                     |            |                          |
+| `unit.storage`                        |             |                   | r                                           |                     |                     |            |                          |
+| `unit.unitType`                       |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.unitsInComplex`                 |             |                   | r                                           |                     |                     |            |                          |
+| `valuation.adoptedValue`              | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.approaches`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.crossCheckApproach`        |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `valuation.highestAndBestUse`         | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.primaryApproach`           | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.reconciliation`            | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 
 ### Financial reporting (fair value) (`FINANCIAL_REPORTING`)
 
-| Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
-| ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
-| `evidence.rentals`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `evidence.sales`                      | r           | r           | r                   | r                   | r          | r                        |
-| `fr.accountingStandard`               | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.disclosureSchedule`               | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.fairValueHierarchyLevel`          | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.marketParticipantAssumptions`     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.principalMarket`                  | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.reportingDate`                    | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.reportingEntity`                  | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.sensitivityAnalysis`              | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.significantInputs`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.unitOfAccount`                    | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.valuationPremise`                 | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `fr.valuationTechnique`               | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
-| `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
-| `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.cranes`                 |             |             |                     |                     | r          |                          |
-| `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
-| `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
-| `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
-| `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
-| `improvements.floorAreas`             |             |             | **R**               | **R**               |            |                          |
-| `improvements.functionalObsolescence` |             |             |                     |                     | **R**      |                          |
-| `improvements.grade`                  |             |             | r                   |                     |            |                          |
-| `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
-| `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
-| `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
-| `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
-| `improvements.parking`                |             | **R**       | **R**               | **R**               |            |                          |
-| `improvements.power`                  |             |             |                     |                     | **R**      |                          |
-| `improvements.renovations`            |             | r           |                     |                     |            |                          |
-| `improvements.services`               |             |             | **R**               | **R**               |            |                          |
-| `improvements.siteCoverage`           |             |             |                     |                     | **R**      |                          |
-| `improvements.use`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `improvements.warehouseArea`          |             |             |                     |                     | **R**      |                          |
-| `improvements.yearBuilt`              |             | **R**       | r                   | r                   |            |                          |
-| `income.capRate`                      |             |             | **R**               | **R**               | **R**      |                          |
-| `income.discountRate`                 |             |             | r                   | r                   |            |                          |
-| `income.marketIncome`                 |             |             | **R**               | **R**               | **R**      |                          |
-| `income.terminalYield`                |             |             | r                   | r                   |            |                          |
-| `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
-| `land.access`                         | **R**       |             |                     |                     |            |                          |
-| `land.area`                           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.areaSource`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.developmentPotential`           | **R**       |             |                     |                     |            |                          |
-| `land.dimensions`                     | **R**       |             |                     |                     |            |                          |
-| `land.easements`                      | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.environmental`                  | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.frontage`                       | **R**       |             |                     |                     |            |                          |
-| `land.services`                       | **R**       |             |                     |                     |            |                          |
-| `land.shape`                          | **R**       |             |                     |                     |            |                          |
-| `land.topography`                     | **R**       |             |                     |                     |            |                          |
-| `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
-| `market.local`                        | r           | r           | r                   | r                   | r          | r                        |
-| `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
-| `planning.overlays`                   | **R**       | r           | r                   | r                   | r          | r                        |
-| `planning.permissibleUses`            | r           |             |                     |                     |            |                          |
-| `planning.prohibitedUses`             | r           |             |                     |                     |            |                          |
-| `planning.reportDocument`             | r           | r           | r                   | r                   | r          | r                        |
-| `planning.source`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.useCompliance`              |             |             |                     |                     | **R**      |                          |
-| `planning.zone`                       | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `retail.centreMetrics`                |             |             |                     | r                   |            |                          |
-| `retail.footfall`                     |             |             |                     | r                   |            |                          |
-| `retail.frontage`                     |             |             |                     | r                   |            |                          |
-| `retail.tradeArea`                    |             |             |                     | r                   |            |                          |
-| `specialised.allocationMethod`        |             |             |                     |                     |            | **R**                    |
-| `specialised.componentSchedule`       |             |             |                     |                     |            | **R**                    |
-| `specialised.goingConcernBoundary`    |             |             |                     |                     |            | **R**                    |
-| `specialised.licences`                |             |             |                     |                     |            | **R**                    |
-| `specialised.specialistReview`        |             |             |                     |                     |            | **R**                    |
-| `tenancy.incentives`                  |             |             | **R**               | **R**               |            |                          |
-| `tenancy.occupancyRate`               |             |             | **R**               | **R**               |            |                          |
-| `tenancy.outgoings`                   |             |             | **R**               | **R**               |            |                          |
-| `tenancy.passingIncome`               |             |             | **R**               | **R**               |            |                          |
-| `tenancy.schedule`                    |             |             | **R**               | **R**               | r          |                          |
-| `tenancy.wale`                        |             |             | **R**               | **R**               | r          |                          |
-| `valuation.adoptedValue`              | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.approaches`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.crossCheckApproach`        |             |             | **R**               | **R**               | **R**      |                          |
-| `valuation.highestAndBestUse`         | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.primaryApproach`           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.reconciliation`            | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| Field                                 | Vacant land | Residential house | Unit, apartment or townhouse (incl. strata) | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
+| ------------------------------------- | ----------- | ----------------- | ------------------------------------------- | ------------------- | ------------------- | ---------- | ------------------------ |
+| `assumptions.general`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `evidence.rentals`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `evidence.sales`                      | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `fr.accountingStandard`               | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.disclosureSchedule`               | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.fairValueHierarchyLevel`          | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.marketParticipantAssumptions`     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.principalMarket`                  | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.reportingDate`                    | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.reportingEntity`                  | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.sensitivityAnalysis`              | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.significantInputs`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.unitOfAccount`                    | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.valuationPremise`                 | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `fr.valuationTechnique`               | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.accommodation`          |             | **R**             | **R**                                       |                     |                     |            |                          |
+| `improvements.areaSchedule`           |             |                   |                                             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.clearance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.condition`              |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.construction`           |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.cranes`                 |             |                   |                                             |                     |                     | r          |                          |
+| `improvements.dwellingType`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.fireServices`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.fitout`                 |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.fixturesFinishes`       |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.floorAreas`             |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.functionalObsolescence` |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.grade`                  |             |                   |                                             | r                   |                     |            |                          |
+| `improvements.hardstand`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.lettableArea`           |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.loading`                |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.measurementBasis`       |             |                   |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.officeArea`             |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.outdoorImprovements`    |             | r                 |                                             |                     |                     |            |                          |
+| `improvements.parking`                |             | **R**             | **R**                                       | **R**               | **R**               |            |                          |
+| `improvements.power`                  |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.renovations`            |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.services`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.siteCoverage`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.use`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `improvements.warehouseArea`          |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.yearBuilt`              |             | **R**             | **R**                                       | r                   | r                   |            |                          |
+| `income.capRate`                      |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `income.discountRate`                 |             |                   |                                             | r                   | r                   |            |                          |
+| `income.marketIncome`                 |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `income.terminalYield`                |             |                   |                                             | r                   | r                   |            |                          |
+| `instruction.dueDate`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.ownership`               | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.reviewer`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.access`                         | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.area`                           | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `land.areaSource`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `land.developmentPotential`           | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.dimensions`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.easements`                      | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `land.environmental`                  | **R**       | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.frontage`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.services`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.shape`                          | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.topography`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.local`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.national`                     | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.state`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `planning.permissibleUses`            | r           |                   |                                             |                     |                     |            |                          |
+| `planning.prohibitedUses`             | r           |                   |                                             |                     |                     |            |                          |
+| `planning.reportDocument`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.source`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `planning.useCompliance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `planning.zone`                       | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `retail.centreMetrics`                |             |                   |                                             |                     | r                   |            |                          |
+| `retail.footfall`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.frontage`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.tradeArea`                    |             |                   |                                             |                     | r                   |            |                          |
+| `specialised.allocationMethod`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.componentSchedule`       |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.goingConcernBoundary`    |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.licences`                |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.specialistReview`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `strata.titleType`                    |             |                   | **R**                                       | r                   | r                   | r          |                          |
+| `tenancy.incentives`                  |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.occupancyRate`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.outgoings`                   |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.passingIncome`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `tenancy.schedule`                    |             |                   |                                             | **R**               | **R**               | r          |                          |
+| `tenancy.wale`                        |             |                   |                                             | **R**               | **R**               | r          |                          |
+| `unit.aspect`                         |             |                   | r                                           |                     |                     |            |                          |
+| `unit.buildingAmenities`              |             |                   | r                                           |                     |                     |            |                          |
+| `unit.internalArea`                   |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.internalAreaSource`             |             |                   | r                                           |                     |                     |            |                          |
+| `unit.level`                          |             |                   | r                                           |                     |                     |            |                          |
+| `unit.outdoorArea`                    |             |                   | r                                           |                     |                     |            |                          |
+| `unit.storage`                        |             |                   | r                                           |                     |                     |            |                          |
+| `unit.unitType`                       |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.unitsInComplex`                 |             |                   | r                                           |                     |                     |            |                          |
+| `valuation.adoptedValue`              | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.approaches`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.crossCheckApproach`        |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `valuation.highestAndBestUse`         | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.primaryApproach`           | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.reconciliation`            | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 
 ### Rental assessment (`RENTAL_ASSESSMENT`)
 
-| Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
-| ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
-| `evidence.rentals`                    | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
-| `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
-| `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.cranes`                 |             |             |                     |                     | r          |                          |
-| `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
-| `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
-| `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
-| `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
-| `improvements.floorAreas`             |             |             | **R**               | **R**               |            |                          |
-| `improvements.functionalObsolescence` |             |             |                     |                     | **R**      |                          |
-| `improvements.grade`                  |             |             | r                   |                     |            |                          |
-| `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
-| `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
-| `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
-| `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
-| `improvements.parking`                |             |             | **R**               | **R**               |            |                          |
-| `improvements.power`                  |             |             |                     |                     | **R**      |                          |
-| `improvements.renovations`            |             | r           |                     |                     |            |                          |
-| `improvements.services`               |             |             | **R**               | **R**               |            |                          |
-| `improvements.siteCoverage`           |             |             |                     |                     | **R**      |                          |
-| `improvements.use`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `improvements.warehouseArea`          |             |             |                     |                     | **R**      |                          |
-| `improvements.yearBuilt`              |             | **R**       | r                   | r                   |            |                          |
-| `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
-| `land.access`                         | **R**       |             |                     |                     |            |                          |
-| `land.area`                           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.areaSource`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `land.developmentPotential`           | **R**       |             |                     |                     |            |                          |
-| `land.dimensions`                     | **R**       |             |                     |                     |            |                          |
-| `land.easements`                      | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.environmental`                  | **R**       | r           | r                   | r                   | r          | r                        |
-| `land.frontage`                       | **R**       |             |                     |                     |            |                          |
-| `land.services`                       | **R**       |             |                     |                     |            |                          |
-| `land.shape`                          | **R**       |             |                     |                     |            |                          |
-| `land.topography`                     | **R**       |             |                     |                     |            |                          |
-| `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
-| `market.local`                        | r           | r           | r                   | r                   | r          | r                        |
-| `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
-| `planning.overlays`                   | **R**       | r           | r                   | r                   | r          | r                        |
-| `planning.permissibleUses`            | r           |             |                     |                     |            |                          |
-| `planning.prohibitedUses`             | r           |             |                     |                     |            |                          |
-| `planning.reportDocument`             | r           | r           | r                   | r                   | r          | r                        |
-| `planning.source`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `planning.useCompliance`              |             |             |                     |                     | **R**      |                          |
-| `planning.zone`                       | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.adoptedMarketRent`              | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.basis`                          | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.effectiveRent`                  | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.faceRent`                       | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.incentives`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.leaseArea`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.outgoings`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.permittedUse`                   | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.ratePerM2`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.reviewDate`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.reviewMechanism`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.termAndOptions`                 | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `rent.vacancy`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `retail.centreMetrics`                |             |             |                     | r                   |            |                          |
-| `retail.footfall`                     |             |             |                     | r                   |            |                          |
-| `retail.frontage`                     |             |             |                     | r                   |            |                          |
-| `retail.tradeArea`                    |             |             |                     | r                   |            |                          |
-| `specialised.allocationMethod`        |             |             |                     |                     |            | **R**                    |
-| `specialised.componentSchedule`       |             |             |                     |                     |            | **R**                    |
-| `specialised.goingConcernBoundary`    |             |             |                     |                     |            | **R**                    |
-| `specialised.licences`                |             |             |                     |                     |            | **R**                    |
-| `specialised.specialistReview`        |             |             |                     |                     |            | **R**                    |
+| Field                                 | Vacant land | Residential house | Unit, apartment or townhouse (incl. strata) | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
+| ------------------------------------- | ----------- | ----------------- | ------------------------------------------- | ------------------- | ------------------- | ---------- | ------------------------ |
+| `assumptions.general`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `evidence.rentals`                    | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.accommodation`          |             | **R**             | **R**                                       |                     |                     |            |                          |
+| `improvements.areaSchedule`           |             |                   |                                             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.clearance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.condition`              |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.construction`           |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.cranes`                 |             |                   |                                             |                     |                     | r          |                          |
+| `improvements.dwellingType`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.fireServices`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.fitout`                 |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.fixturesFinishes`       |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.floorAreas`             |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.functionalObsolescence` |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.grade`                  |             |                   |                                             | r                   |                     |            |                          |
+| `improvements.hardstand`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.lettableArea`           |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.loading`                |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.measurementBasis`       |             |                   |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.officeArea`             |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.outdoorImprovements`    |             | r                 |                                             |                     |                     |            |                          |
+| `improvements.parking`                |             |                   | **R**                                       | **R**               | **R**               |            |                          |
+| `improvements.power`                  |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.renovations`            |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.services`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.siteCoverage`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.use`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `improvements.warehouseArea`          |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.yearBuilt`              |             | **R**             | **R**                                       | r                   | r                   |            |                          |
+| `instruction.dueDate`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.ownership`               | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.reviewer`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.access`                         | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.area`                           | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `land.areaSource`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `land.developmentPotential`           | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.dimensions`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.easements`                      | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `land.environmental`                  | **R**       | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.frontage`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.services`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.shape`                          | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.topography`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.local`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.national`                     | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.state`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
+| `planning.permissibleUses`            | r           |                   |                                             |                     |                     |            |                          |
+| `planning.prohibitedUses`             | r           |                   |                                             |                     |                     |            |                          |
+| `planning.reportDocument`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.source`                     | **R**       | **R**             |                                             | **R**               | **R**               | **R**      | **R**                    |
+| `planning.useCompliance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `planning.zone`                       | **R**       | **R**             | r                                           | **R**               | **R**               | **R**      | **R**                    |
+| `rent.adoptedMarketRent`              | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.basis`                          | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.effectiveRent`                  | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.faceRent`                       | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.incentives`                     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.leaseArea`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.outgoings`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.permittedUse`                   | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.ratePerM2`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.reviewDate`                     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.reviewMechanism`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.termAndOptions`                 | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `rent.vacancy`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `retail.centreMetrics`                |             |                   |                                             |                     | r                   |            |                          |
+| `retail.footfall`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.frontage`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.tradeArea`                    |             |                   |                                             |                     | r                   |            |                          |
+| `specialised.allocationMethod`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.componentSchedule`       |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.goingConcernBoundary`    |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.licences`                |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.specialistReview`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `strata.titleType`                    |             |                   | **R**                                       | r                   | r                   | r          |                          |
+| `unit.aspect`                         |             |                   | r                                           |                     |                     |            |                          |
+| `unit.buildingAmenities`              |             |                   | r                                           |                     |                     |            |                          |
+| `unit.internalArea`                   |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.internalAreaSource`             |             |                   | r                                           |                     |                     |            |                          |
+| `unit.level`                          |             |                   | r                                           |                     |                     |            |                          |
+| `unit.outdoorArea`                    |             |                   | r                                           |                     |                     |            |                          |
+| `unit.storage`                        |             |                   | r                                           |                     |                     |            |                          |
+| `unit.unitType`                       |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.unitsInComplex`                 |             |                   | r                                           |                     |                     |            |                          |
 
 ### Insurance / replacement cost (`INSURANCE_REPLACEMENT`)
 
-| Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
-| ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
-| `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
-| `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
-| `improvements.cranes`                 |             |             |                     |                     | r          |                          |
-| `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
-| `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
-| `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
-| `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
-| `improvements.floorAreas`             |             |             | **R**               | **R**               |            |                          |
-| `improvements.functionalObsolescence` |             |             |                     |                     | **R**      |                          |
-| `improvements.grade`                  |             |             | r                   |                     |            |                          |
-| `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
-| `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
-| `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
-| `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
-| `improvements.parking`                |             |             | **R**               | **R**               |            |                          |
-| `improvements.power`                  |             |             |                     |                     | **R**      |                          |
-| `improvements.renovations`            |             | r           |                     |                     |            |                          |
-| `improvements.services`               |             |             | **R**               | **R**               |            |                          |
-| `improvements.siteCoverage`           |             |             |                     |                     | **R**      |                          |
-| `improvements.use`                    |             |             | **R**               | **R**               | **R**      |                          |
-| `improvements.warehouseArea`          |             |             |                     |                     | **R**      |                          |
-| `improvements.yearBuilt`              |             | **R**       | r                   | r                   |            |                          |
-| `ins.basis`                           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.codeUpgradeAllowance`            | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.constructionType`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.costDataSource`                  | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.demolitionDebris`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.escalation`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.exclusions`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.gstTreatment`                    | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.leadTimeMonths`                  | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.locationFactor`                  | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.professionalFees`                | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.quality`                         | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.services`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `ins.sumInsured`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
-| `land.access`                         | **R**       |             |                     |                     |            |                          |
-| `land.area`                           | **R**       |             |                     |                     |            |                          |
-| `land.areaSource`                     | **R**       |             |                     |                     |            |                          |
-| `land.developmentPotential`           | **R**       |             |                     |                     |            |                          |
-| `land.dimensions`                     | **R**       |             |                     |                     |            |                          |
-| `land.easements`                      | **R**       |             |                     |                     |            |                          |
-| `land.environmental`                  | **R**       |             |                     |                     |            |                          |
-| `land.frontage`                       | **R**       |             |                     |                     |            |                          |
-| `land.services`                       | **R**       |             |                     |                     |            |                          |
-| `land.shape`                          | **R**       |             |                     |                     |            |                          |
-| `land.topography`                     | **R**       |             |                     |                     |            |                          |
-| `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
-| `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
-| `planning.overlays`                   | **R**       |             |                     |                     |            |                          |
-| `planning.permissibleUses`            | r           |             |                     |                     |            |                          |
-| `planning.prohibitedUses`             | r           |             |                     |                     |            |                          |
-| `planning.reportDocument`             | r           | r           | r                   | r                   | r          | r                        |
-| `planning.source`                     | **R**       |             |                     |                     |            |                          |
-| `planning.useCompliance`              |             |             |                     |                     | **R**      |                          |
-| `planning.zone`                       | **R**       |             |                     |                     |            |                          |
-| `retail.centreMetrics`                |             |             |                     | r                   |            |                          |
-| `retail.footfall`                     |             |             |                     | r                   |            |                          |
-| `retail.frontage`                     |             |             |                     | r                   |            |                          |
-| `retail.tradeArea`                    |             |             |                     | r                   |            |                          |
-| `specialised.allocationMethod`        |             |             |                     |                     |            | **R**                    |
-| `specialised.componentSchedule`       |             |             |                     |                     |            | **R**                    |
-| `specialised.goingConcernBoundary`    |             |             |                     |                     |            | **R**                    |
-| `specialised.licences`                |             |             |                     |                     |            | **R**                    |
-| `specialised.specialistReview`        |             |             |                     |                     |            | **R**                    |
+| Field                                 | Vacant land | Residential house | Unit, apartment or townhouse (incl. strata) | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
+| ------------------------------------- | ----------- | ----------------- | ------------------------------------------- | ------------------- | ------------------- | ---------- | ------------------------ |
+| `assumptions.general`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `improvements.accommodation`          |             | **R**             | **R**                                       |                     |                     |            |                          |
+| `improvements.areaSchedule`           | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.clearance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.condition`              |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.construction`           |             | **R**             | **R**                                       | **R**               | **R**               | **R**      |                          |
+| `improvements.cranes`                 |             |                   |                                             |                     |                     | r          |                          |
+| `improvements.dwellingType`           |             | **R**             |                                             |                     |                     |            |                          |
+| `improvements.fireServices`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.fitout`                 |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.fixturesFinishes`       |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.floorAreas`             |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.functionalObsolescence` |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.grade`                  |             |                   |                                             | r                   |                     |            |                          |
+| `improvements.hardstand`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.lettableArea`           |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.loading`                |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.measurementBasis`       | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.officeArea`             |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.outdoorImprovements`    |             | r                 |                                             |                     |                     |            |                          |
+| `improvements.parking`                |             |                   | **R**                                       | **R**               | **R**               |            |                          |
+| `improvements.power`                  |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.renovations`            |             | r                 | r                                           |                     |                     |            |                          |
+| `improvements.services`               |             |                   |                                             | **R**               | **R**               |            |                          |
+| `improvements.siteCoverage`           |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.use`                    |             |                   |                                             | **R**               | **R**               | **R**      |                          |
+| `improvements.warehouseArea`          |             |                   |                                             |                     |                     | **R**      |                          |
+| `improvements.yearBuilt`              |             | **R**             | **R**                                       | r                   | r                   |            |                          |
+| `ins.basis`                           | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.codeUpgradeAllowance`            | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.constructionType`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.costDataSource`                  | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.demolitionDebris`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.escalation`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.exclusions`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.gstTreatment`                    | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.leadTimeMonths`                  | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.locationFactor`                  | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.professionalFees`                | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.quality`                         | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.services`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `ins.sumInsured`                      | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `instruction.dueDate`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.ownership`               | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `instruction.reviewer`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `land.access`                         | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.area`                           | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.areaSource`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.developmentPotential`           | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.dimensions`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.easements`                      | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.environmental`                  | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.frontage`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.services`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.shape`                          | **R**       |                   |                                             |                     |                     |            |                          |
+| `land.topography`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.overlays`                   | **R**       |                   |                                             |                     |                     |            |                          |
+| `planning.permissibleUses`            | r           |                   |                                             |                     |                     |            |                          |
+| `planning.prohibitedUses`             | r           |                   |                                             |                     |                     |            |                          |
+| `planning.reportDocument`             | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `planning.source`                     | **R**       |                   |                                             |                     |                     |            |                          |
+| `planning.useCompliance`              |             |                   |                                             |                     |                     | **R**      |                          |
+| `planning.zone`                       | **R**       |                   |                                             |                     |                     |            |                          |
+| `retail.centreMetrics`                |             |                   |                                             |                     | r                   |            |                          |
+| `retail.footfall`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.frontage`                     |             |                   |                                             |                     | r                   |            |                          |
+| `retail.tradeArea`                    |             |                   |                                             |                     | r                   |            |                          |
+| `specialised.allocationMethod`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.componentSchedule`       |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.goingConcernBoundary`    |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.licences`                |             |                   |                                             |                     |                     |            | **R**                    |
+| `specialised.specialistReview`        |             |                   |                                             |                     |                     |            | **R**                    |
+| `strata.titleType`                    |             |                   | **R**                                       | r                   | r                   | r          |                          |
+| `unit.aspect`                         |             |                   | r                                           |                     |                     |            |                          |
+| `unit.buildingAmenities`              |             |                   | r                                           |                     |                     |            |                          |
+| `unit.internalArea`                   |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.internalAreaSource`             |             |                   | r                                           |                     |                     |            |                          |
+| `unit.level`                          |             |                   | r                                           |                     |                     |            |                          |
+| `unit.outdoorArea`                    |             |                   | r                                           |                     |                     |            |                          |
+| `unit.storage`                        |             |                   | r                                           |                     |                     |            |                          |
+| `unit.unitType`                       |             |                   | **R**                                       |                     |                     |            |                          |
+| `unit.unitsInComplex`                 |             |                   | r                                           |                     |                     |            |                          |
 
 ## 3. Inspection-scope deltas (market value, residential, VIC)
 
@@ -578,8 +645,6 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 
 ## 4. Fields required for every job
 
-- `assumptions.general`
-- `assumptions.limitations`
 - `dates.instruction`
 - `dates.valuation`
 - `desktop.confidenceStatement`
@@ -588,17 +653,13 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 - `desktop.informationGaps`
 - `instruction.basisOfValue`
 - `instruction.clientEntity`
-- `instruction.confidentiality`
 - `instruction.conflictCheck`
 - `instruction.engagementDocuments`
-- `instruction.instructingParty`
 - `instruction.intendedUse`
 - `instruction.intendedUsers`
 - `instruction.interestValued`
-- `instruction.reliance`
 - `instruction.responsibleValuer`
 - `location.address`
-- `location.lga`
 - `location.titleReference`
 - `scope.escalationDecision`
 

@@ -26,6 +26,8 @@ export type TemplateBlock =
     }
   | { readonly type: 'sales_table' }
   | { readonly type: 'rental_table' }
+  /** National, state and local commentary under their own headings, each with its as-at date. */
+  | { readonly type: 'market_commentary' }
   | { readonly type: 'calculation_trace'; readonly formulaIds?: readonly string[] }
   | { readonly type: 'area_schedule' }
   | { readonly type: 'sketch' }

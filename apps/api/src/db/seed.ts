@@ -1,5 +1,21 @@
-import { AU_CORE_RULE_SET, DEFAULT_TEMPLATE, hashCanonical, type Role } from '@vp/domain';
+import {
+  AU_CORE_RULE_SET,
+  COMMENTARY_LIBRARY_SOURCE,
+  CORELOGIC_AVM_SOURCE,
+  CORELOGIC_SOURCE,
+  DEFAULT_TEMPLATE,
+  DEMO_RESEARCH_SOURCE,
+  PUBLIC_RELEASES_SOURCE,
+  SAMPLE_AVM_SOURCE,
+  SAMPLE_COMMENTARY_LIBRARY,
+  SAMPLE_PROPERTY_SOURCE,
+  hashCanonical,
+  type DataSource,
+  type Role,
+} from '@vp/domain';
 import type { Db } from './db.js';
+import { insertCommentaryModule } from '../repo/commentary.js';
+import { saveValuerProfile } from '../repo/profiles.js';
 
 export interface SeededOrg {
   readonly orgId: string;
@@ -9,7 +25,8 @@ export interface SeededOrg {
 
 /**
  * Bootstraps an organisation with the seed rule set and template (both **draft** — they must be
- * reviewed and approved by the standards owner before reports can be issued).
+ * reviewed and approved by the standards owner before reports can be issued) and registers the
+ * firm's market commentary library as a data source, so commentary taken from it names its source.
  */
 export async function seedOrganisation(
   db: Db,
@@ -50,6 +67,7 @@ export async function seedOrganisation(
         DEFAULT_TEMPLATE.authoredBy,
       ],
     );
+    await registerDataSource(tx, ids.orgId, COMMENTARY_LIBRARY_SOURCE);
   });
   return ids;
 }
@@ -106,6 +124,43 @@ export const DEMO = {
   },
 } as const;
 
+/**
+ * Signing profiles for the demo valuers. The API member numbers and the QLD registration / WA
+ * licence are placeholders (not real numbers), so demos can sign in every state.
+ */
+async function seedDemoValuerProfiles(db: Db): Promise<void> {
+  const at = '2026-01-01T00:00:00.000Z';
+  await saveValuerProfile(
+    db,
+    DEMO.orgId,
+    {
+      userId: DEMO.users.valuer,
+      fullName: 'Val Valuer',
+      credentials: ['AAPI', 'CPV'],
+      apiMemberNumber: '00000-DEMO',
+      registrations: [
+        { jurisdiction: 'QLD', number: 'QLD-DEMO-0001' },
+        { jurisdiction: 'WA', number: 'WA-DEMO-0001' },
+      ],
+      signature: { kind: 'typed', value: 'Val Valuer', updatedAt: at },
+    },
+    at,
+  );
+  await saveValuerProfile(
+    db,
+    DEMO.orgId,
+    {
+      userId: DEMO.users.valuer2,
+      fullName: 'Vic Valuer',
+      credentials: ['AAPI', 'CPV'],
+      apiMemberNumber: '00001-DEMO',
+      registrations: [],
+      signature: { kind: 'typed', value: 'Vic Valuer', updatedAt: at },
+    },
+    at,
+  );
+}
+
 export async function seedDemo(db: Db): Promise<typeof DEMO> {
   await seedOrganisation(db, DEMO, 'Example Valuers Pty Ltd', '00 000 000 001');
   const u = DEMO.users;
@@ -132,6 +187,7 @@ export async function seedDemo(db: Db): Promise<typeof DEMO> {
       ...(credentials ? { credentials } : {}),
     });
   }
+  await seedDemoValuerProfiles(db);
   await db.query('INSERT INTO client (id, org_id, name, abn) VALUES ($1, $2, $3, $4)', [
     DEMO.clientId,
     DEMO.orgId,
@@ -188,5 +244,44 @@ export async function seedDemo(db: Db): Promise<typeof DEMO> {
       }),
     ],
   );
+  // Property data sources: CoreLogic (used once keys are supplied) and the sample data used
+  // until then. Sample data and automated estimates are not reproducible in reports.
+  for (const source of [
+    CORELOGIC_SOURCE,
+    CORELOGIC_AVM_SOURCE,
+    SAMPLE_PROPERTY_SOURCE,
+    SAMPLE_AVM_SOURCE,
+  ])
+    await registerDataSource(db, DEMO.orgId, source);
+  // Demonstration market commentary (already approved) and the sources it cites.
+  for (const source of [DEMO_RESEARCH_SOURCE, PUBLIC_RELEASES_SOURCE])
+    await registerDataSource(db, DEMO.orgId, source);
+  await db.transaction(async (tx) => {
+    for (const [i, m] of SAMPLE_COMMENTARY_LIBRARY.entries())
+      await insertCommentaryModule(tx, DEMO.orgId, demoCommentaryId(i), m);
+  });
   return DEMO;
+}
+
+/** Fixed identifiers for the demo library paragraphs, in SAMPLE_COMMENTARY_LIBRARY order. */
+export const demoCommentaryId = (index: number): string =>
+  `00000000-0000-4000-8001-${String(index + 1).padStart(12, '0')}`;
+
+/** Registers a data source (with its licence terms) for an organisation. */
+export async function registerDataSource(db: Db, orgId: string, source: DataSource): Promise<void> {
+  await db.query(
+    `INSERT INTO data_source (id, org_id, name, provider, kind, jurisdictions, licence, freshness_days, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      source.id,
+      orgId,
+      source.name,
+      source.provider,
+      source.kind,
+      source.jurisdictions ?? [],
+      JSON.stringify(source.licence),
+      source.freshnessDays ?? null,
+      source.status,
+    ],
+  );
 }

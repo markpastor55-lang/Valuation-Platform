@@ -17,7 +17,7 @@ Permissions listed under "Key tasks" are indicative. The authoritative matrix is
 | Administrator      | `ADMINISTRATOR`   | Web                                            | Weekly; on demand              | Organisation configuration, users, data sources, retention, legal hold, audit |
 | Allocator          | `ALLOCATOR`       | Web; phone for notifications                   | Daily, continuous              | Intake and allocation of all jobs not in restricted portfolios                |
 | Valuer             | `VALUER`          | Phone and tablet in the field; web at the desk | Daily                          | Jobs where they are the responsible valuer, co-signatory or assigned          |
-| Field Inspector    | `FIELD_INSPECTOR` | Phone; tablet for sketching                    | Daily, in the field            | Assigned inspections only                                                     |
+| Field Inspector    | `FIELD_INSPECTOR` | Phone; tablet for sketching                    | Daily, in the field            | Assigned inspections only. Optional role (01 D12)                             |
 | QA Reviewer        | `QA_REVIEWER`     | Web (large or dual screen)                     | Daily, queue-driven            | Jobs in `submitted` / `in_review` / `returned` assigned to them               |
 | Finance            | `FINANCE`         | Web                                            | Daily / weekly                 | Invoices and the commercial fields of jobs                                    |
 | Client (read-only) | `CLIENT_READONLY` | Desktop or mobile browser                      | Occasional                     | Issued reports and invoices for their own client entities                     |
@@ -25,14 +25,14 @@ Permissions listed under "Key tasks" are indicative. The authoritative matrix is
 
 ### Job relationships used by permission checks
 
-| Relationship                | Set by                                             | Effect                                                                                                                             |
-| --------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Responsible valuer          | Allocator (`job.allocate`)                         | The only person who can `certification.sign` for the job. Excluded from `qa.approve` on the job unless an exception is authorised. |
-| Co-signatory                | Allocator, at the responsible valuer's request     | Signs their own co-signatory statement. Excluded from QA on the job (SoD-07, proposed).                                            |
-| Assigned inspector          | Allocator                                          | Field Inspector access to that job's inspection, photos and sketch.                                                                |
-| Assigned QA reviewer        | Allocator or QA queue pick-up                      | `qa.review` / `qa.approve` on that job.                                                                                            |
-| Version author              | System (creator of a template or rule-set version) | Excluded from `template.approve` / `ruleset.approve` for that version.                                                             |
-| Restricted-portfolio member | Administrator (`user.manage`)                      | Required to see any job in a restricted portfolio, whatever the role.                                                              |
+| Relationship                | Set by                                             | Effect                                                                                                                              |
+| --------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Responsible valuer          | Allocator (`job.allocate`)                         | The only person who can `certification.sign` for the job. Excluded from `qa.approve` on the job unless an exception is authorised.  |
+| Co-signatory                | Allocator, at the responsible valuer's request     | Signs their own co-signatory statement. Excluded from QA on the job (SoD-07, proposed).                                             |
+| Assigned inspector          | Allocator                                          | Field Inspector access to that job's inspection, photos and sketch. Optional: in the default workflow the valuer inspects (01 D12). |
+| Assigned QA reviewer        | Allocator or QA queue pick-up                      | `qa.review` / `qa.approve` on that job.                                                                                             |
+| Version author              | System (creator of a template or rule-set version) | Excluded from `template.approve` / `ruleset.approve` for that version.                                                              |
+| Restricted-portfolio member | Administrator (`user.manage`)                      | Required to see any job in a restricted portfolio, whatever the role.                                                               |
 
 ## 2. Personas
 
@@ -97,25 +97,26 @@ Critical controls:
 
 | Attribute     | Detail                                                                                                                                                                                                                                                 |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Who           | API member, typically a Certified Practising Valuer (CPV), with registration where a jurisdiction requires it (01 A-15). Accountable for the opinion of value.                                                                                         |
+| Who           | API member, typically a Certified Practising Valuer (CPV), with registration where a jurisdiction requires it (01 A-15). Accountable for the opinion of value. In the default workflow the valuer also inspects (01 D12).                              |
 | Goals         | Produce a defensible, well-evidenced valuation efficiently. Reuse field data without re-keying. Know before QA that nothing blocking is missing. Keep professional judgement visible and attributed.                                                   |
 | Devices       | Phone for kerbside and quick capture; tablet for full inspections and sketching; web for analysis, certification and QA responses.                                                                                                                     |
 | Frequency     | Daily. Several residential inspections per day, or fewer, longer commercial jobs.                                                                                                                                                                      |
 | Pain points   | Double entry between field notes and report. Poor signal on site. Slow photo handling. Not knowing why a field became required after a selection change. Outlier warnings without context. QA findings arriving by email instead of against the field. |
 | Accessibility | One-handed phone operation. Outdoor-contrast mode. Dictation for notes. Dynamic type to 200 %. Numeric entry as an alternative to dragging on the sketch canvas.                                                                                       |
 
-| Key task                                                                    | Permission(s)                                                       | Screen      |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------- |
-| Declare conflicts and independence; accept the engagement                   | `engagement.accept`                                                 | W-03        |
-| Set or change purpose, property type, scope, jurisdiction, template version | `job.update`                                                        | M-03        |
-| Edit asset data; inspect; capture photos and documents; flag and redact     | `asset.edit`, `inspection.capture`, `photo.capture`, `photo.redact` | M-05 – M-08 |
-| Decide AI suggestions                                                       | `ai.decide`                                                         | M-09        |
-| Sketch, confirm calibration, approve the area schedule                      | `sketch.edit`, `measurement.approve`                                | M-10 – M-12 |
-| Enter sales and rental evidence; run and override calculations; reconcile   | `evidence.edit`, `calculation.run`, `calculation.override`          | W-04 – W-07 |
-| Acknowledge non-blocking validations with a reason                          | `validation.acknowledge`                                            | W-10        |
-| Sign the certification as responsible valuer (MFA step-up)                  | `certification.sign`                                                | W-11        |
-| Generate draft previews; respond to QA findings                             | `report.generate_draft`, `job.update`                               | W-13, W-14  |
-| Issue and send, where firm policy allows                                    | `report.issue`, `email.send`                                        | W-15        |
+| Key task                                                                                                             | Permission(s)                                                       | Screen      |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------- |
+| Declare conflicts and independence; accept the engagement                                                            | `engagement.accept`                                                 | W-03        |
+| Set or change purpose, property type, scope, jurisdiction, template version                                          | `job.update`                                                        | M-03        |
+| Edit asset data; inspect; capture photos and documents; flag and redact                                              | `asset.edit`, `inspection.capture`, `photo.capture`, `photo.redact` | M-05 – M-08 |
+| Decide AI suggestions                                                                                                | `ai.decide`                                                         | M-09        |
+| Sketch as working notes; where the report relies on a measured schedule, confirm calibration and approve it (01 D11) | `sketch.edit`, `measurement.approve`                                | M-10 – M-12 |
+| Enter sales and rental evidence; run and override calculations; reconcile                                            | `evidence.edit`, `calculation.run`, `calculation.override`          | W-04 – W-07 |
+| Use the firm's market commentary for the property type and location, then tailor it (01 D17)                         | `evidence.edit`                                                     | W-08        |
+| Acknowledge non-blocking validations with a reason                                                                   | `validation.acknowledge`                                            | W-10        |
+| Sign the certification as responsible valuer and send the job to QA (MFA step-up)                                    | `certification.sign`                                                | W-11        |
+| Generate draft previews; respond to QA findings                                                                      | `report.generate_draft`, `job.update`                               | W-13, W-14  |
+| Issue and send, where firm policy allows                                                                             | `report.issue`, `email.send`                                        | W-15        |
 
 Critical controls:
 
@@ -127,6 +128,10 @@ Critical controls:
 - Credentials and their expiry are shown on the certification; expired credentials block signing.
 
 ### P-04 Field Inspector (`FIELD_INSPECTOR`)
+
+Optional role. In the default workflow the responsible valuer inspects and values, and the QA
+reviewer is the only other person on the job (01 D12). This persona applies only where a firm uses
+separate inspectors.
 
 | Attribute     | Detail                                                                                                                                                |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -166,7 +171,7 @@ Critical controls:
 
 | Key task                                                   | Permission(s)                         | Screen     |
 | ---------------------------------------------------------- | ------------------------------------- | ---------- |
-| Pick up submitted jobs                                     | `qa.review`                           | W-12       |
+| Pick up jobs the valuer has signed and sent to QA          | `qa.review`                           | W-12       |
 | Work the checklist; raise findings with severity           | `qa.review`                           | W-13       |
 | Inspect calculation traces, evidence and job audit history | `job.read`, `audit.read` (job-scoped) | W-06, W-21 |
 | View unredacted photos where needed (logged)               | `photo.view_unredacted`               | M-08       |
@@ -228,23 +233,23 @@ Critical controls:
 
 ### P-08 Standards Owner (`STANDARDS_OWNER`)
 
-| Attribute     | Detail                                                                                                                                                                                             |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Who           | Nominated senior CPV (01 D7, `API_STANDARDS`) responsible for mapping firm templates to current API Rules, Code of Ethics, adopted IVS and Guidance Papers, as interpreted by qualified reviewers. |
-| Goals         | Keep templates, clauses, rule sets and QA checklists current. Roll out changes with effective dates without disrupting jobs in progress. Record specialist sign-offs.                              |
-| Devices       | Web.                                                                                                                                                                                               |
-| Frequency     | Monthly; on demand when standards or client requirements change.                                                                                                                                   |
-| Pain points   | The impact of a change on jobs in progress is unclear. Versions are hard to compare. Hard to track which specialist signed off what. Effective dates overlap.                                      |
-| Accessibility | Version diffs are textual (added/removed markers), not colour-only. The rule editor is fully keyboard-operable.                                                                                    |
+| Attribute     | Detail                                                                                                                                                                                               |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Who           | Nominated senior CPV (01 D7, `API_STANDARDS`) responsible for mapping firm templates to current API Rules, Code of Ethics, adopted IVS and Guidance Papers, as interpreted by qualified reviewers.   |
+| Goals         | Keep templates, clauses, rule sets, QA checklists and the market commentary library current. Roll out changes with effective dates without disrupting jobs in progress. Record specialist sign-offs. |
+| Devices       | Web.                                                                                                                                                                                                 |
+| Frequency     | Monthly; on demand when standards or client requirements change.                                                                                                                                     |
+| Pain points   | The impact of a change on jobs in progress is unclear. Versions are hard to compare. Hard to track which specialist signed off what. Effective dates overlap.                                        |
+| Accessibility | Version diffs are textual (added/removed markers), not colour-only. The rule editor is fully keyboard-operable.                                                                                      |
 
-| Key task                                                         | Permission(s)                         | Screen     |
-| ---------------------------------------------------------------- | ------------------------------------- | ---------- |
-| Author template, clause and commentary-library versions          | `template.edit`                       | W-18, W-08 |
-| Author rule-set versions (requirements, validations, checklists) | `ruleset.edit`                        | W-18       |
-| Approve versions authored by someone else                        | `template.approve`, `ruleset.approve` | W-18       |
-| Record specialist review references against `[REVIEW: …]` items  | `template.edit`, `ruleset.edit`       | W-18       |
-| Authorise a per-job QA self-approval exception                   | `qa.self_approval_exception`          | W-13       |
-| Read configuration audit history                                 | `audit.read`                          | W-21       |
+| Key task                                                                                  | Permission(s)                         | Screen     |
+| ----------------------------------------------------------------------------------------- | ------------------------------------- | ---------- |
+| Author template, clause and commentary-library versions                                   | `template.edit`                       | W-18, W-08 |
+| Author rule-set versions (requirements, validations, checklists)                          | `ruleset.edit`                        | W-18       |
+| Approve template, rule-set and commentary-library versions authored by someone else (MFA) | `template.approve`, `ruleset.approve` | W-18       |
+| Record specialist review references against `[REVIEW: …]` items                           | `template.edit`, `ruleset.edit`       | W-18       |
+| Authorise a per-job QA self-approval exception                                            | `qa.self_approval_exception`          | W-13       |
+| Read configuration audit history                                                          | `audit.read`                          | W-21       |
 
 Critical controls:
 
@@ -260,15 +265,15 @@ Rules SoD-01 to SoD-05 restate 00 §5. SoD-06 is derived from G2. SoD-07 is prop
 confirmation. Every rule is enforced in `@vp/domain` (shared by the API and the clients), and the
 API rejects violations with `auth.denied`, even if a client presents the action.
 
-| ID     | Rule                                                                                                                                                                                                  | Rationale                                                                                                               | Exception path                                                                                                                                        | Audit events                                                                                       |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| SoD-01 | `certification.sign` only by the job's responsible valuer, as a human actor, with MFA step-up.                                                                                                        | Brief §7: software or AI never signs for the valuer. Professional accountability rests with one identified person (G2). | None. Co-signatories sign their own statements, never on behalf of the responsible valuer.                                                            | `certification.signed`, `auth.denied`                                                              |
-| SoD-02 | `qa.approve` never by the responsible valuer, unless a documented self-approval exception exists, authorised by a different user holding `qa.self_approval_exception`.                                | Brief §7 step 8: an independent reviewer; self-approval prevented unless an authorised exception is documented.         | Per job, written reason mandatory, step-up MFA for the authoriser, exception printed in the issued report's audit metadata `[REVIEW: API_STANDARDS]`. | `qa.self_approval_exception_authorised`, `qa.approved`, `auth.denied`                              |
-| SoD-03 | `template.approve` / `ruleset.approve` never by the author of that version.                                                                                                                           | G4: approval is separate from authorship. Prevents unreviewed wording reaching reports.                                 | None. A firm needs at least two standards owners (01 Q-21).                                                                                           | `template.version_created`, `template.version_approved`, `ruleset.version_approved`, `auth.denied` |
-| SoD-04 | `CLIENT_READONLY` sees only issued reports and invoices for their own client entities.                                                                                                                | Confidentiality, intended-use and reliance controls. Drafts are not opinions.                                           | None.                                                                                                                                                 | `auth.denied`                                                                                      |
-| SoD-05 | Restricted portfolios require explicit membership even for organisation-wide roles.                                                                                                                   | Brief §8: portfolio-level segregation, e.g. for sensitive clients or related-party work.                                | An Administrator may grant membership, including to themselves. This is audited and visible in W-21.                                                  | `user.membership_changed` (proposed, spec 05 §4), `auth.denied`                                    |
-| SoD-06 | AI actors hold no permission that signs, approves, accepts or issues (`certification.sign`, `qa.approve`, `ai.decide`, `measurement.approve`, `report.issue`, `template.approve`, `ruleset.approve`). | Brief §1, §5, §11: AI may extract, suggest and flag only.                                                               | None.                                                                                                                                                 | `ai.suggestion_created` (AI actor), `auth.denied`                                                  |
-| SoD-07 | (Proposed) A co-signatory on a job cannot be its QA reviewer, and the authoriser of a self-approval exception cannot be a co-signatory.                                                               | Independence extends to everyone who signs.                                                                             | None once confirmed `[REVIEW: API_STANDARDS]`.                                                                                                        | `auth.denied`                                                                                      |
+| ID     | Rule                                                                                                                                                                                                  | Rationale                                                                                                               | Exception path                                                                                                                                        | Audit events                                                                                                                                                    |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SoD-01 | `certification.sign` only by the job's responsible valuer, as a human actor, with MFA step-up.                                                                                                        | Brief §7: software or AI never signs for the valuer. Professional accountability rests with one identified person (G2). | None. Co-signatories sign their own statements, never on behalf of the responsible valuer.                                                            | `certification.signed`, `auth.denied`                                                                                                                           |
+| SoD-02 | `qa.approve` never by the responsible valuer, unless a documented self-approval exception exists, authorised by a different user holding `qa.self_approval_exception`.                                | Brief §7 step 8: an independent reviewer; self-approval prevented unless an authorised exception is documented.         | Per job, written reason mandatory, step-up MFA for the authoriser, exception printed in the issued report's audit metadata `[REVIEW: API_STANDARDS]`. | `qa.self_approval_exception_authorised`, `qa.approved`, `auth.denied`                                                                                           |
+| SoD-03 | `template.approve` / `ruleset.approve` never by the author of that version.                                                                                                                           | G4: approval is separate from authorship. Prevents unreviewed wording reaching reports.                                 | None. A firm needs at least two standards owners (01 Q-21).                                                                                           | `template.version_created`, `template.version_approved`, `ruleset.version_approved`, `commentary.version_created`, `commentary.version_approved`, `auth.denied` |
+| SoD-04 | `CLIENT_READONLY` sees only issued reports and invoices for their own client entities.                                                                                                                | Confidentiality, intended-use and reliance controls. Drafts are not opinions.                                           | None.                                                                                                                                                 | `auth.denied`                                                                                                                                                   |
+| SoD-05 | Restricted portfolios require explicit membership even for organisation-wide roles.                                                                                                                   | Brief §8: portfolio-level segregation, e.g. for sensitive clients or related-party work.                                | An Administrator may grant membership, including to themselves. This is audited and visible in W-21.                                                  | `user.membership_changed` (proposed, spec 05 §4), `auth.denied`                                                                                                 |
+| SoD-06 | AI actors hold no permission that signs, approves, accepts or issues (`certification.sign`, `qa.approve`, `ai.decide`, `measurement.approve`, `report.issue`, `template.approve`, `ruleset.approve`). | Brief §1, §5, §11: AI may extract, suggest and flag only.                                                               | None.                                                                                                                                                 | `ai.suggestion_created` (AI actor), `auth.denied`                                                                                                               |
+| SoD-07 | (Proposed) A co-signatory on a job cannot be its QA reviewer, and the authoriser of a self-approval exception cannot be a co-signatory.                                                               | Independence extends to everyone who signs.                                                                             | None once confirmed `[REVIEW: API_STANDARDS]`.                                                                                                        | `auth.denied`                                                                                                                                                   |
 
 ### Small-practice configurations
 
