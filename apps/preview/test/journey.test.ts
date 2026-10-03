@@ -1,5 +1,6 @@
-import { DEFAULT_QA_CHECKLIST, verifyAuditChain } from '@vp/domain';
+import { DEFAULT_QA_CHECKLIST, buildWip, verifyAuditChain } from '@vp/domain';
 import { describe, expect, it } from 'vitest';
+import { DEMO_PROFILE, seedApp, wipJobs } from '../src/app-state.js';
 import {
   REVIEWER,
   VALUER,
@@ -89,14 +90,14 @@ describe('preview journey (runs the domain engine)', () => {
 
   it('will not send to QA until everything is done', () => {
     const s = initialState(NOW);
-    expect(() => apply(s, { type: 'sendToQa' }, NOW)).toThrow(/blocking/);
+    expect(() => apply(s, { type: 'sendToQa', profile: DEMO_PROFILE }, NOW)).toThrow(/blocking/);
   });
 
   it('runs from capture to issue with QA only after the valuer sends it', () => {
     let s = complete(initialState(NOW));
     expect(codes(s, 'submit')).toEqual([]);
 
-    s = run(s, { type: 'sendToQa' });
+    s = run(s, { type: 'sendToQa', profile: DEMO_PROFILE });
     expect(s.status).toBe('submitted');
     expect(qaVisible(s)).toBe(true);
     expect(s.certification?.valuer.userId).toBe(VALUER.userId);
@@ -128,7 +129,7 @@ describe('preview journey (runs the domain engine)', () => {
   it('lets QA send the job back; the valuer fixes it and signs again', () => {
     let s = run(
       complete(initialState(NOW)),
-      { type: 'sendToQa' },
+      { type: 'sendToQa', profile: DEMO_PROFILE },
       {
         type: 'transition',
         action: 'startReview',
@@ -144,9 +145,25 @@ describe('preview journey (runs the domain engine)', () => {
     const firstSignature = s.certification?.snapshotHash;
     s = run(s, set('land.area', 652));
     expect(derive(s, NOW).certificationCurrent).toBe(false);
-    s = run(s, { type: 'sendToQa' });
+    s = run(s, { type: 'sendToQa', profile: DEMO_PROFILE });
     expect(s.status).toBe('submitted');
     expect(s.certification?.snapshotHash).not.toBe(firstSignature);
     expect(derive(s, NOW).certificationCurrent).toBe(true);
+  });
+
+  it('seeds one demo job in each main work-in-progress stage', async () => {
+    const app = await seedApp(NOW);
+    const board = buildWip(wipJobs(app), NOW.slice(0, 10));
+    expect(board.counts).toMatchObject({
+      new: 1,
+      to_inspect: 1,
+      in_progress: 1,
+      with_qa: 1,
+      to_issue: 1,
+      issued: 1,
+    });
+    expect(
+      buildWip(wipJobs(app), NOW.slice(0, 10), { query: 'sampleville cgt' }).rows,
+    ).toHaveLength(1);
   });
 });

@@ -13,6 +13,11 @@ import {
   DEFAULT_TEMPLATE,
   DEFAULT_VALIDATION_CONFIG,
   DomainError,
+  SAMPLE_AVM_SOURCE,
+  SAMPLE_PROPERTY_SOURCE,
+  addDays,
+  signingProblems,
+  valuerIdentityFor,
   FIELD_BY_ID,
   INSPECTION_SCOPE_LABELS,
   JURISDICTION_TIME_ZONES,
@@ -45,6 +50,8 @@ import {
   type Certification,
   type CertificationContent,
   type DataSource,
+  type FieldSuggestion,
+  type LocalDate,
   type FieldValues,
   type InputTabId,
   type JobAction,
@@ -56,6 +63,7 @@ import {
   type Permission,
   type Point,
   type Provenance,
+  type ValuerProfile,
   type QaReview,
   type ReportModel,
   type RequirementDiff,
@@ -108,14 +116,29 @@ export const USER_NAMES: Readonly<Record<string, string>> = {
 };
 
 export const ASSET_ID = 'a1';
-export const JOB = {
-  id: 'job-demo',
-  reference: 'VAL-2026-DEMO',
+export const FIRM_NAME = 'Example Valuers Pty Ltd';
+
+/** The parts of a job that identify it (set when the job is created). */
+export interface JobMeta {
+  readonly id: string;
+  readonly reference: string;
+  readonly clientName: string;
+  readonly address: string;
+  readonly lat: number;
+  readonly lng: number;
+  /** Provider property id, when the address was matched. */
+  readonly propertyId?: string;
+}
+
+export const DEMO_JOB: JobMeta = {
+  id: 'job-0141',
+  reference: 'VAL-2026-0141',
   clientName: 'Example Lending Pty Ltd',
-  firmName: 'Example Valuers Pty Ltd',
   address: '10 Sample Road, Exampleton VIC 3000',
-} as const;
-const STREAM = `job:${JOB.id}`;
+  lat: -37.81,
+  lng: 144.96,
+  propertyId: 'S-VIC-0001',
+};
 
 export const DATA_SOURCES: readonly DataSource[] = [
   {
@@ -148,9 +171,11 @@ export const DATA_SOURCES: readonly DataSource[] = [
     freshnessDays: 90,
     status: 'active',
   },
+  SAMPLE_PROPERTY_SOURCE,
+  SAMPLE_AVM_SOURCE,
 ];
 
-const verified = (sourceId: string, effectiveDate: string): Provenance => ({
+export const verified = (sourceId: string, effectiveDate: string): Provenance => ({
   origin: 'external_source',
   sourceId,
   retrievedAt: '2026-09-20T00:00:00Z',
@@ -200,15 +225,23 @@ const sale = (
   analysisBasis: 'land_rate',
 });
 
-export const SALES: readonly SaleComparable[] = [
+/** Example sales from the (fictional) licensed feed for the demo job. */
+export const EXAMPLE_SALES: readonly SaleComparable[] = [
   sale('s1', '4 Wattle Court, Exampleton VIC', 1_100_000, 640, 205, '2026-06-01', 'inferior'),
   sale('s2', '27 Banksia Street, Exampleton VIC', 1_180_000, 660, 228, '2026-07-15', 'superior'),
   sale('s3', '9 Grevillea Avenue, Exampleton VIC', 1_150_000, 655, 214, '2026-08-20', 'comparable'),
 ];
 
-export const SALE_ANALYSES: readonly SaleAnalysis[] = SALES.map((s) =>
-  analyseSale(s, { computedBy: VALUER.userId, computedAt: '2026-09-30T02:00:00Z' }),
-);
+export const EXAMPLE_SALE_LOCATIONS: Readonly<Record<string, { lat: number; lng: number }>> = {
+  s1: { lat: -37.8062, lng: 144.9551 },
+  s2: { lat: -37.8158, lng: 144.9667 },
+  s3: { lat: -37.8121, lng: 144.9531 },
+};
+
+export const analysesOf = (sales: readonly SaleComparable[]): SaleAnalysis[] =>
+  sales.map((s) =>
+    analyseSale(s, { computedBy: VALUER.userId, computedAt: '2026-09-30T02:00:00Z' }),
+  );
 
 /** Demo template: the seed template with stand-in clause wording, treated as approved. */
 export const DEMO_TEMPLATE: TemplateVersion = {
@@ -295,11 +328,16 @@ function initialSketch(): SketchVersion {
  * A near-complete market-value job. Three things are left for the user: the dwelling's
  * condition, the building area (from the sketch) and the reconciliation.
  */
-function initialValues(): FieldValues {
+export function demoValues(
+  meta: JobMeta,
+  today: LocalDate,
+  sales: readonly SaleComparable[],
+): FieldValues {
+  const inspected = addDays(today, -2);
   return {
     job: {
-      'instruction.clientEntity': JOB.clientName,
-      'instruction.intendedUsers': [JOB.clientName],
+      'instruction.clientEntity': meta.clientName,
+      'instruction.intendedUsers': [meta.clientName],
       'instruction.intendedUse': 'First mortgage security',
       'instruction.basisOfValue': 'market_value',
       'instruction.interestValued': 'fee_simple_vacant_possession',
@@ -307,20 +345,20 @@ function initialValues(): FieldValues {
       'instruction.responsibleValuer': VALUER.userId,
       'instruction.reviewer': REVIEWER.userId,
       'instruction.engagementDocuments': ['doc-engagement'],
-      'instruction.dueDate': '2026-10-05',
-      'dates.instruction': '2026-09-25',
-      'dates.inspection': '2026-09-30',
-      'dates.valuation': '2026-09-30',
+      'instruction.dueDate': addDays(today, 3),
+      'dates.instruction': addDays(today, -7),
+      'dates.inspection': inspected,
+      'dates.valuation': inspected,
       'assumptions.general': ['Title is free of unregistered interests'],
       'assumptions.limitations': ['No structural or pest survey was undertaken'],
     },
     assets: {
       [ASSET_ID]: {
         'instruction.ownership': 'Registered proprietor (withheld in preview)',
-        'location.address': { formatted: JOB.address },
+        'location.address': { formatted: meta.address },
         'location.titleReference': 'Lot 1 PS123456',
         'location.lga': 'Example City Council',
-        'location.coordinates': { lat: -37.81, lng: 144.96 },
+        'location.coordinates': { lat: meta.lat, lng: meta.lng },
         'scope.areasInspected': 'All internal and external areas',
         'valuation.highestAndBestUse': 'Residential dwelling (existing use)',
         'valuation.approaches': ['direct_comparison', 'summation'],
@@ -330,7 +368,7 @@ function initialValues(): FieldValues {
         'valuation.marketability': 'Good: established street, strong owner-occupier demand',
         'valuation.riskCommentary': 'Low risk',
         'market.local': 'Steady demand for family homes near schools and transport.',
-        'evidence.sales': SALES.map((s) => s.id),
+        'evidence.sales': sales.map((s) => s.id),
         'improvements.dwellingType': 'Detached house',
         'improvements.accommodation': '4 bedrooms, 2 bathrooms, open-plan living',
         'improvements.yearBuilt': 2005,
@@ -357,11 +395,22 @@ function initialValues(): FieldValues {
 // ── State ──────────────────────────────────────────────────────────────────
 
 export interface PreviewState {
-  readonly schema: 2;
+  readonly schema: 3;
+  readonly job: JobMeta;
   readonly status: JobStatus;
   readonly selection: JobSelection;
   readonly values: FieldValues;
   readonly sketch: SketchVersion;
+  /** Sales evidence for the property (with provenance). */
+  readonly sales: readonly SaleComparable[];
+  /** Where each sale is, for the map. */
+  readonly saleLocations: Readonly<Record<string, { readonly lat: number; readonly lng: number }>>;
+  /** Provenance of field values that came from a data provider. */
+  readonly provenance: readonly {
+    readonly fieldId: string;
+    readonly assetId: string | null;
+    readonly provenance: Provenance;
+  }[];
   readonly acknowledgements: readonly ValidationAcknowledgement[];
   readonly certification: Certification | null;
   readonly submittedSnapshotHash: string | null;
@@ -381,13 +430,20 @@ export const DEMO_SELECTION: JobSelection = {
   mode: 'SINGLE',
 };
 
+const todayOf = (now: string): LocalDate => now.slice(0, 10);
+
+/** The demo job: inspected two days ago, three things left to do. */
 export function initialState(now: string = new Date().toISOString()): PreviewState {
   const state: PreviewState = {
-    schema: 2,
+    schema: 3,
+    job: DEMO_JOB,
     status: 'active',
     selection: DEMO_SELECTION,
-    values: initialValues(),
+    values: demoValues(DEMO_JOB, todayOf(now), EXAMPLE_SALES),
     sketch: initialSketch(),
+    sales: EXAMPLE_SALES,
+    saleLocations: EXAMPLE_SALE_LOCATIONS,
+    provenance: [],
     acknowledgements: [],
     certification: null,
     submittedSnapshotHash: null,
@@ -398,9 +454,62 @@ export function initialState(now: string = new Date().toISOString()): PreviewSta
     lastChange: null,
     seq: 0,
   };
-  return audit(state, VALUER, now, 'job.engagement_accepted', 'job', JOB.id, {
-    reference: JOB.reference,
+  return audit(state, VALUER, now, 'job.engagement_accepted', 'job', DEMO_JOB.id, {
+    reference: DEMO_JOB.reference,
   });
+}
+
+/** A new instruction (WIP stage "New instructions") for a matched or typed address. */
+export function newJobState(
+  meta: JobMeta,
+  selection: JobSelection,
+  now: string,
+  opts: { readonly dueDate?: LocalDate; readonly inspectionDate?: LocalDate } = {},
+): PreviewState {
+  const state: PreviewState = {
+    schema: 3,
+    job: meta,
+    status: 'draft',
+    selection,
+    values: {
+      job: {
+        'instruction.clientEntity': meta.clientName,
+        'instruction.intendedUsers': [meta.clientName],
+        'instruction.basisOfValue': 'market_value',
+        'instruction.interestValued': 'fee_simple_vacant_possession',
+        'instruction.conflictCheck': 'no_conflict',
+        'instruction.responsibleValuer': VALUER.userId,
+        'instruction.reviewer': REVIEWER.userId,
+        'instruction.engagementDocuments': ['doc-engagement'],
+        'dates.instruction': todayOf(now),
+        ...(opts.dueDate ? { 'instruction.dueDate': opts.dueDate } : {}),
+        ...(opts.inspectionDate
+          ? { 'dates.inspection': opts.inspectionDate, 'dates.valuation': opts.inspectionDate }
+          : {}),
+        'assumptions.limitations': ['No structural or pest survey was undertaken'],
+      },
+      assets: {
+        [ASSET_ID]: {
+          'location.address': { formatted: meta.address },
+          'location.coordinates': { lat: meta.lat, lng: meta.lng },
+        },
+      },
+    },
+    sketch: { ...initialSketch(), boundaries: [] },
+    sales: [],
+    saleLocations: {},
+    provenance: [],
+    acknowledgements: [],
+    certification: null,
+    submittedSnapshotHash: null,
+    qaReview: null,
+    approvedSnapshotHash: null,
+    issuedAt: null,
+    audit: [],
+    lastChange: null,
+    seq: 0,
+  };
+  return audit(state, VALUER, now, 'job.created', 'job', meta.id, { reference: meta.reference });
 }
 
 // ── Derived data (pure; recomputed on every change) ───────────────────────
@@ -432,6 +541,7 @@ export function snapshotHashOf(state: PreviewState): string {
   return hashCanonical({
     selection: state.selection,
     values: state.values,
+    sales: state.sales.map((x) => ({ id: x.id, verification: x.provenance.verification })),
   });
 }
 
@@ -451,15 +561,20 @@ export function validationContext(
     values: state.values,
     assetIds: [ASSET_ID],
     provenance: [
-      {
-        fieldId: 'planning.zone',
-        assetId: ASSET_ID,
-        provenance: verified('ds-planning-vic', '2026-09-20'),
-      },
+      ...(state.job.id === DEMO_JOB.id
+        ? [
+            {
+              fieldId: 'planning.zone',
+              assetId: ASSET_ID,
+              provenance: verified('ds-planning-vic', '2026-09-20'),
+            },
+          ]
+        : []),
+      ...state.provenance,
     ],
     dataSources: DATA_SOURCES,
-    sales: SALES,
-    saleAnalyses: SALE_ANALYSES,
+    sales: state.sales,
+    saleAnalyses: analysesOf(state.sales),
     rentals: [],
     calculations: [],
     commentary: [],
@@ -506,19 +621,19 @@ export function derive(state: PreviewState, now: string = new Date().toISOString
         status: state.issuedAt ? 'final' : 'draft',
         ...(state.issuedAt ? { issueDate: state.issuedAt.slice(0, 10) } : {}),
       },
-      firmName: JOB.firmName,
+      firmName: FIRM_NAME,
       job: {
-        id: JOB.id,
-        reference: JOB.reference,
+        id: state.job.id,
+        reference: state.job.reference,
         selection: state.selection,
-        clientName: JOB.clientName,
+        clientName: state.job.clientName,
       },
       valuerName: VALUER.displayName,
       requirements,
       values: state.values,
-      assets: [{ id: ASSET_ID, label: JOB.address }],
-      sales: SALES,
-      saleAnalyses: SALE_ANALYSES,
+      assets: [{ id: ASSET_ID, label: state.job.address }],
+      sales: state.sales,
+      saleAnalyses: analysesOf(state.sales),
       rentals: [],
       calculations: [],
       areaSchedules: [schedule],
@@ -600,7 +715,7 @@ export function transitionCheck(
   const stage = STAGE_FOR[action];
   return checkTransition(action, {
     job: {
-      id: JOB.id,
+      id: state.job.id,
       status: state.status,
       responsibleValuerId: VALUER.userId,
       conflictCheck: 'no_conflict',
@@ -626,8 +741,14 @@ export type PreviewAction =
   | { type: 'setConvention'; conventionId: string }
   | { type: 'useSketchArea' }
   | { type: 'acknowledge'; code: string; path: string; reason: string }
-  /** Signs the certification and sends the job to QA in one step. */
-  | { type: 'sendToQa' }
+  /** Signs the certification (with the valuer's profile) and sends the job to QA in one step. */
+  | { type: 'sendToQa'; profile: ValuerProfile }
+  | { type: 'acceptJob' }
+  /** Uses provider values the valuer has checked (recorded with their provenance). */
+  | { type: 'applySuggestions'; suggestions: readonly FieldSuggestion[] }
+  | { type: 'addSale'; sale: SaleComparable; location?: { lat: number; lng: number } }
+  | { type: 'removeSale'; saleId: string }
+  | { type: 'verifySale'; saleId: string }
   | { type: 'transition'; action: JobAction; reason?: string }
   | { type: 'answerChecklist'; itemId: string; response: 'yes' | 'no' | 'na'; note?: string }
   | { type: 'reset' };
@@ -646,7 +767,7 @@ function audit(
   const event = appendAuditEvent(previous, {
     id: `ev-${state.seq + 1}`,
     orgId: actor.orgId,
-    streamId: STREAM,
+    streamId: `job:${state.job.id}`,
     at,
     actor: { userId: actor.userId, kind: actor.kind, roles: actor.roles },
     action,
@@ -671,7 +792,7 @@ function requireEditable(state: PreviewState): void {
     );
 }
 
-function certificationContent(state: PreviewState): CertificationContent {
+function certificationContent(state: PreviewState, profile: ValuerProfile): CertificationContent {
   const job = state.values.job;
   const asset = state.values.assets[ASSET_ID] ?? {};
   const purpose = state.selection.purpose;
@@ -694,12 +815,8 @@ function certificationContent(state: PreviewState): CertificationContent {
   const inspected = text(job['dates.inspection']);
   const limitations = list(job['assumptions.limitations']);
   return {
-    jobId: JOB.id,
-    valuer: {
-      userId: VALUER.userId,
-      fullName: VALUER.displayName,
-      credentials: VALUER.credentials,
-    },
+    jobId: state.job.id,
+    valuer: valuerIdentityFor(profile, state.selection.jurisdiction),
     role: 'responsible_valuer',
     inspectionScope: state.selection.scope,
     inspectionScopeStatement: `${INSPECTION_SCOPE_LABELS[state.selection.scope]}${
@@ -765,7 +882,7 @@ export function apply(
         selection: action.selection,
         lastChange: { from: state.selection, diff: diffRequirements(before, after, state.values) },
       };
-      return audit(next, VALUER, now, 'job.selection_changed', 'job', JOB.id, {
+      return audit(next, VALUER, now, 'job.selection_changed', 'job', state.job.id, {
         from: state.selection as unknown as Json,
         to: action.selection as unknown as Json,
       });
@@ -788,8 +905,12 @@ export function apply(
         before.retrospective !== after.retrospective
           ? { from: state.selection, diff: diffRequirements(before, after, values) }
           : state.lastChange;
+      // A value typed by the valuer replaces any provider value and its provenance.
+      const provenance = state.provenance.filter(
+        (p) => !(p.fieldId === def.id && p.assetId === action.assetId),
+      );
       return audit(
-        { ...state, values, lastChange },
+        { ...state, values, lastChange, provenance },
         VALUER,
         now,
         'field.updated',
@@ -848,8 +969,18 @@ export function apply(
     }
     case 'sendToQa': {
       requireEditable(state);
+      if (action.profile.userId !== VALUER.userId) deny('Only the responsible valuer can sign');
+      const problems = signingProblems(
+        action.profile,
+        state.selection.jurisdiction,
+        now.slice(0, 10),
+      );
+      if (problems.length)
+        throw new DomainError('GUARD_FAILED', 'Your profile is not ready to sign this job', {
+          issues: problems,
+        });
       const d = derive(state, now);
-      const certification = signCertification(certificationContent(state), {
+      const certification = signCertification(certificationContent(state, action.profile), {
         id: `cert-${state.seq + 1}`,
         actor: VALUER,
         responsibleValuerId: VALUER.userId,
@@ -877,11 +1008,111 @@ export function apply(
         },
       );
       next = { ...next, status: check.to, submittedSnapshotHash: d.snapshotHash, qaReview: null };
-      return audit(next, VALUER, now, TRANSITIONS.submitForQa.auditAction, 'job', JOB.id, {
+      return audit(next, VALUER, now, TRANSITIONS.submitForQa.auditAction, 'job', state.job.id, {
         from: state.status,
         to: check.to,
         snapshotHash: d.snapshotHash,
       });
+    }
+    case 'acceptJob': {
+      const d = derive(state, now);
+      const check = transitionCheck(state, d, 'acceptEngagement');
+      if (!check.allowed)
+        throw new DomainError('GUARD_FAILED', check.failures.join('; '), {
+          failures: [...check.failures],
+        });
+      return audit(
+        { ...state, status: check.to },
+        VALUER,
+        now,
+        TRANSITIONS.acceptEngagement.auditAction,
+        'job',
+        state.job.id,
+        { from: state.status, to: check.to },
+      );
+    }
+    case 'applySuggestions': {
+      requireEditable(state);
+      let next = state;
+      for (const s of action.suggestions) {
+        next = apply(
+          next,
+          { type: 'setField', fieldId: s.fieldId, assetId: s.assetId, value: s.value },
+          now,
+        );
+        // The valuer checked the value before using it.
+        next = {
+          ...next,
+          provenance: [
+            ...next.provenance,
+            {
+              fieldId: s.fieldId,
+              assetId: s.assetId,
+              provenance: {
+                ...s.provenance,
+                verification: 'verified',
+                verifiedBy: VALUER.userId,
+                verifiedAt: now,
+              },
+            },
+          ],
+        };
+      }
+      return next;
+    }
+    case 'addSale': {
+      requireEditable(state);
+      if (state.sales.some((x) => x.id === action.sale.id)) return state;
+      const sales = [...state.sales, action.sale];
+      const next = {
+        ...state,
+        sales,
+        saleLocations: action.location
+          ? { ...state.saleLocations, [action.sale.id]: action.location }
+          : state.saleLocations,
+        values: withField(
+          state,
+          'evidence.sales',
+          ASSET_ID,
+          sales.map((x) => x.id),
+        ),
+      };
+      return audit(next, VALUER, now, 'evidence.sale_added', 'sale', action.sale.id, {
+        source: action.sale.provenance.sourceId ?? null,
+      });
+    }
+    case 'removeSale': {
+      requireEditable(state);
+      const sales = state.sales.filter((x) => x.id !== action.saleId);
+      return {
+        ...state,
+        sales,
+        values: withField(
+          state,
+          'evidence.sales',
+          ASSET_ID,
+          sales.length ? sales.map((x) => x.id) : null,
+        ),
+      };
+    }
+    case 'verifySale': {
+      requireEditable(state);
+      return {
+        ...state,
+        sales: state.sales.map((x) =>
+          x.id === action.saleId
+            ? {
+                ...x,
+                provenance: {
+                  ...x.provenance,
+                  verification: 'verified',
+                  verifiedBy: VALUER.userId,
+                  verifiedAt: now,
+                },
+              }
+            : x,
+        ),
+      };
     }
     case 'answerChecklist': {
       if (!state.qaReview) return deny('The QA review has not started');
@@ -909,7 +1140,7 @@ export function apply(
           ...next,
           qaReview: startQaReview({
             id: `qa-${state.seq + 1}`,
-            jobId: JOB.id,
+            jobId: state.job.id,
             reviewerId: REVIEWER.userId,
             snapshotHash: d.snapshotHash,
             at: now,
@@ -934,7 +1165,7 @@ export function apply(
         now,
         def.auditAction,
         'job',
-        JOB.id,
+        state.job.id,
         { from: state.status, to: check.to, snapshotHash: d.snapshotHash },
         action.reason,
       );

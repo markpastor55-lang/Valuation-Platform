@@ -19,6 +19,7 @@ import type { FieldValues, ResolvedRequirements } from '../requirements/resolve.
 import { formatArea, formatAud, formatNumber, formatPercent } from '../units/units.js';
 import type { Certification } from '../workflow/certification.js';
 import type { TemplateBlock, TemplateVersion } from './template.js';
+import { VALUER_REGISTRATION_RULES } from '../workflow/valuer-profile.js';
 
 /** Everything a report is rendered from. Issued reports render from an immutable snapshot of this. */
 export interface ReportData {
@@ -87,7 +88,10 @@ export type RenderBlock =
     }
   | {
       readonly kind: 'image';
-      readonly ref: { readonly type: 'photo' | 'sketch' | 'map'; readonly id: string };
+      readonly ref: {
+        readonly type: 'photo' | 'sketch' | 'map' | 'signature';
+        readonly id: string;
+      };
       readonly caption: string;
     }
   | { readonly kind: 'page_break' };
@@ -130,6 +134,11 @@ export interface ReportModel {
   /** Must be empty before a final report can be issued. */
   readonly problems: readonly ComposeProblem[];
 }
+
+const registrationLabel = (jurisdiction: string): string =>
+  (VALUER_REGISTRATION_RULES as Readonly<Record<string, { label: string } | undefined>>)[
+    jurisdiction
+  ]?.label ?? `${jurisdiction} registration number`;
 
 const humanise = (v: string): string => {
   const s = v.replaceAll('_', ' ').toLowerCase();
@@ -526,11 +535,14 @@ export function composeReport(
             rows: [
               ['Valuer', c.valuer.fullName],
               ['Credentials', c.valuer.credentials.join(', ')],
+              ...(c.valuer.apiMemberNumber
+                ? [['API member number', c.valuer.apiMemberNumber] as [string, string]]
+                : []),
               ...(c.valuer.registration
                 ? [
                     [
-                      'Registration',
-                      `${c.valuer.registration.jurisdiction} ${c.valuer.registration.number}`,
+                      registrationLabel(c.valuer.registration.jurisdiction),
+                      c.valuer.registration.number,
                     ] as [string, string],
                   ]
                 : []),
@@ -558,6 +570,15 @@ export function composeReport(
               ],
             ],
           },
+          ...(c.valuer.signatureSha256
+            ? [
+                {
+                  kind: 'image',
+                  ref: { type: 'signature', id: c.valuer.signatureSha256 },
+                  caption: `Signature of ${c.valuer.fullName}`,
+                } as RenderBlock,
+              ]
+            : []),
         ];
       }
       case 'audit_metadata':

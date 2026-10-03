@@ -1,9 +1,10 @@
 import { Fragment, type JSX } from 'preact';
-import type { RenderBlock } from '@vp/domain';
+import { signatureHash, type RenderBlock, type ValuerProfile } from '@vp/domain';
+import { SignatureView } from './profile.js';
 import type { Derived } from '../model.js';
 import { Pill, shortHash } from '../ui.js';
 
-function Block(props: { b: RenderBlock }): JSX.Element | null {
+function Block(props: { b: RenderBlock; profile: ValuerProfile }): JSX.Element | null {
   const { b } = props;
   switch (b.kind) {
     case 'heading':
@@ -49,6 +50,15 @@ function Block(props: { b: RenderBlock }): JSX.Element | null {
         </div>
       );
     case 'image':
+      if (b.ref.type === 'signature')
+        return props.profile.signature && signatureHash(props.profile.signature) === b.ref.id ? (
+          <div class="report-signature">
+            <SignatureView profile={props.profile} />
+            <span class="note">{b.caption}</span>
+          </div>
+        ) : (
+          <p class="note">[Signature on file]</p>
+        );
       return (
         <p class="note">
           [{b.ref.type}: {b.caption}]
@@ -59,7 +69,7 @@ function Block(props: { b: RenderBlock }): JSX.Element | null {
   }
 }
 
-export function ReportScreen(props: { d: Derived }): JSX.Element {
+export function ReportScreen(props: { d: Derived; profile: ValuerProfile }): JSX.Element {
   const { d } = props;
   const r = d.report;
   const final = r.meta.status === 'final';
@@ -97,7 +107,7 @@ export function ReportScreen(props: { d: Derived }): JSX.Element {
           <section key={s.sectionId} class="stack">
             <h2>{s.title}</h2>
             {s.blocks.map((b, i) => (
-              <Block key={i} b={b} />
+              <Block key={i} b={b} profile={props.profile} />
             ))}
           </section>
         ))}

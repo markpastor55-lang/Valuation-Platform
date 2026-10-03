@@ -5,6 +5,8 @@ import {
   MIN_ACKNOWLEDGEMENT_REASON,
   REPORT_PURPOSE_LABELS,
   formatAustralianDate,
+  signingProblems,
+  valuerIdentityFor,
   inputTabForField,
   verifyAuditChain,
   type Finding,
@@ -14,7 +16,6 @@ import {
   ATTESTATION,
   REVIEWER,
   USER_NAMES,
-  VALUER,
   isLocked,
   transitionCheck,
   type Derived,
@@ -22,6 +23,7 @@ import {
 } from '../model.js';
 import { Pill, aud, humanise, readable, when, type Dispatch, type Navigate } from '../ui.js';
 import type { ScreenProps } from './tabs.js';
+import { SignatureView } from './profile.js';
 
 const fieldOf = (f: Finding): string | undefined => /field:([A-Za-z.]+)/.exec(f.path)?.[1];
 
@@ -143,6 +145,12 @@ function OtherFinding(props: {
 function SendToQaCard(props: ScreenProps): JSX.Element {
   const { state, d, dispatch, navigate } = props;
   const [certify, setCertify] = useState(false);
+  const signing = signingProblems(
+    props.profile,
+    state.selection.jurisdiction,
+    new Date().toISOString().slice(0, 10),
+  );
+  const identity = valuerIdentityFor(props.profile, state.selection.jurisdiction);
   const result = d.validation.submit;
   const others = result.findings.filter(
     (f) => f.code !== 'VAL-REQ-001' && f.code !== 'VAL-REQ-002',
@@ -206,15 +214,41 @@ function SendToQaCard(props: ScreenProps): JSX.Element {
           <dd>{typeof basis === 'string' ? humanise(basis) : '—'}</dd>
           <dt>Valuer</dt>
           <dd>
-            {VALUER.displayName} ({VALUER.credentials.join(', ')})
+            {identity.fullName} ({identity.credentials.join(', ')})
+          </dd>
+          {identity.apiMemberNumber && (
+            <>
+              <dt>API member no.</dt>
+              <dd>{identity.apiMemberNumber}</dd>
+            </>
+          )}
+          {identity.registration && (
+            <>
+              <dt>{identity.registration.jurisdiction} number</dt>
+              <dd>{identity.registration.number}</dd>
+            </>
+          )}
+          <dt>Signature</dt>
+          <dd>
+            <SignatureView profile={props.profile} />
           </dd>
         </dl>
+        {signing.length > 0 && (
+          <div class="notice blocking">
+            {signing.map((p) => (
+              <div key={p}>{p}</div>
+            ))}
+            <button type="button" class="link" onClick={props.openProfile}>
+              Open your profile
+            </button>
+          </div>
+        )}
         <label class="certify">
           <input
             id="certify"
             type="checkbox"
             checked={certify}
-            disabled={!ready}
+            disabled={!ready || signing.length > 0}
             onChange={(e) => {
               setCertify(e.currentTarget.checked);
             }}
@@ -224,11 +258,11 @@ function SendToQaCard(props: ScreenProps): JSX.Element {
         <button
           type="button"
           class="btn primary"
-          disabled={!ready || !certify}
+          disabled={!ready || !certify || signing.length > 0}
           onClick={() => {
             if (
               dispatch(
-                { type: 'sendToQa' },
+                { type: 'sendToQa', profile: props.profile },
                 `Signed and sent to QA. ${REVIEWER.displayName} can now review it.`,
               )
             )

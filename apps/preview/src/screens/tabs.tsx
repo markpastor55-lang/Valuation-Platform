@@ -12,6 +12,7 @@ import {
   formatAustralianDate,
   type InputTabId,
   type JobSelection,
+  type ValuerProfile,
 } from '@vp/domain';
 import {
   REVIEWER,
@@ -23,6 +24,7 @@ import {
 } from '../model.js';
 import { NextButton, fieldLabel, sectionLabel, type Dispatch, type Navigate } from '../ui.js';
 import { InputFields } from './fields.js';
+import { ComparablesCard, MapCard, PropertyDataCard, SalesCard } from './property-data.js';
 import { SketchNotes } from './sketch.js';
 
 export interface ScreenProps {
@@ -31,6 +33,35 @@ export interface ScreenProps {
   readonly dispatch: Dispatch;
   readonly navigate: Navigate;
   readonly focus: { id: string; n: number } | null;
+  readonly profile: ValuerProfile;
+  readonly openProfile: () => void;
+}
+
+function AcceptCard(props: { state: PreviewState; dispatch: Dispatch }): JSX.Element | null {
+  if (props.state.status !== 'draft') return null;
+  const job = props.state.values.job;
+  const inspection = job['dates.inspection'];
+  return (
+    <section class="card change" aria-labelledby="accept">
+      <h3 id="accept">New instruction</h3>
+      <p>
+        Check the instruction and that there is no conflict of interest, then accept the job.
+        {typeof inspection === 'string' &&
+          ` Inspection is booked for ${formatAustralianDate(inspection)}.`}
+      </p>
+      <div class="row">
+        <button
+          type="button"
+          class="btn primary"
+          onClick={() =>
+            props.dispatch({ type: 'acceptJob' }, 'Job accepted. It is now in “To inspect”.')
+          }
+        >
+          Accept job
+        </button>
+      </div>
+    </section>
+  );
 }
 
 function LockNotice(props: { state: PreviewState; navigate: Navigate }): JSX.Element | null {
@@ -235,6 +266,7 @@ export function JobScreen(props: ScreenProps): JSX.Element {
   return (
     <>
       <TabIntro tab="job" d={props.d} />
+      <AcceptCard state={props.state} dispatch={props.dispatch} />
       <LockNotice state={props.state} navigate={props.navigate} />
       <SelectionCard state={props.state} dispatch={props.dispatch} />
       <ChangeCard state={props.state} dispatch={props.dispatch} />
@@ -257,7 +289,15 @@ export function InputTabScreen(props: ScreenProps & { tab: InputTabId }): JSX.El
     <>
       <TabIntro tab={props.tab} d={props.d} />
       <LockNotice state={props.state} navigate={props.navigate} />
+      {props.tab === 'property' && (
+        <PropertyDataCard state={props.state} dispatch={props.dispatch} />
+      )}
+      {props.tab === 'evidence' && <SalesCard state={props.state} dispatch={props.dispatch} />}
       <InputFields {...props} />
+      {props.tab === 'property' && <MapCard state={props.state} />}
+      {props.tab === 'evidence' && (
+        <ComparablesCard state={props.state} dispatch={props.dispatch} />
+      )}
       {props.tab === 'inspection' && (
         <SketchNotes state={props.state} d={props.d} dispatch={props.dispatch} />
       )}

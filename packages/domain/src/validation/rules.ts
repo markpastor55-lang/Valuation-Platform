@@ -9,6 +9,7 @@ import { deriveFairValueLevel } from '../calc/fair-value.js';
 import { detectOutliers, withinRange } from '../calc/statistics.js';
 import { findMissingFields } from '../requirements/resolve.js';
 import { retrospectiveStatus } from '../requirements/retrospective.js';
+import { VALUER_REGISTRATION_RULES } from '../workflow/valuer-profile.js';
 import type { AreaSchedule } from '../geometry/area-schedule.js';
 import { photoReportEligibility } from '../photo/privacy.js';
 import type { RawFinding, ValidationContext, ValidationRule } from './types.js';
@@ -1003,6 +1004,26 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
         });
       }
       return out;
+    },
+  }),
+  rule({
+    code: 'VAL-CERT-003',
+    title: 'State registration missing from the certification',
+    category: 'certification',
+    severity: 'blocking',
+    stages: ['submit', 'issue'],
+    acknowledgeable: false,
+    description:
+      'In Queensland and Western Australia the certifying valuer must state their state registration or licence number.',
+    review: 'API_STANDARDS',
+    evaluate: (ctx) => {
+      const c = ctx.certification;
+      const rule = VALUER_REGISTRATION_RULES[ctx.selection.jurisdiction];
+      if (!c || !rule) return [];
+      return c.valuer.registration?.jurisdiction === ctx.selection.jurisdiction &&
+        c.valuer.registration.number.trim()
+        ? []
+        : [{ path: 'job/certification', message: `the certification has no ${rule.label}` }];
     },
   }),
   rule({

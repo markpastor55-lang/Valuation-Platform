@@ -4,26 +4,14 @@ import {
   FIELD_BY_ID,
   FIELD_CATALOGUE,
   REPORT_SECTIONS,
-  effectiveValue,
-  formatAustralianDate,
   inputTabForField,
   type FieldDef,
   type FieldRequirement,
   type InputTabId,
   type SectionId,
 } from '@vp/domain';
-import {
-  ASSET_ID,
-  DATA_SOURCES,
-  SALES,
-  SALE_ANALYSES,
-  VALUER,
-  fieldValue,
-  isLocked,
-  type Derived,
-  type PreviewState,
-} from '../model.js';
-import { Pill, Segmented, aud, humanise, m2, type Dispatch } from '../ui.js';
+import { ASSET_ID, fieldValue, isLocked, type Derived, type PreviewState } from '../model.js';
+import { Pill, Segmented, humanise, type Dispatch } from '../ui.js';
 
 const CATALOGUE_ORDER = FIELD_CATALOGUE.map((f) => f.id);
 
@@ -40,41 +28,6 @@ const UNITS: Partial<Record<FieldDef['type'], string>> = {
   length: 'm',
   ratio: '0 – 1',
 };
-
-export function SalesList(): JSX.Element {
-  const source = DATA_SOURCES.find((s) => s.id === 'ds-sales');
-  return (
-    <div class="stack">
-      {SALES.map((s) => {
-        const analysis = SALE_ANALYSES.find((a) => a.saleId === s.id);
-        const rate = analysis?.landRate ? effectiveValue(analysis.landRate) : undefined;
-        return (
-          <div key={s.id} class="sale">
-            <div class="row" style={{ justifyContent: 'space-between' }}>
-              <strong>{s.address}</strong>
-              <Pill tone={s.comparability === 'comparable' ? 'ok' : 'plain'}>
-                {humanise(s.comparability)}
-              </Pill>
-            </div>
-            <span class="num">
-              {aud(s.price)} · {formatAustralianDate(s.contractDate)} · land {m2(s.landAreaM2 ?? 0)}
-              {rate !== undefined && <> · {aud(Math.round(rate))}/m² land</>}
-            </span>
-            <span class="muted" style={{ fontSize: '0.8rem' }}>
-              {source?.name} · checked by {VALUER.displayName}
-              {s.adjustments.map(
-                (a) => ` · ${a.rationale} (${a.value > 0 ? '+' : ''}${a.value * 100}%)`,
-              )}
-            </span>
-          </div>
-        );
-      })}
-      <p class="muted" style={{ fontSize: '0.84rem' }}>
-        In the app you add sales from the licensed data feed or enter them yourself.
-      </p>
-    </div>
-  );
-}
 
 function FieldInput(props: {
   def: FieldDef;
@@ -245,11 +198,7 @@ function FieldInput(props: {
       );
     }
     case 'evidence_list':
-      return def.id === 'evidence.sales' ? (
-        <SalesList />
-      ) : (
-        <span class="muted">{Array.isArray(value) ? value.length : 0} added</span>
-      );
+      return <span class="muted">{Array.isArray(value) ? value.length : 0} added</span>;
     case 'document_refs':
     case 'datasource_refs': {
       const n = Array.isArray(value) ? value.length : 0;
@@ -369,7 +318,14 @@ export function InputFields(props: {
   const missingKeys = new Set(d.missing.map((m) => m.fieldId));
   const items: Item[] = d.requirements.fields.flatMap((req) => {
     const def = FIELD_BY_ID.get(req.fieldId);
-    if (!def || def.entry === 'system' || inputTabForField(def.id) !== tab) return [];
+    // Sales evidence has its own card on the Sales & market tab
+    if (
+      !def ||
+      def.entry === 'system' ||
+      def.id === 'evidence.sales' ||
+      inputTabForField(def.id) !== tab
+    )
+      return [];
     if (props.only && !props.only.includes(def.section)) return [];
     return [
       {
