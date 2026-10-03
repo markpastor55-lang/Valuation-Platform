@@ -17,6 +17,13 @@ import {
   type ValidationContext,
 } from '../src/index.js';
 
+/** Commentary long enough to pass the brief-commentary check (VAL-MKT-001). */
+export const COMMENTARY = (level: string): string =>
+  `${level} commentary. `.padEnd(
+    320,
+    'Demand, supply, prices and credit conditions are described. ',
+  );
+
 export const NOW = '2026-10-02T00:00:00Z';
 export const valuer: Actor = {
   kind: 'human',
@@ -181,8 +188,8 @@ export function marketValueValues(): FieldValues {
       'dates.researchCutOff': '2026-10-01',
       'assumptions.general': ['Title is free of unregistered interests'],
       'assumptions.limitations': ['No structural survey was undertaken'],
-      'market.national': 'National commentary.',
-      'market.state': 'State commentary.',
+      'market.national': COMMENTARY('National'),
+      'market.state': COMMENTARY('State'),
     },
     assets: {
       a1: {
@@ -200,7 +207,7 @@ export function marketValueValues(): FieldValues {
         'valuation.adoptedValue': 1_150_000,
         'valuation.marketability': 'Good',
         'valuation.riskCommentary': 'Low risk',
-        'market.local': 'Local commentary.',
+        'market.local': COMMENTARY('Local'),
         'evidence.sales': ['s1', 's2', 's3'],
         'improvements.dwellingType': 'Detached house',
         'improvements.accommodation': '4 bed, 2 bath',

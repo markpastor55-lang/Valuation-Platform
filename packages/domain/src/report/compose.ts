@@ -20,6 +20,15 @@ import { formatArea, formatAud, formatNumber, formatPercent } from '../units/uni
 import type { Certification } from '../workflow/certification.js';
 import type { TemplateBlock, TemplateVersion } from './template.js';
 import { VALUER_REGISTRATION_RULES } from '../workflow/valuer-profile.js';
+import type { MarketCommentary } from '../evidence/market.js';
+import { currentCommentary } from '../evidence/market.js';
+import {
+  COMMENTARY_FIELDS,
+  COMMENTARY_LEVELS,
+  commentaryHeading,
+  commentaryLocalities,
+  commentaryNote,
+} from '../evidence/commentary-library.js';
 
 /** Everything a report is rendered from. Issued reports render from an immutable snapshot of this. */
 export interface ReportData {
@@ -43,6 +52,8 @@ export interface ReportData {
   readonly sales: readonly SaleComparable[];
   readonly saleAnalyses: readonly SaleAnalysis[];
   readonly rentals: readonly RentalComparable[];
+  /** Dated commentary records (as-at dates and sources for the market section). */
+  readonly commentary?: readonly MarketCommentary[];
   readonly calculations: readonly CalculationRecord[];
   readonly areaSchedules: readonly AreaSchedule[];
   readonly sketches: readonly {
@@ -406,6 +417,52 @@ export function composeReport(
               ]),
           },
         ];
+      }
+      case 'market_commentary': {
+        const out: RenderBlock[] = [];
+        const records = currentCommentary(data.commentary ?? []);
+        for (const level of COMMENTARY_LEVELS) {
+          const fieldId = COMMENTARY_FIELDS[level];
+          const req = requirementByField.get(fieldId);
+          if (!req) continue;
+          const targets =
+            level === 'local' ? (req.assetIds ?? data.assets.map((a) => a.id)) : [null];
+          for (const assetId of targets) {
+            const value =
+              assetId === null ? data.values.job[fieldId] : data.values.assets[assetId]?.[fieldId];
+            const address =
+              assetId === null ? undefined : data.values.assets[assetId]?.['location.address'];
+            const formatted =
+              typeof address === 'object' && address !== null
+                ? (address as { formatted?: unknown }).formatted
+                : address;
+            const locality =
+              level === 'local' && multiAsset
+                ? data.assets.find((a) => a.id === assetId)?.label
+                : typeof formatted === 'string'
+                  ? commentaryLocalities(formatted)[0]
+                  : undefined;
+            const heading = commentaryHeading(level, data.job.selection.jurisdiction, locality);
+            if (typeof value !== 'string' || !value.trim()) {
+              if (req.level !== 'required') continue;
+              out.push({ kind: 'heading', text: heading, level: 3 });
+              out.push({ kind: 'paragraph', text: '[Not provided]', style: 'placeholder' });
+              problem('TPL-MISSING-REQUIRED', `${heading} commentary is required`);
+              continue;
+            }
+            out.push({ kind: 'heading', text: heading, level: 3 });
+            for (const para of value.split(/\n\s*\n/)) {
+              const text = para.trim();
+              if (text) out.push({ kind: 'paragraph', text, style: 'normal' });
+            }
+            const record = records.find(
+              (c) => c.level === level && (c.assetId ?? null) === assetId,
+            );
+            if (record)
+              out.push({ kind: 'paragraph', text: commentaryNote(record), style: 'note' });
+          }
+        }
+        return out;
       }
       case 'calculation_trace': {
         const calcs = data.calculations.filter(

@@ -63,6 +63,7 @@ const EXTRA_BLOCKS: Partial<Record<SectionId, TemplateBlock[]>> = {
   location: [ft('location'), { type: 'map' }],
   // Sketches are working notes: the seed template reports measured areas, not the drawing.
   areas: [ft('areas'), { type: 'area_schedule' }, clause('area-disclaimer')],
+  market: [{ type: 'market_commentary' }],
   sales_evidence: [{ type: 'sales_table' }],
   rental_evidence: [{ type: 'rental_table' }],
   valuation_approach: [

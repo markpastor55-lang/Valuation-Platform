@@ -94,6 +94,9 @@ const VALUATION_CORE = [
   'valuation.adoptedValue',
 ] as const;
 
+/** National, state and local commentary, offered from the firm's library by property type and location. */
+const MARKET_COMMENTARY = ['market.national', 'market.state', 'market.local'] as const;
+
 /**
  * Australian core rule set — **draft**. This is the starting configuration for the
  * purpose × property type × scope × jurisdiction matrix. It must be reviewed and approved by
@@ -237,7 +240,12 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
       id: 'REQ-PUR-MV-001',
       description: 'Market value',
       when: { purposes: ['MARKET_VALUE'] },
-      require: [...VALUATION_CORE, 'valuation.marketability', 'market.local', 'evidence.sales'],
+      require: [
+        ...VALUATION_CORE,
+        'valuation.marketability',
+        ...MARKET_COMMENTARY,
+        'evidence.sales',
+      ],
       recommend: ['valuation.crossCheckApproach', 'valuation.riskCommentary'],
       sections: ['market', 'hbu', 'sales_evidence', 'valuation_approach', 'reconciliation', 'risk'],
       specialistReview: ['API_STANDARDS'],
@@ -247,7 +255,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
       description:
         'Capital gains tax valuation. The client (often the tax agent) instructs; whether it is retrospective follows from the dates (REQ-RETRO-001).',
       when: { purposes: ['CGT'] },
-      require: [...VALUATION_CORE, 'cgt.taxEvent', 'market.local', 'evidence.sales'],
+      require: [...VALUATION_CORE, 'cgt.taxEvent', ...MARKET_COMMENTARY, 'evidence.sales'],
       sections: [
         'tax_context',
         'market',
@@ -293,7 +301,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'fl.independenceDeclaration',
         'fl.reasons',
         'fl.declaration',
-        'market.local',
+        ...MARKET_COMMENTARY,
         'evidence.sales',
       ],
       recommend: ['fl.conferenceOrJointStatement'],
@@ -333,7 +341,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'fr.sensitivityAnalysis',
         'fr.disclosureSchedule',
       ],
-      recommend: ['market.local', 'evidence.sales'],
+      recommend: [...MARKET_COMMENTARY, 'evidence.sales'],
       sections: ['fair_value', 'market', 'hbu', 'valuation_approach', 'reconciliation'],
       specialistReview: ['ACCOUNTING', 'API_STANDARDS'],
       formulas: ['fv.sensitivity'],
@@ -358,7 +366,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'rent.adoptedMarketRent',
         'evidence.rentals',
       ],
-      recommend: ['market.local'],
+      recommend: [...MARKET_COMMENTARY],
       sections: ['market', 'rental_evidence', 'rental_determination'],
       specialistReview: ['API_STANDARDS'],
       formulas: ['income.effective_rent', 'income.rent_rate_per_m2'],

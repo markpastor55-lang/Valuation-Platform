@@ -37,6 +37,8 @@ export * from './report/compose.js';
 export * from './integration/connector.js';
 export * from './integration/planning.js';
 export * from './evidence/market.js';
+export * from './evidence/commentary-library.js';
+export * from './evidence/sample-commentary-library.js';
 export * from './validation/types.js';
 export * from './validation/rules.js';
 export * from './validation/engine.js';

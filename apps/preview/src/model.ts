@@ -9,13 +9,21 @@
  */
 import {
   AU_CORE_RULE_SET,
+  COMMENTARY_LIBRARY_SOURCE,
   DEFAULT_CONVENTIONS,
   DEFAULT_TEMPLATE,
   DEFAULT_VALIDATION_CONFIG,
   DomainError,
   SAMPLE_AVM_SOURCE,
+  SAMPLE_COMMENTARY_LIBRARY,
+  SAMPLE_PLACES,
   SAMPLE_PROPERTY_SOURCE,
   addDays,
+  commentaryLocalities,
+  commentaryProvenance,
+  commentaryRecord,
+  isLocalDate,
+  selectCommentary,
   signingProblems,
   sketchAreaFieldFor,
   valuerIdentityFor,
@@ -50,9 +58,12 @@ import {
   type Boundary,
   type Certification,
   type CertificationContent,
+  type CommentaryLevel,
+  type CommentarySuggestion,
   type DataSource,
   type FieldSuggestion,
   type LocalDate,
+  type MarketCommentary,
   type FieldValues,
   type InputTabId,
   type JobAction,
@@ -174,6 +185,7 @@ export const DATA_SOURCES: readonly DataSource[] = [
   },
   SAMPLE_PROPERTY_SOURCE,
   SAMPLE_AVM_SOURCE,
+  COMMENTARY_LIBRARY_SOURCE,
 ];
 
 export const verified = (sourceId: string, effectiveDate: string): Provenance => ({
@@ -358,7 +370,9 @@ export function demoValues(
         'instruction.ownership': 'Registered proprietor (withheld in preview)',
         'location.address': { formatted: meta.address },
         'location.titleReference': 'Lot 1 PS123456',
-        'location.lga': 'Example City Council',
+        'location.lga':
+          SAMPLE_PLACES.find((p) => p.propertyId === meta.propertyId)?.lga ??
+          'Example City Council',
         'location.coordinates': { lat: meta.lat, lng: meta.lng },
         'scope.areasInspected': 'All internal and external areas',
         'valuation.highestAndBestUse': 'Residential dwelling (existing use)',
@@ -368,7 +382,6 @@ export function demoValues(
         'valuation.adoptedValue': 1_150_000,
         'valuation.marketability': 'Good: established street, strong owner-occupier demand',
         'valuation.riskCommentary': 'Low risk',
-        'market.local': 'Steady demand for family homes near schools and transport.',
         'evidence.sales': sales.map((s) => s.id),
         'improvements.dwellingType': 'Detached house',
         'improvements.accommodation': '4 bedrooms, 2 bathrooms, open-plan living',
@@ -412,6 +425,8 @@ export interface PreviewState {
     readonly assetId: string | null;
     readonly provenance: Provenance;
   }[];
+  /** Dated market commentary the valuer took from the firm's library (one per level). */
+  readonly commentary?: readonly MarketCommentary[];
   readonly acknowledgements: readonly ValidationAcknowledgement[];
   readonly certification: Certification | null;
   readonly submittedSnapshotHash: string | null;
@@ -455,9 +470,11 @@ export function initialState(now: string = new Date().toISOString()): PreviewSta
     lastChange: null,
     seq: 0,
   };
-  return audit(state, VALUER, now, 'job.engagement_accepted', 'job', DEMO_JOB.id, {
+  const accepted = audit(state, VALUER, now, 'job.engagement_accepted', 'job', DEMO_JOB.id, {
     reference: DEMO_JOB.reference,
   });
+  // The valuer has already taken the firm's market commentary for this suburb.
+  return apply(accepted, { type: 'useCommentary', levels: ['national', 'state', 'local'] }, now);
 }
 
 /** A new instruction (WIP stage "New instructions") for a matched or typed address. */
@@ -543,6 +560,28 @@ export function snapshotHashOf(state: PreviewState): string {
     selection: state.selection,
     values: state.values,
     sales: state.sales.map((x) => ({ id: x.id, verification: x.provenance.verification })),
+    ...(state.commentary?.length
+      ? {
+          commentary: state.commentary.map((c) => ({
+            level: c.level,
+            asAtDate: c.asAtDate,
+            library: c.library ?? [],
+          })),
+        }
+      : {}),
+  });
+}
+
+/** The firm's commentary that fits the job: property type, location and valuation date. */
+export function commentaryFor(state: PreviewState, now: string): CommentarySuggestion[] {
+  const job = state.values.job;
+  const lga = state.values.assets[ASSET_ID]?.['location.lga'];
+  const date = [job['dates.valuation'], job['dates.inspection']].find(isLocalDate);
+  return selectCommentary(SAMPLE_COMMENTARY_LIBRARY, {
+    propertyType: state.selection.propertyType,
+    jurisdiction: state.selection.jurisdiction,
+    localities: commentaryLocalities(state.job.address, typeof lga === 'string' ? lga : undefined),
+    valuationDate: date ?? todayOf(now),
   });
 }
 
@@ -578,7 +617,7 @@ export function validationContext(
     saleAnalyses: analysesOf(state.sales),
     rentals: [],
     calculations: [],
-    commentary: [],
+    commentary: state.commentary ?? [],
     // The sketch is working notes: the engine checks it only if the report relies on it.
     areaSchedules: [schedule],
     measurementApprovals: [],
@@ -636,6 +675,7 @@ export function derive(state: PreviewState, now: string = new Date().toISOString
       sales: state.sales,
       saleAnalyses: analysesOf(state.sales),
       rentals: [],
+      commentary: state.commentary ?? [],
       calculations: [],
       areaSchedules: [schedule],
       sketches: [
@@ -747,6 +787,7 @@ export type PreviewAction =
   | { type: 'acceptJob' }
   /** Uses provider values the valuer has checked (recorded with their provenance). */
   | { type: 'applySuggestions'; suggestions: readonly FieldSuggestion[] }
+  | { type: 'useCommentary'; levels: readonly CommentaryLevel[] }
   | { type: 'addSale'; sale: SaleComparable; location?: { lat: number; lng: number } }
   | { type: 'removeSale'; saleId: string }
   | { type: 'verifySale'; saleId: string }
@@ -1058,6 +1099,53 @@ export function apply(
             },
           ],
         };
+      }
+      return next;
+    }
+    case 'useCommentary': {
+      requireEditable(state);
+      let next = state;
+      for (const s of commentaryFor(state, now)) {
+        if (!action.levels.includes(s.level) || !s.modules.length) continue;
+        const assetId = s.level === 'local' ? ASSET_ID : null;
+        next = apply(next, { type: 'setField', fieldId: s.fieldId, assetId, value: s.text }, now);
+        const record = commentaryRecord(s, {
+          id: `mc-${String(next.seq + 1)}`,
+          ...(assetId ? { assetId } : {}),
+          by: VALUER.userId,
+          at: now,
+        });
+        next = {
+          ...next,
+          provenance: [
+            ...next.provenance,
+            {
+              fieldId: s.fieldId,
+              assetId,
+              provenance: commentaryProvenance(s, VALUER.userId, now),
+            },
+          ],
+          // The new record replaces any earlier commentary for the same level.
+          commentary: [
+            ...(next.commentary ?? []).filter(
+              (c) => !(c.level === s.level && (c.assetId ?? null) === assetId),
+            ),
+            record,
+          ],
+        };
+        next = audit(
+          next,
+          VALUER,
+          now,
+          'evidence.commentary_added',
+          'market_commentary',
+          record.id,
+          {
+            level: s.level,
+            asAtDate: record.asAtDate,
+            library: s.modules.map((m) => `${m.moduleId}@${String(m.version)}`),
+          },
+        );
       }
       return next;
     }

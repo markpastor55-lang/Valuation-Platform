@@ -10,6 +10,12 @@ import { detectOutliers, withinRange } from '../calc/statistics.js';
 import { findMissingFields } from '../requirements/resolve.js';
 import { retrospectiveStatus } from '../requirements/retrospective.js';
 import { VALUER_REGISTRATION_RULES } from '../workflow/valuer-profile.js';
+import { currentCommentary } from '../evidence/market.js';
+import {
+  COMMENTARY_FIELDS,
+  COMMENTARY_LEVELS,
+  commentaryTopics,
+} from '../evidence/commentary-library.js';
 import type { AreaSchedule } from '../geometry/area-schedule.js';
 import { photoReportEligibility } from '../photo/privacy.js';
 import type { RawFinding, ValidationContext, ValidationRule } from './types.js';
@@ -210,7 +216,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
       if (!isRetrospective(ctx)) return [];
       const cut = informationCutOff(ctx);
       if (!cut) return [];
-      return ctx.commentary
+      return currentCommentary(ctx.commentary)
         .filter((c) => isAfter(c.asAtDate, cut))
         .map((c) => ({
           path: `commentary:${c.id}`,
@@ -362,6 +368,33 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
       }),
   }),
   rule({
+    code: 'VAL-STALE-003',
+    title: 'Dated market commentary',
+    category: 'staleness',
+    severity: 'warning',
+    stages: ALL,
+    acknowledgeable: true,
+    description:
+      'The market commentary relied on is dated more than the configured number of months before the valuation date.',
+    review: 'API_STANDARDS',
+    evaluate: (ctx) => {
+      const v = jobDate(ctx, 'dates.valuation');
+      if (!v) return [];
+      return currentCommentary(ctx.commentary).flatMap((c) => {
+        const months = monthsBetween(c.asAtDate, v);
+        const limit = ctx.config.commentaryStaleMonths[c.level];
+        return months > limit
+          ? [
+              {
+                path: `commentary:${c.id}`,
+                message: `${c.level} commentary is as at ${c.asAtDate}, ${months} months before the valuation date (limit ${limit})`,
+              },
+            ]
+          : [];
+      });
+    },
+  }),
+  rule({
     code: 'VAL-PROV-001',
     title: 'Incomplete provenance',
     category: 'provenance',
@@ -446,6 +479,39 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
   }),
 
   // ── Evidence and calculations ────────────────────────────────────────────
+  rule({
+    code: 'VAL-MKT-001',
+    title: 'Brief market commentary',
+    category: 'evidence',
+    severity: 'warning',
+    stages: ALL,
+    acknowledgeable: true,
+    description:
+      'National, state or local market commentary is shorter than the configured minimum; it should cover the topics for the property type and location.',
+    review: 'API_STANDARDS',
+    evaluate: (ctx) => {
+      const out: RawFinding[] = [];
+      for (const level of COMMENTARY_LEVELS) {
+        const fieldId = COMMENTARY_FIELDS[level];
+        const req = ctx.requirements.fields.find((f) => f.fieldId === fieldId);
+        if (!req) continue;
+        const targets = level === 'local' ? (req.assetIds ?? ctx.assetIds) : [null];
+        for (const assetId of targets) {
+          const v =
+            assetId === null ? ctx.values.job[fieldId] : ctx.values.assets[assetId]?.[fieldId];
+          // missing commentary is reported by the completeness rules
+          if (typeof v !== 'string' || !v.trim()) continue;
+          const n = v.trim().length;
+          if (n < ctx.config.commentaryMinChars)
+            out.push({
+              path: `${assetId ? `asset:${assetId}` : 'job'}/field:${fieldId}`,
+              message: `${level} commentary is brief (${n} characters); cover: ${commentaryTopics(level, ctx.selection.propertyType).join('; ')}`,
+            });
+        }
+      }
+      return out;
+    },
+  }),
   rule({
     code: 'VAL-EVID-001',
     title: 'Inadequate evidence',

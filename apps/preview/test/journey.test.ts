@@ -5,6 +5,7 @@ import {
   REVIEWER,
   VALUER,
   apply,
+  commentaryFor,
   derive,
   initialState,
   qaVisible,
@@ -165,5 +166,68 @@ describe('preview journey (runs the domain engine)', () => {
     expect(
       buildWip(wipJobs(app), NOW.slice(0, 10), { query: 'sampleville cgt' }).rows,
     ).toHaveLength(1);
+  });
+
+  it('offers national, state and local commentary for the property type and suburb', async () => {
+    const app = await seedApp(NOW);
+    let unit = app.jobs['job-0143']!;
+    const offered = commentaryFor(unit, NOW).map((x) => x.modules.map((m) => m.moduleId));
+    expect(offered).toEqual([
+      ['au-overview', 'au-units'],
+      ['vic-overview', 'vic-units'],
+      ['local-exampleton', 'local-exampleton-units'],
+    ]);
+    const missing = (st: PreviewState) => derive(st, NOW).missing.map((m) => m.fieldId);
+    expect(missing(unit)).toEqual(
+      expect.arrayContaining(['market.national', 'market.state', 'market.local']),
+    );
+    unit = apply(unit, { type: 'useCommentary', levels: ['national', 'state', 'local'] }, NOW);
+    expect(missing(unit).filter((f) => f.startsWith('market.'))).toEqual([]);
+    expect(unit.commentary?.map((c) => c.asAtDate)).toEqual([
+      '2026-08-31',
+      '2026-08-31',
+      '2026-08-31',
+    ]);
+    const market = derive(unit, NOW).report.sections.find((x) => x.sectionId === 'market');
+    expect(market?.blocks.flatMap((b) => (b.kind === 'heading' ? [b.text] : []))).toEqual([
+      'National market',
+      'State market — Victoria',
+      'Local market — Exampleton',
+    ]);
+    expect(market?.blocks.filter((b) => b.kind === 'paragraph' && b.style === 'note')).toHaveLength(
+      3,
+    );
+    expect(unit.audit.filter((e) => e.action === 'evidence.commentary_added')).toHaveLength(3);
+    // Using it again replaces, never duplicates
+    unit = apply(unit, { type: 'useCommentary', levels: ['state'] }, NOW);
+    expect(unit.commentary).toHaveLength(3);
+  });
+
+  it('gives the retrospective CGT job the commentary of its valuation date', async () => {
+    const app = await seedApp(NOW);
+    const cgt = apply(
+      app.jobs['job-0142']!,
+      { type: 'useCommentary', levels: ['national', 'state', 'local'] },
+      NOW,
+    );
+    expect(cgt.commentary?.map((c) => c.asAtDate)).toEqual([
+      '2019-06-30',
+      '2019-06-30',
+      '2019-06-30',
+    ]);
+    expect(cgt.values.job['market.national']).toMatch(/1\.25 per cent in June 2019/);
+    const d = derive(cgt, NOW);
+    expect(d.validation.submit.findings.map((f) => f.code)).not.toContain('VAL-DATE-004');
+    expect(d.validation.submit.findings.map((f) => f.code)).not.toContain('VAL-STALE-003');
+  });
+
+  it('puts the firm commentary into the seeded issued report', async () => {
+    const app = await seedApp(NOW);
+    const issued = app.jobs['job-0130']!;
+    expect(issued.status).toBe('issued');
+    const market = derive(issued, NOW).report.sections.find((x) => x.sectionId === 'market');
+    expect(market?.blocks[0]).toEqual({ kind: 'heading', text: 'National market', level: 3 });
+    expect(JSON.stringify(market)).toContain('Local market — Mockbury');
+    expect(JSON.stringify(market)).toContain('Commentary as at 31 August 2026.');
   });
 });

@@ -8,9 +8,9 @@ Resolved by `resolveRequirements` from the draft AU core rule set. Conditional r
 
 | Purpose \ Property type          | Vacant land | Residential house | Unit, apartment or townhouse (incl. strata) | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
 | -------------------------------- | ----------- | ----------------- | ------------------------------------------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| Market value                     | 36          | 34                | 31                                          | 46                  | 46                  | 46         | 34                       |
-| Capital gains tax (CGT)          | 36          | 34                | 31                                          | 46                  | 46                  | 46         | 34                       |
-| Family law                       | 46          | 44                | 41                                          | 56                  | 56                  | 56         | 44                       |
+| Market value                     | 38          | 36                | 33                                          | 48                  | 48                  | 48         | 36                       |
+| Capital gains tax (CGT)          | 38          | 36                | 33                                          | 48                  | 48                  | 48         | 36                       |
+| Family law                       | 48          | 46                | 43                                          | 58                  | 58                  | 58         | 46                       |
 | Financial reporting (fair value) | 45          | 43                | 40                                          | 55                  | 55                  | 55         | 43                       |
 | Rental assessment                | 42          | 39                | 37                                          | 42                  | 42                  | 48         | 40                       |
 | Insurance / replacement cost     | ⛔          | 36                | 38                                          | 38                  | 38                  | 43         | 35                       |
@@ -76,6 +76,8 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `market.local`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.national`                     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.state`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 | `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
@@ -177,6 +179,8 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `market.local`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.national`                     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.state`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 | `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
@@ -287,6 +291,8 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `market.local`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.national`                     | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
+| `market.state`                        | **R**       | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 | `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
@@ -397,6 +403,8 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `market.local`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.national`                     | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.state`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |
@@ -490,6 +498,8 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `location.coordinates`                | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `location.lga`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `market.local`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.national`                     | r           | r                 | r                                           | r                   | r                   | r          | r                        |
+| `market.state`                        | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `occupancy.status`                    |             | **R**             | **R**                                       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r                 | r                                           | r                   | r                   | r          | r                        |
 | `planning.overlays`                   | **R**       | r                 |                                             | r                   | r                   | r          | r                        |

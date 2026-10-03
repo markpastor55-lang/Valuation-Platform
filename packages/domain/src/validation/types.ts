@@ -7,6 +7,8 @@ import type { CalculationRecord } from '../calc/calculation.js';
 import type { AiSuggestion } from '../ai/suggestions.js';
 import type { RentalComparable, SaleAnalysis, SaleComparable } from '../evidence/comparables.js';
 import type { MarketCommentary, RiskFlag } from '../evidence/market.js';
+import type { CommentaryLevel } from '../evidence/commentary-library.js';
+import { COMMENTARY_MIN_CHARS, COMMENTARY_STALE_MONTHS } from '../evidence/commentary-library.js';
 import type { AreaSchedule, MeasurementApproval } from '../geometry/area-schedule.js';
 import type { PhotoRecord } from '../photo/privacy.js';
 import type { FieldValues, ResolvedRequirements } from '../requirements/resolve.js';
@@ -39,6 +41,10 @@ export interface ValidationConfig {
   readonly minComparables: number;
   readonly saleStaleMonths: number;
   readonly commercialSaleStaleMonths: number;
+  /** Commentary dated more than this many months before the valuation date is dated. */
+  readonly commentaryStaleMonths: Readonly<Record<CommentaryLevel, number>>;
+  /** Commentary shorter than this (characters) is flagged for expansion. */
+  readonly commentaryMinChars: number;
   readonly outlierK: number;
   readonly adoptedRangeTolerance: number;
   readonly requireApprovedRuleSet: boolean;
@@ -49,6 +55,8 @@ export const DEFAULT_VALIDATION_CONFIG: ValidationConfig = {
   minComparables: 3,
   saleStaleMonths: 12,
   commercialSaleStaleMonths: 24,
+  commentaryStaleMonths: COMMENTARY_STALE_MONTHS,
+  commentaryMinChars: COMMENTARY_MIN_CHARS,
   outlierK: 1.5,
   adoptedRangeTolerance: 0.05,
   requireApprovedRuleSet: true,

@@ -184,12 +184,15 @@ async function inspectedJob(
     })(),
     sales,
     saleLocations: locations,
+    provenance: [],
+    commentary: [],
     audit: [],
     seq: 0,
   };
   s = run(
     s,
     now,
+    { type: 'useCommentary', levels: ['national', 'state', 'local'] },
     { type: 'setField', fieldId: 'improvements.condition', assetId: ASSET_ID, value: 'Good' },
     { type: 'useSketchArea' },
     {

@@ -24,6 +24,7 @@ import {
 } from '../model.js';
 import { NextButton, fieldLabel, sectionLabel, type Dispatch, type Navigate } from '../ui.js';
 import { InputFields } from './fields.js';
+import { CommentaryCard } from './commentary.js';
 import { ComparablesCard, MapCard, PropertyDataCard, SalesCard } from './property-data.js';
 import { SketchNotes } from './sketch.js';
 
@@ -293,6 +294,9 @@ export function InputTabScreen(props: ScreenProps & { tab: InputTabId }): JSX.El
         <PropertyDataCard state={props.state} dispatch={props.dispatch} />
       )}
       {props.tab === 'evidence' && <SalesCard state={props.state} dispatch={props.dispatch} />}
+      {props.tab === 'evidence' && (
+        <CommentaryCard state={props.state} d={props.d} dispatch={props.dispatch} />
+      )}
       <InputFields {...props} />
       {props.tab === 'property' && <MapCard state={props.state} />}
       {props.tab === 'evidence' && (

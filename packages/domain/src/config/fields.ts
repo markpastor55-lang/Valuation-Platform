@@ -447,9 +447,15 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
   asset('retail.centreMetrics', 'Centre metrics (where authorised)', 'retail_metrics', 'longtext'),
 
   // ── Market commentary and evidence ───────────────────────────────────────────
-  job('market.national', 'National market commentary', 'market', 'longtext'),
-  job('market.state', 'State market commentary', 'market', 'longtext'),
-  asset('market.local', 'Local market commentary', 'market', 'longtext'),
+  job('market.national', 'National market commentary', 'market', 'longtext', {
+    help: 'Start from the firm’s commentary for this property type, then tailor it',
+  }),
+  job('market.state', 'State market commentary', 'market', 'longtext', {
+    help: 'The state or territory the property is in, for this property type',
+  }),
+  asset('market.local', 'Local market commentary', 'market', 'longtext', {
+    help: 'The suburb and council area: sales activity, supply and demand',
+  }),
   asset('evidence.sales', 'Sales evidence', 'sales_evidence', 'evidence_list'),
   asset('evidence.rentals', 'Rental / leasing evidence', 'rental_evidence', 'evidence_list'),
 

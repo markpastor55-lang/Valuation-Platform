@@ -1366,6 +1366,32 @@ input[type='search'] {
 }
 
 /* ── Property data, sales, map ─────────────────────────────────────── */
+.commentary-level {
+  display: grid;
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.commentary-level h4 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+.commentary-level .notice {
+  margin: 0;
+}
+.commentary-preview > summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+.commentary-text {
+  white-space: pre-wrap;
+  font-size: 0.92rem;
+  margin: 6px 0 0;
+}
+.commentary-level .topics {
+  margin: 0;
+}
 .provider-status {
   display: flex;
   gap: 8px;
