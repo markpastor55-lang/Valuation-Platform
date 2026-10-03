@@ -7,8 +7,10 @@ import {
   raiseFinding,
   respondToFinding,
   signCertification,
+  signingProblems,
   startQaReview,
   transitionJob,
+  valuerIdentityFor,
   type CertificationContent,
   type JobAction,
   type Json,
@@ -22,8 +24,10 @@ import type { Db } from '../db/db.js';
 import { denied, HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
 import { authorizeJob, touchJob, type JobRow } from '../repo/jobs.js';
+import { loadValuerProfile, recordSignatureUse } from '../repo/profiles.js';
 import {
   engagementDocumentCount,
+  jurisdictionToday,
   loadAggregate,
   snapshotHashOf,
   validate,
@@ -87,12 +91,12 @@ async function currentReview(tx: Db, job: JobRow): Promise<QaReview> {
   return rows[0].data;
 }
 
+/**
+ * The valuer's identity (name, designations, API member number, state registration, signature)
+ * comes from the signer's saved profile, never from the request; a `valuer` object sent by older
+ * clients is ignored.
+ */
 const CertificationBody = z.object({
-  valuer: z.object({
-    fullName: z.string().min(2),
-    credentials: z.array(z.string()).min(1),
-    registration: z.object({ jurisdiction: z.string(), number: z.string() }).optional(),
-  }),
   inspectionScopeStatement: z.string().min(5),
   valuationDate: LocalDateSchema,
   basisOfValue: z.string().min(3),
@@ -269,15 +273,26 @@ export function registerWorkflowRoutes(r: Router): void {
         });
         assertEditable(job.status);
         const agg = await loadAggregate(tx, job.id, job);
+        const jurisdiction = agg.selection.jurisdiction;
+        const { profile } = await loadValuerProfile(tx, principal.userId);
+        const problems = signingProblems(
+          profile,
+          jurisdiction,
+          jurisdictionToday(agg, ctx.clock.now()),
+        );
+        if (problems.length) {
+          throw new HttpError(
+            422,
+            'PROFILE_INCOMPLETE',
+            'complete your valuer profile before signing',
+            { problems },
+          );
+        }
+        const valuer = valuerIdentityFor(profile, jurisdiction);
         const snapshotHash = snapshotHashOf(agg);
         const content: CertificationContent = {
           jobId: job.id,
-          valuer: {
-            userId: principal.userId,
-            fullName: body.valuer.fullName,
-            credentials: body.valuer.credentials,
-            ...(body.valuer.registration ? { registration: body.valuer.registration } : {}),
-          },
+          valuer,
           role: 'responsible_valuer',
           inspectionScope: agg.selection.scope,
           inspectionScopeStatement: body.inspectionScopeStatement,
@@ -321,6 +336,16 @@ export function registerWorkflowRoutes(r: Router): void {
             cert.signedAt,
           ],
         );
+        if (profile.signature && valuer.signatureSha256) {
+          await recordSignatureUse(
+            tx,
+            job.org_id,
+            principal.userId,
+            valuer.signatureSha256,
+            profile.signature,
+            cert.signedAt,
+          );
+        }
         await audit(tx, ctx, {
           orgId: job.org_id,
           streamId: jobStream(job.id),
@@ -332,6 +357,10 @@ export function registerWorkflowRoutes(r: Router): void {
             snapshotHash,
             amount: cert.amount.value,
             attestationHash: cert.signature.attestationHash,
+            signatureSha256: valuer.signatureSha256 ?? null,
+            registration: valuer.registration
+              ? `${valuer.registration.jurisdiction} ${valuer.registration.number}`
+              : null,
           },
         });
         return cert;

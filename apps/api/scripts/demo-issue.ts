@@ -182,8 +182,8 @@ try {
     );
   }
   must(
+    // Name, designations, API member number and signature come from the valuer's saved profile.
     await t.call('valuer', 'POST', `/v1/jobs/${jobId}/certification`, {
-      valuer: { fullName: 'Val Valuer', credentials: ['AAPI', 'CPV'] },
       inspectionScopeStatement: 'Full internal and external inspection on 30 September 2026.',
       valuationDate: '2026-09-30',
       basisOfValue: 'Market value',

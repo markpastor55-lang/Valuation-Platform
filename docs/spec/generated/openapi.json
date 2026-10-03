@@ -333,7 +333,7 @@
         ]
       },
       "get": {
-        "summary": "List jobs visible to the user",
+        "summary": "Work in progress: jobs visible to the user with stage and due state; search and stage filter",
         "tags": ["jobs"],
         "x-permission": "job.read",
         "x-actors": ["human"],
@@ -344,6 +344,43 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "new",
+                "to_inspect",
+                "in_progress",
+                "returned",
+                "with_qa",
+                "to_issue",
+                "issued",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "name": "valuerId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         ],
@@ -3036,35 +3073,6 @@
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "type": "object",
                 "properties": {
-                  "valuer": {
-                    "type": "object",
-                    "properties": {
-                      "fullName": {
-                        "type": "string",
-                        "minLength": 2
-                      },
-                      "credentials": {
-                        "minItems": 1,
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "registration": {
-                        "type": "object",
-                        "properties": {
-                          "jurisdiction": {
-                            "type": "string"
-                          },
-                          "number": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["jurisdiction", "number"]
-                      }
-                    },
-                    "required": ["fullName", "credentials"]
-                  },
                   "inspectionScopeStatement": {
                     "type": "string",
                     "minLength": 5
@@ -3131,7 +3139,6 @@
                   }
                 },
                 "required": [
-                  "valuer",
                   "inspectionScopeStatement",
                   "valuationDate",
                   "basisOfValue",
@@ -4950,6 +4957,479 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/me/profile": {
+      "get": {
+        "summary": "Your valuer profile (signature, API member number, state registrations) and what stops you signing",
+        "tags": ["profile"],
+        "x-actors": ["human"],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "Update your own valuer profile used to sign reports (valuers only, MFA); the signature is kept when omitted",
+        "tags": ["profile"],
+        "x-permission": "certification.sign",
+        "x-actors": ["human"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "credentials": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 40
+                    }
+                  },
+                  "apiMemberNumber": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "registrations": {
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "jurisdiction": {
+                          "type": "string",
+                          "enum": ["QLD", "WA"]
+                        },
+                        "number": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "expiresOn": {
+                          "type": "string",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        }
+                      },
+                      "required": ["jurisdiction", "number"]
+                    }
+                  },
+                  "signature": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": ["drawn", "typed"]
+                          },
+                          "value": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["kind", "value"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["fullName", "credentials", "registrations"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/integrations/status": {
+      "get": {
+        "summary": "Property data provider status and state government map services",
+        "tags": ["integrations"],
+        "x-permission": "job.read",
+        "x-actors": ["human"],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/property-search": {
+      "get": {
+        "summary": "Search by address: provider property matches and existing jobs the user can see",
+        "tags": ["integrations"],
+        "x-permission": "job.read",
+        "x-actors": ["human"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{jobId}/assets/{assetId}/property-data": {
+      "post": {
+        "summary": "Look up licensed property data for an asset: field suggestions with provenance, sales history and an automated estimate (nothing is saved)",
+        "tags": ["integrations"],
+        "x-permission": "asset.edit",
+        "x-actors": ["human"],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "propertyId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9._:-]+$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{jobId}/assets/{assetId}/comparables/search": {
+      "post": {
+        "summary": "Search the provider for recent nearby sales as candidate evidence (nothing is saved; add chosen sales with POST /sales)",
+        "tags": ["integrations"],
+        "x-permission": "evidence.edit",
+        "x-actors": ["human"],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "radiusKm": {
+                    "default": 2,
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 10
+                  },
+                  "months": {
+                    "default": 12,
+                    "type": "integer",
+                    "minimum": 3,
+                    "maximum": 36
+                  },
+                  "limit": {
+                    "default": 10,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                  },
+                  "propertyId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z0-9._:-]+$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{jobId}/map": {
+      "get": {
+        "summary": "Map for a job: the state's government map service, the subject properties and sales",
+        "tags": ["map"],
+        "x-permission": "job.read",
+        "x-actors": ["human"],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",

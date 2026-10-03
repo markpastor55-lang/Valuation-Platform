@@ -222,6 +222,86 @@ same `Provenance`, same `ConnectorPolicy`, same fallback rule.
 Sales/rental evidence, construction-cost data (Rawlinsons/AIQS), e-signature, email and accounting
 connectors follow the same policy model and are specified with the API contracts (07).
 
+### 4.1 Licensed property data: CoreLogic (Cotality)
+
+Decision 01 D15. Property attributes, sales history, comparable sales and an automated estimate
+come from CoreLogic Australia (trading as Cotality) through the provider-neutral
+`PropertyDataProvider` contract (`packages/domain/src/integration/property-data.ts`). The API
+implementation is `CoreLogicProvider` (`apps/api/src/integrations/corelogic.ts`).
+**API keys have not been supplied**, so the connector is built and tested but not configured in
+any environment.
+
+| Topic              | Behaviour                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Authentication     | OAuth 2.0 client credentials. The client id and secret are sent to the token URL as form fields (`CORELOGIC_TOKEN_AUTH=body`, the default), an HTTP Basic header (`basic`) or URL parameters (`query`, only if the portal requires it). The token is cached until 60 seconds before it expires; a `401` from an API call refreshes the token and retries that call once. |
+| Requests           | Bearer `GET` requests through the domain connector policy (`callWithPolicy`): 10 s timeout, 2 retries with backoff for timeouts, `429` and `5xx`, rate limit, circuit breaker; other `4xx` responses and rejected credentials are not retried. A failure ends in `502 PROPERTY_DATA_UNAVAILABLE` with `fallback: manual_entry`, and field work carries on by hand.       |
+| Parsing            | Responses are parsed defensively (zod, loose objects): unknown fields are ignored, wrongly typed optional values are dropped, one malformed record never discards the rest, and only the values the domain contract needs are kept. A response of the wrong overall shape is treated as unavailable.                                                                     |
+| Optional parts     | Floor area and year built, location, title (lot/plan) and zoning come from separate endpoints. A `403`/`404` or an outage on one of them leaves those values out of the suggestions instead of failing the lookup.                                                                                                                                                       |
+| Secrets and logs   | Keys come only from the server's secret store, never from requests, and are never logged or returned. Error messages carry the endpoint name and HTTP status only; anything credential-like is scrubbed. Response bodies and addresses are not logged.                                                                                                                   |
+| What is kept       | Nothing is written to the job by a lookup. The valuer accepts suggestions through `PUT /fields` (with the returned provenance, marked `verified`) and adds chosen sales through `POST /sales`. Licence terms decide what may be stored and reported `[REVIEW: DATA_LICENSING]`.                                                                                          |
+| Automated estimate | Registered as its own data source (`ds-corelogic-avm`, `permitsReportReproduction: false`), fetched only when that source is active and the caller has `valuation.edit`, and labelled "a cross-check only, never the valuation".                                                                                                                                         |
+
+Default endpoint paths, all in one configuration object (`CORELOGIC_DEFAULT_PATHS`) and
+overridable with `CORELOGIC_PATHS`. They are our best understanding of the Cotality APIs; the
+developer portal (developer.corelogic.asia) is behind a login, so every path must be checked
+there under the firm's licence before live use `[REVIEW: DATA_LICENSING]`.
+
+| Endpoint               | Default path (base `https://api.corelogic.asia`)                                            | Used for                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Token                  | `/access/oauth/token` (`CORELOGIC_TOKEN_URL`)                                               | Client-credentials token                                                                                                        |
+| `suggest`              | `/property/au/v2/suggest.json?q=&suggestionTypes=address&limit=5`                           | Address search and matching                                                                                                     |
+| `attributesCore`       | `/property-details/au/properties/{propertyId}/attributes/core`                              | Bedrooms, bathrooms, car spaces, land area, property type (required)                                                            |
+| `attributesAdditional` | `/property-details/au/properties/{propertyId}/attributes/additional`                        | Floor area, year built (optional)                                                                                               |
+| `location`             | `/property-details/au/properties/{propertyId}/location`                                     | Address, coordinates, council (optional)                                                                                        |
+| `legal`                | `/property-details/au/properties/{propertyId}/legal`                                        | Lot/plan, title reference (optional)                                                                                            |
+| `site`                 | `/property-details/au/properties/{propertyId}/site`                                         | Zoning (optional)                                                                                                               |
+| `salesHistory`         | `/property-details/au/properties/{propertyId}/sales`                                        | Sales history of the property                                                                                                   |
+| `comparables`          | `/search/au/property/geo/radius/lastSale?lat=&lon=&radius=&pTypes=&fromDate=&toDate=&size=` | Recent sales within a radius; results are also filtered locally by distance, date window and limit, and the subject is excluded |
+| `avm`                  | `/avm/au/properties/{propertyId}/avm/intellival/consumer/current`                           | Automated estimate (IntelliVal)                                                                                                 |
+
+### 4.2 Sample property data while keys are not supplied
+
+`createSamplePropertyDataProvider` returns made-up, deterministic data for six fictional
+addresses (e.g. `10 Sample Road, Exampleton VIC 3000`) and generated comparable sales around
+them. It is registered as `ds-sample-property-data` and `ds-sample-avm`, both with
+`permitsReportReproduction: false`, so a report that relies on sample data cannot be issued
+(`VAL-PROV-003`, blocking). `PROPERTY_DATA_MODE` chooses the provider:
+
+| `PROPERTY_DATA_MODE` | Keys supplied | Result                                                  |
+| -------------------- | ------------- | ------------------------------------------------------- |
+| not set              | yes           | `corelogic`                                             |
+| not set              | no            | `sample` in development and test; `off` in production   |
+| `corelogic`          | no            | `off` with the reason "CoreLogic API keys not supplied" |
+| `sample`             | either        | sample data (refused at start-up in production)         |
+| `off`                | either        | property data off (`503 PROPERTY_DATA_NOT_CONFIGURED`)  |
+
+`GET /v1/integrations/status` reports the state (`connected`, `sample` or `not_configured`) and
+the reason, so screens can label sample data and explain why live data is missing.
+
+### 4.3 State and territory government map services
+
+`STATE_MAP_SERVICES` (`packages/domain/src/integration/state-maps.ts`) lists, per jurisdiction,
+the free government viewer the valuer can open for a property and, where one is published, a
+basemap tile service the app can draw under the job's properties. `GET /v1/jobs/:jobId/map`
+returns the job's service with its subject properties. Endpoints, attribution and terms of use
+are confirmed by the `DATA_LICENSING` reviewer before use; the tile licences below are recorded
+as "to be confirmed".
+
+| Code  | Viewer                   | Planning viewer                    | Basemap tiles                                                 | Custodian                                   |
+| ----- | ------------------------ | ---------------------------------- | ------------------------------------------------------------- | ------------------------------------------- |
+| `VIC` | VicPlan                  | —                                  | Vicmap Basemaps (cartographic), CC BY 4.0 (to be confirmed)   | Department of Transport and Planning        |
+| `NSW` | SIX Maps                 | NSW Planning Portal spatial viewer | NSW Base Map, CC BY 4.0 (to be confirmed)                     | Spatial Services NSW                        |
+| `QLD` | Queensland Globe         | —                                  | Queensland basemap (topographic), CC BY 4.0 (to be confirmed) | Department of Resources                     |
+| `WA`  | Landgate Map Viewer Plus | —                                  | —                                                             | Landgate                                    |
+| `SA`  | Location SA Map Viewer   | SA Property and Planning Atlas     | —                                                             | Department for Infrastructure and Transport |
+| `TAS` | LISTmap                  | —                                  | —                                                             | Land Tasmania (theLIST)                     |
+| `ACT` | ACTmapi                  | —                                  | —                                                             | ACT Government                              |
+| `NT`  | NR Maps                  | —                                  | —                                                             | Northern Territory Government               |
+
+Viewers are opened as links; nothing is scraped from them. Tiles are display-only and always
+shown with their attribution. Sales evidence does not store coordinates yet, so the job map
+shows the subject properties only and says so.
+
 ## 5. Connector policy and error behaviour
 
 ### 5.1 Default `ConnectorPolicy` values
@@ -337,11 +417,14 @@ credentials; it records availability only and stores no payloads unless the lice
 
 ## 8. Open decisions
 
-| #   | Decision                                                                                                           | Owner                                         |
-| --- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
-| 1   | First jurisdictions and authorised data providers (brief §12, decision D2)                                         | Product + `[REVIEW: DATA_LICENSING]`          |
-| 2   | Whether automated generation and storage of the VIC Planning Property Report is permitted                          | `[REVIEW: DATA_LICENSING]`                    |
-| 3   | Freshness thresholds per family and per purpose                                                                    | `[REVIEW: API_STANDARDS]`                     |
-| 4   | Report wording for adapter-sourced planning data, hazard "not mapped" statements and current-controls-only caveats | `[REVIEW: API_STANDARDS]`, `[REVIEW: LEGAL]`  |
-| 5   | QLD council adapter priority list                                                                                  | Product, based on job volume                  |
-| 6   | Retention of raw provider payloads per licence (see 11 §5, RC-15)                                                  | `[REVIEW: DATA_LICENSING]`, `[REVIEW: LEGAL]` |
+| #   | Decision                                                                                                                                                      | Owner                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| 1   | First jurisdictions and authorised data providers (brief §12, decision D2)                                                                                    | Product + `[REVIEW: DATA_LICENSING]`           |
+| 2   | Whether automated generation and storage of the VIC Planning Property Report is permitted                                                                     | `[REVIEW: DATA_LICENSING]`                     |
+| 3   | Freshness thresholds per family and per purpose                                                                                                               | `[REVIEW: API_STANDARDS]`                      |
+| 4   | Report wording for adapter-sourced planning data, hazard "not mapped" statements and current-controls-only caveats                                            | `[REVIEW: API_STANDARDS]`, `[REVIEW: LEGAL]`   |
+| 5   | QLD council adapter priority list                                                                                                                             | Product, based on job volume                   |
+| 6   | Retention of raw provider payloads per licence (see 11 §5, RC-15)                                                                                             | `[REVIEW: DATA_LICENSING]`, `[REVIEW: LEGAL]`  |
+| 7   | CoreLogic (Cotality) licence: what may be stored, cached offline and reproduced in reports; attribution wording; whether the automated estimate may be stored | `[REVIEW: DATA_LICENSING]`                     |
+| 8   | Verify the CoreLogic endpoint paths, token method and response fields (§4.1) on the Cotality developer portal once keys are supplied                          | Integrations lead + `[REVIEW: DATA_LICENSING]` |
+| 9   | Terms of use and attribution for each state government viewer and basemap tile service (§4.3)                                                                 | `[REVIEW: DATA_LICENSING]`                     |

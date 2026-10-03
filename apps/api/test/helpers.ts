@@ -6,6 +6,7 @@ import { PgliteDb, type Db } from '../src/db/db.js';
 import { migrate } from '../src/db/migrate.js';
 import { DEMO, seedDemo } from '../src/db/seed.js';
 import { RecordingEmailTransport } from '../src/services/email.js';
+import type { PropertyDataService } from '../src/integrations/property-data.js';
 
 export { DEMO };
 export type UserKey = keyof typeof DEMO.users;
@@ -26,7 +27,10 @@ export interface TestApp {
   close(): Promise<void>;
 }
 
-export async function createTestApp(env: Record<string, string> = {}): Promise<TestApp> {
+export async function createTestApp(
+  env: Record<string, string> = {},
+  opts: { propertyData?: PropertyDataService } = {},
+): Promise<TestApp> {
   const db = await PgliteDb.create();
   await migrate(db);
   await seedDemo(db);
@@ -42,7 +46,13 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
   };
   const config: AppConfig = loadConfig({ NODE_ENV: 'test', ...env });
   const email = new RecordingEmailTransport();
-  const { app, ctx } = await buildApp({ config, db, clock: { now: () => clock.now() }, email });
+  const { app, ctx } = await buildApp({
+    config,
+    db,
+    clock: { now: () => clock.now() },
+    email,
+    ...(opts.propertyData ? { propertyData: opts.propertyData } : {}),
+  });
   return {
     app,
     db,

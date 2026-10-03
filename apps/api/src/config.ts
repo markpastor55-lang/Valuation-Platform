@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CORELOGIC_DEFAULT_PATHS, type CoreLogicEndpoint } from './integrations/corelogic.js';
 
 const bool = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1');
 
@@ -17,6 +18,14 @@ const EnvSchema = z.object({
   REQUIRE_APPROVED_CONFIG_FOR_ISSUE: bool.optional(),
   GST_RATE: z.coerce.number().min(0).max(1).default(0.1),
   EMAIL_FROM: z.email().default('reports@example.com'),
+  PROPERTY_DATA_MODE: z.enum(['corelogic', 'sample', 'off']).optional(),
+  CORELOGIC_CLIENT_ID: z.string().trim().min(1).optional(),
+  CORELOGIC_CLIENT_SECRET: z.string().trim().min(1).optional(),
+  CORELOGIC_BASE_URL: z.url().default('https://api.corelogic.asia'),
+  CORELOGIC_TOKEN_URL: z.url().optional(),
+  CORELOGIC_TOKEN_AUTH: z.enum(['body', 'basic', 'query']).default('body'),
+  /** JSON object overriding endpoint paths, e.g. {"avm":"/avm/au/…"}. */
+  CORELOGIC_PATHS: z.string().optional(),
 });
 
 export interface AppConfig {
@@ -40,7 +49,29 @@ export interface AppConfig {
   readonly requireApprovedConfigForIssue: boolean;
   readonly gstRate: number;
   readonly emailFrom: string;
+  /**
+   * Licensed property data. `corelogic` only when both API keys are supplied; otherwise `sample`
+   * (made-up data, development and test only) or `off`. Keys come from the secret store.
+   */
+  readonly propertyData: {
+    readonly mode: 'corelogic' | 'sample' | 'off';
+    readonly keysSupplied: boolean;
+    readonly corelogic: {
+      readonly clientId?: string;
+      readonly clientSecret?: string;
+      readonly baseUrl: string;
+      readonly tokenUrl: string;
+      readonly tokenAuth: 'body' | 'basic' | 'query';
+      readonly paths: Readonly<Partial<Record<CoreLogicEndpoint, string>>>;
+    };
+  };
 }
+
+/** Overrides for the CoreLogic endpoint paths (unknown endpoint names are refused). */
+const CoreLogicPathsSchema = z.partialRecord(
+  z.enum(Object.keys(CORELOGIC_DEFAULT_PATHS) as [CoreLogicEndpoint, ...CoreLogicEndpoint[]]),
+  z.string().regex(/^(\/.*)?$/),
+);
 
 /**
  * Loads environment-specific configuration. Secrets (database credentials, IdP settings) come
@@ -62,7 +93,26 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
   if (authMode === 'oidc' && (!e.OIDC_ISSUER || !e.OIDC_AUDIENCE || !e.OIDC_JWKS_URL)) {
     problems.push('OIDC_ISSUER, OIDC_AUDIENCE and OIDC_JWKS_URL are required for oidc auth');
   }
+  if (production && e.PROPERTY_DATA_MODE === 'sample')
+    problems.push('PROPERTY_DATA_MODE=sample (made-up data) cannot be used in production');
+  let corelogicPaths: Partial<Record<CoreLogicEndpoint, string>> = {};
+  if (e.CORELOGIC_PATHS) {
+    try {
+      corelogicPaths = CoreLogicPathsSchema.parse(JSON.parse(e.CORELOGIC_PATHS));
+    } catch {
+      problems.push('CORELOGIC_PATHS must be a JSON object of endpoint paths starting with /');
+    }
+  }
   if (problems.length) throw new Error(`invalid configuration: ${problems.join('; ')}`);
+  const keysSupplied = Boolean(e.CORELOGIC_CLIENT_ID && e.CORELOGIC_CLIENT_SECRET);
+  const propertyDataMode =
+    e.PROPERTY_DATA_MODE === 'corelogic' || e.PROPERTY_DATA_MODE === undefined
+      ? keysSupplied
+        ? 'corelogic'
+        : e.PROPERTY_DATA_MODE === undefined && !production
+          ? 'sample'
+          : 'off'
+      : e.PROPERTY_DATA_MODE;
 
   return {
     env: e.NODE_ENV,
@@ -86,5 +136,18 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
       : (e.REQUIRE_APPROVED_CONFIG_FOR_ISSUE ?? true),
     gstRate: e.GST_RATE,
     emailFrom: e.EMAIL_FROM,
+    propertyData: {
+      mode: propertyDataMode,
+      keysSupplied,
+      corelogic: {
+        ...(e.CORELOGIC_CLIENT_ID ? { clientId: e.CORELOGIC_CLIENT_ID } : {}),
+        ...(e.CORELOGIC_CLIENT_SECRET ? { clientSecret: e.CORELOGIC_CLIENT_SECRET } : {}),
+        baseUrl: e.CORELOGIC_BASE_URL,
+        tokenUrl:
+          e.CORELOGIC_TOKEN_URL ?? `${e.CORELOGIC_BASE_URL.replace(/\/+$/, '')}/access/oauth/token`,
+        tokenAuth: e.CORELOGIC_TOKEN_AUTH,
+        paths: corelogicPaths,
+      },
+    },
   };
 }

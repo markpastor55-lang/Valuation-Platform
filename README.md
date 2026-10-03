@@ -68,6 +68,9 @@ state stays in the browser.
 The OpenAPI contract is served at `/v1/openapi.json` and committed at
 [`docs/spec/generated/openapi.json`](docs/spec/generated/openapi.json). Demo user ids are listed in
 `apps/api/src/db/seed.ts`.
+The demo valuers have signing profiles (`GET /v1/me/profile`): placeholder API member numbers, a
+typed signature and, for `valuer@example.com`, placeholder QLD and WA registration numbers, so demo
+jobs can be signed in any state.
 
 ### Configuration
 

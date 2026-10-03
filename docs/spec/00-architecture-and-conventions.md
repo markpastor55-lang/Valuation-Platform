@@ -143,6 +143,8 @@ The permission matrix is defined in code (`packages/domain/src/auth/permissions.
 generated table is in `generated/permission-matrix.md`. Separation-of-duties rules:
 
 - `certification.sign` — only the job's responsible valuer, as a human actor, with MFA.
+  The same permission (human, MFA, no job scope) lets a valuer update their own signing profile
+  (`PUT /v1/me/profile`); nobody can edit another person's profile (01 D13).
 - `valuation.edit` — professional-judgement fields (evidence selection, approaches, rates,
   reconciliation, conclusions) are written only by valuers; field inspectors capture facts. In the
   default workflow the valuer inspects and values; `FIELD_INSPECTOR` is optional, for firms that
@@ -202,7 +204,10 @@ Actions emitted by the iteration-1 API (see `06-data-model-and-audit.md` for whe
 `report.issued`, `report.accessed`, `invoice.created`, `email.queued`, `email.sent`,
 `email.delivery_updated`, `template.version_created`, `template.review_recorded`,
 `template.version_approved`, `ruleset.version_approved`, `recipient.approved`, `legal_hold.applied`,
-`sync.operation_applied`, `sync.conflict_detected`, `auth.denied`.
+`sync.operation_applied`, `sync.conflict_detected`, `auth.denied`, `profile.updated` (a valuer
+changed their own signing profile, 01 D13), `property_data.retrieved` (property data or comparable
+sales were looked up from the property data provider for an asset; metadata holds the provider,
+source, property id and counts, never data values; 01 D15).
 
 Planned (later iterations): `asset.updated`, `datasource.used`, `datasource.lookup_failed`,
 `datasource.fallback_task_created`, `datasource.verified`, `datasource.config_changed`,

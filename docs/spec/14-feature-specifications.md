@@ -891,14 +891,14 @@ Common errors, plus `404 NOT_FOUND` (no current finding for that code and path),
 
 ### F-18 — Certification and submission for QA
 
-**Status:** Implemented in domain/API: template-driven certification content and a typed attestation by the responsible valuer (human, MFA), bound to the content snapshot hash, followed by locked submission. Planned: e-signature (S-070, Pilot), co-signatory statements, a credential register with expiry, and the W-11 UI. · E-11 · S-015 (Done), S-054, S-070 · J-08 · W-11
+**Status:** Implemented in domain/API: template-driven certification content and a typed attestation by the responsible valuer (human, MFA), bound to the content snapshot hash, followed by locked submission; the valuer's own profile (sign-off signature, API member number, QLD registration / WA licence, 01 D13), printed on the certification. Planned: e-signature (S-070, Pilot), co-signatory statements, verification of membership and registration numbers, and the W-11 UI. · E-11 · S-015 (Done), S-054, S-070 · J-08 · W-11
 
 **User story**
 As the responsible valuer, I want to sign a template-driven certification for exactly the content I have reviewed, and then submit it for QA, so that only I can certify my valuation and later changes invalidate my signature.
 
 **Acceptance criteria**
 
-1. `POST /certification` takes: `valuer` {`fullName`, `credentials` (at least one), `registration`?}; `inspectionScopeStatement`, `valuationDate`, `basisOfValue`; `amount` {`value` > 0, `kind`: value, market_rent or sum_insured}; `independenceStatement`, `conflictsStatement`, `assumptions`, `specialAssumptions`; `limitations` (at least one), `standardsReliedOn` (at least one); `attestationText` (≥ 20 characters). It stores a certification with the current snapshot hash, the attestation hash and the clause version ids from the template's `certification-core` clauses, and records `certification.signed`.
+1. `POST /certification` takes: `inspectionScopeStatement`, `valuationDate`, `basisOfValue`; `amount` {`value` > 0, `kind`: value, market_rent or sum_insured}; `independenceStatement`, `conflictsStatement`, `assumptions`, `specialAssumptions`; `limitations` (at least one), `standardsReliedOn` (at least one); `attestationText` (≥ 20 characters). It stores a certification with the current snapshot hash, the attestation hash and the clause version ids from the template's `certification-core` clauses, and records `certification.signed`. The valuer identity (full name, designations, API member number, the registration for the job's state where one is needed, signature fingerprint) is copied from the signer's saved profile; a `valuer` object in the request is ignored.
 2. Only the job's responsible valuer, as a human actor with the MFA claim, can sign. Anyone else gets `403` (`SEPARATION_OF_DUTIES`, `HUMAN_REQUIRED` or `MFA_REQUIRED`) and `auth.denied` is recorded (SoD-01).
 3. If `valuationDate` differs from `dates.valuation`, `422 CERTIFICATION_MISMATCH` is returned. At submit and issue, `VAL-CERT-002` blocks if the certified amount, basis of value or valuation date no longer matches the adopted figures and dates in the report.
 4. Incomplete content returns `409 GUARD_FAILED` listing the issues. Examples: no approved clause versions, no limitations, a non-positive amount.
@@ -906,38 +906,44 @@ As the responsible valuer, I want to sign a template-driven certification for ex
 6. `POST /submit` (`certification.sign`, responsible valuer) requires zero blocking findings, zero unacknowledged warnings and a current certification. On success: the job moves `active`/`returned` → `submitted`; the snapshot hash is recorded and content is locked; `job.submitted` is recorded.
 7. Placeholder or draft clauses block production issue (G1, `VAL-TPL-002`). Certification wording is `[REVIEW: API_STANDARDS]` `[REVIEW: LEGAL]`; the family-law declaration is `[REVIEW: FAMILY_LAW]`.
 8. Software and AI never sign (SoD-06). _(planned)_ E-signature records method `e_signature` and a `providerRef` `[REVIEW: LEGAL]`.
-9. _(planned)_ Further checks: co-signatories sign their own statements (A-12, Q-03); credentials must be current for the jurisdiction (proposed `VAL-CERT-003`).
+9. Signing is refused with `422 PROFILE_INCOMPLETE` (`details.problems`) while the signer's profile has problems, no signature, or, for a QLD or WA job, no registration for that state or one that has expired on the state's current date. `VAL-CERT-003` blocks submit and issue of a QLD or WA certification without that registration. _(planned)_ Co-signatories sign their own statements (A-12, Q-03).
 10. Issuing without a certification is blocked by `VAL-CERT-001`. A prospective valuation date needs a special assumption (`VAL-DATE-001`).
 11. On the Review tab the valuer has one action, **Sign and send to QA**, which signs the certification and submits in one step (01 D12; implemented in the preview, planned for mobile/web). The API keeps the two calls (`POST /certification`, `POST /submit`), so each guard above still applies.
+12. Valuer profile (01 D13): `GET /v1/me/profile` returns the caller's own profile (defaulting to their display name and credentials before the first save), its problems, whether it is ready to sign, and for QLD and WA whether the registration is in order. `PUT /v1/me/profile` saves it: only for the caller (there is no user id in the path), only for holders of `certification.sign` (valuers), human, with MFA. Name and at least one designation are required; the API member number is 3–20 letters, digits or hyphens; registrations are recorded only for QLD and WA, one each, with an optional expiry date. Problems return `422 INVALID_PROFILE` with `details.problems`.
+13. The sign-off signature is drawn or uploaded as a PNG (`data:image/png;base64,`, at most 200,000 characters, bytes must decode as a PNG that can be embedded in a PDF) or typed. Leaving it out of `PUT` keeps the saved one; `null` removes it. The audit event `profile.updated` records the signature's kind and SHA-256, never the image.
+14. The issued PDF shows the API member number and the state registration (labelled e.g. "Queensland registered valuer number") in the certification block, then the signature: the drawn image scaled to fit 180 × 60 pt, or the typed name in italics, with a signature line, "Signature of <name>" and the SHA-256 fingerprint. The signature used at signing is kept by its hash (`valuer_signature`, append-only), so changing the profile later does not change a signed certification or an issued report, and the issue snapshot carries the image so reproduction stays byte for byte.
 
 **Data fields**
 
 - Catalogue: `dates.valuation`, `instruction.basisOfValue`, `valuation.adoptedValue`, `rent.adoptedMarketRent`, `ins.sumInsured`, `assumptions.general`, `assumptions.special`, `assumptions.limitations`, `assumptions.materialUncertainty`, `instruction.conflictCheck`.
-- Record `certification`: the content above, plus `signedAt`, `snapshotHash` and `signature` {`method`, `attestationText`, `attestationHash`, `providerRef`}.
+- Record `certification`: the content above, plus `signedAt`, `snapshotHash` and `signature` {`method`, `attestationText`, `attestationHash`, `providerRef`}; `valuer` {`userId`, `fullName`, `credentials`, `apiMemberNumber`?, `registration`? {`jurisdiction`, `number`}, `signatureSha256`?}.
+- Record `valuer_profile`: `fullName`, `credentials`, `apiMemberNumber`, `registrations` [{`jurisdiction` QLD or WA, `number`, `expiresOn`?}], `signature` {`kind` drawn or typed, `value`, `updatedAt`}. Record `valuer_signature`: `userId`, `sha256`, `kind`, `value`.
 
 **Validation**
-`VAL-CERT-001`, `VAL-CERT-002`, `VAL-TPL-002`, `VAL-DATE-001`, and every submit-stage rule. Proposed: `VAL-CERT-003`.
+`VAL-CERT-001`, `VAL-CERT-002`, `VAL-CERT-003`, `VAL-TPL-002`, `VAL-DATE-001`, and every submit-stage rule. Profile checks: `profileProblems` and `signingProblems` (`packages/domain/src/workflow/valuer-profile.ts`).
 
 **Permissions**
-`certification.sign` (VALUER; human only; MFA; responsible valuer only). It also gates `submitForQa`.
+`certification.sign` (VALUER; human only; MFA; responsible valuer only). It also gates `submitForQa` and, without a job scope, `PUT /v1/me/profile` (own profile only). `GET /v1/me/profile` needs only an authenticated person.
 
 **Audit events**
-`certification.signed`, `job.submitted`, `auth.denied`.
+`certification.signed` (with the signature fingerprint and the registration printed), `job.submitted`, `profile.updated` (**org** stream), `auth.denied`.
 
 **Offline behaviour**
 Online only, because MFA step-up is required. W-11 is disabled offline with the reason (UX-09). Submission requires no pending sync operations or conflicts.
 
 **Error states**
-Common errors, plus `403 SEPARATION_OF_DUTIES`, `HUMAN_REQUIRED`, `MFA_REQUIRED`; `422 CERTIFICATION_MISMATCH`; `409 GUARD_FAILED`, with submit failures such as "N blocking validation(s) unresolved", "N warning(s) not acknowledged", "certification has not been signed", "content changed after certification; re-certify"; `409 INVALID_TRANSITION`; `409 RECORD_LOCKED`.
+Common errors, plus `403 SEPARATION_OF_DUTIES`, `HUMAN_REQUIRED`, `MFA_REQUIRED`; `422 CERTIFICATION_MISMATCH`; `422 PROFILE_INCOMPLETE` (signing); `422 INVALID_PROFILE` (profile update); `409 GUARD_FAILED`, with submit failures such as "N blocking validation(s) unresolved", "N warning(s) not acknowledged", "certification has not been signed", "content changed after certification; re-certify"; `409 INVALID_TRANSITION`; `409 RECORD_LOCKED`.
 
 **Tests**
 
 - `packages/domain/test/workflow.test.ts` › "is signed by the responsible valuer with MFA and binds to the snapshot"; "can never be signed by software, AI, another user or without MFA"; "rejects incomplete certification content"; "cannot submit with blocking validations, unacknowledged warnings or no certification"; "requires re-certification when content changes after signing"; "locks content once submitted".
 - `apps/api/test/lifecycle.test.ts` › "only the responsible valuer, with MFA, can certify; then submit locks the job".
+- `apps/api/test/profile.test.ts` › "returns the caller’s own profile with registration status per state"; "only valuers update a profile, with MFA, and only their own"; "refuses incomplete profiles and signatures that are not PNG images"; "saves a drawn signature and audits its fingerprint, not the image"; "refuses to sign until the valuer’s profile has their QLD registration"; "issues a PDF showing the API member number, registration and signature"; "reproduces the issued PDF from the snapshot".
+- `packages/domain/test/wip-profile-integrations.test.ts` › valuer profile and state registration.
 - `packages/domain/test/permissions.test.ts` › "allows the responsible valuer to sign and denies other valuers"; "requires MFA and a human for certification".
 - `packages/domain/test/validation.test.ts` › "passes when the certificate matches the report"; "blocks a certified amount, date or basis that differs from the report".
 - `apps/api/test/security.test.ts` › "verifies tokens against the issuer keys and maps amr to MFA".
-- TC-ROLE-004, TC-WF-002, TC-VAL-001. **Gap:** co-signatories; e-signature; expired credentials (J-08 E6); placeholder clauses blocking signing in production (J-08 E4); late sync between validation and signing (J-08 E1).
+- TC-ROLE-004, TC-WF-002, TC-VAL-001. **Gap:** co-signatories; e-signature; expired designations other than QLD/WA registrations (J-08 E6); placeholder clauses blocking signing in production (J-08 E4); late sync between validation and signing (J-08 E1).
 
 ### F-19 — QA review and self-approval exceptions
 
@@ -1204,7 +1210,6 @@ Each item below needs a change to the named source: the code (then `pnpm docs:ge
 | `VAL-SYNC-001`  | blocking · submit               | Unresolved sync conflicts exist on the job (UX-10)                                                                                                   | F-07       |
 | `VAL-INSP-001`  | warning · submit, issue         | Inspection finished with checklist gaps; a reason is recorded per gap (J-04 step 11)                                                                 | F-07       |
 | `VAL-AREA-005`  | blocking · draft, submit, issue | Calibration check dimension deviates beyond tolerance (default 2 %) without recalibration or reason (J-06 E2). Matching code `GEO-CALIBRATION-CHECK` | F-10       |
-| `VAL-CERT-003`  | blocking · submit, issue        | The signing valuer's credentials are expired or not current for the asset jurisdiction (J-08 E6) `[REVIEW: API_STANDARDS]`                           | F-18       |
 | `VAL-DATE-010`  | blocking · draft, submit, issue | Commentary or evidence dated after `dates.researchCutOff` (any purpose; J-07 step 8)                                                                 | F-16       |
 | `VAL-AI-002`    | blocking · submit, issue        | Accepted facts conflict within one area (J-05 E4)                                                                                                    | F-09       |
 | `VAL-AI-003`    | warning · submit, issue         | An inspector-accepted fact has not been confirmed by the valuer (A-25)                                                                               | F-09       |

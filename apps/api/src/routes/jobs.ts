@@ -17,6 +17,9 @@ import {
   resolveRequirements,
   selectRuleSet,
   selectTemplate,
+  buildWip,
+  WIP_STAGES,
+  type WipStage,
   type JobAction,
   type JobSelection,
   type Principal,
@@ -50,6 +53,7 @@ import {
 } from '../services/aggregate.js';
 import { audit, jobStream } from '../services/audit.js';
 import { writeField } from '../services/fields.js';
+import { loadVisibleJobs, wipJobView, wipToday } from '../services/wip.js';
 import {
   AssetInput,
   JobParams,
@@ -383,28 +387,39 @@ export function registerJobRoutes(r: Router): void {
   r.add({
     method: 'GET',
     url: '/v1/jobs',
-    summary: 'List jobs visible to the user',
+    summary:
+      'Work in progress: jobs visible to the user with stage and due state; search and stage filter',
     tags: ['jobs'],
     permission: 'job.read',
-    query: z.object({ status: z.string().optional() }),
+    query: z.object({
+      status: z.string().optional(),
+      /** Words matched against reference, client, addresses, valuer, purpose, type, state, stage. */
+      q: z.string().trim().max(200).optional(),
+      stage: z.enum(WIP_STAGES.map((s) => s.id) as [WipStage, ...WipStage[]]).optional(),
+      valuerId: Uuid.optional(),
+    }),
     handler: async ({ ctx, principal, query }) => {
-      const { rows } = await ctx.db.query<JobRow>(
-        `SELECT * FROM job WHERE org_id = $1 ${query.status ? 'AND status = $2' : ''} ORDER BY created_at DESC LIMIT 500`,
-        query.status ? [principal.orgId, query.status] : [principal.orgId],
+      const visible = await loadVisibleJobs(
+        ctx,
+        principal,
+        compact({ status: query.status, valuerId: query.valuerId }),
       );
-      const visible = [];
-      for (const job of rows) {
-        if (authorize(principal, 'job.read', await jobResource(ctx.db, job)).allowed) {
-          visible.push({
-            id: job.id,
-            reference: job.reference,
-            status: job.status,
-            selection: selectionOf(job),
-            responsibleValuerId: job.responsible_valuer_id,
-          });
-        }
-      }
-      return { jobs: visible };
+      const today = wipToday(ctx);
+      const board = buildWip(
+        visible.map((v) => v.wip),
+        today,
+        compact({ query: query.q, stage: query.stage }),
+      );
+      const rows = new Map(visible.map((v) => [v.row.id, v.row]));
+      return {
+        today,
+        jobs: board.rows.flatMap((r) => {
+          const row = rows.get(r.job.id);
+          return row ? [wipJobView(row, r)] : [];
+        }),
+        counts: board.counts,
+        overdue: board.overdue,
+      };
     },
   });
 

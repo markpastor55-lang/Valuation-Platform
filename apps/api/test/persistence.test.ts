@@ -17,6 +17,7 @@ describe('migrations', () => {
         '0002_immutability',
         '0003_counters_and_sync_scope',
         '0004_cgt_purpose',
+        '0005_valuer_profile',
       ]);
       expect((await migrate(db)).applied).toEqual([]);
       const tampered = (await loadMigrations()).map((m) =>
