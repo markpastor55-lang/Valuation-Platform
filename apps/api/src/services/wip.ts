@@ -11,7 +11,7 @@ import { jobResource, selectionOf, type JobRow } from '../repo/jobs.js';
 
 /**
  * WIP is a cross-job view, so "today" uses one time zone. There is no per-organisation time zone
- * setting yet; Australia/Sydney is the default. [REVIEW: PRODUCT]
+ * setting yet; Australia/Sydney is the default (01 D14).
  */
 export const WIP_TIME_ZONE = 'Australia/Sydney';
 

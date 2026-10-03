@@ -58,31 +58,33 @@ These apply to every API-backed feature. Each feature lists only its own additio
 
 ### 1.3 Feature index
 
-| ID   | Feature                                                     | Epic             | Stories                                                              | Release                                                      | Status in this repository |
-| ---- | ----------------------------------------------------------- | ---------------- | -------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
-| F-01 | Job creation and allocation (single and portfolio)          | E-01             | S-025, S-035, S-039, S-082                                           | MVP (bulk import Pilot)                                      | Partially implemented     |
-| F-02 | Engagement acceptance and conflict check                    | E-01             | S-015, S-035                                                         | MVP                                                          | Partially implemented     |
-| F-03 | Selection and dynamic requirements                          | E-02             | S-002, S-003, S-004, S-037, S-085, S-086                             | MVP (FL, CGT products Pilot)                                 | Implemented in domain/API |
-| F-04 | Property data capture, provenance and data-source licensing | E-03             | S-005, S-038, S-039, S-075                                           | MVP (licensed imports Pilot)                                 | Partially implemented     |
-| F-05 | Planning and hazard adapters with manual fallback           | E-04             | S-022, S-040, S-073, S-074, S-093                                    | MVP planning; Pilot hazards                                  | Partially implemented     |
-| F-06 | Permission-aware map                                        | E-01             | S-036, S-083                                                         | MVP                                                          | Partially implemented     |
-| F-07 | Mobile offline inspection and sync                          | E-05             | S-020, S-032, S-041, S-042, S-043, S-066, S-083                      | MVP (route planning Pilot)                                   | Partially implemented     |
-| F-08 | Photo capture, quality checks and privacy redaction         | E-06             | S-019, S-044, S-045, S-046                                           | MVP                                                          | Partially implemented     |
-| F-09 | AI photo suggestions (accept / edit / reject)               | E-06             | S-018, S-068, S-069                                                  | Pilot                                                        | Implemented in domain/API |
-| F-10 | Areas & Sketch (import, calibrate, draw, schedule, approve) | E-07             | S-011, S-012, S-013, S-026, S-047, S-048, S-049, S-069               | MVP (AI outlines Pilot)                                      | Implemented in domain/API |
-| F-11 | Sales evidence and adjustments                              | E-08             | S-007, S-026, S-050, S-075                                           | MVP                                                          | Implemented in domain/API |
-| F-12 | Rental evidence                                             | E-08             | S-008, S-050                                                         | MVP                                                          | Implemented in domain/API |
-| F-13 | Traced calculations and overrides                           | E-08             | S-005, S-006, S-051                                                  | MVP                                                          | Implemented in domain/API |
-| F-14 | Replacement cost (insurance)                                | E-08             | S-009, S-076, S-098                                                  | MVP if in D3; Pilot; Production                              | Partially implemented     |
-| F-15 | Fair value (AASB 13) support                                | E-08             | S-010, S-097                                                         | MVP if in D3; Production export                              | Partially implemented     |
-| F-16 | Market commentary modules with date guards                  | E-09             | S-052                                                                | MVP                                                          | Partially implemented     |
-| F-17 | Validation and acknowledgements                             | E-10             | S-014, S-053                                                         | MVP                                                          | Implemented in domain/API |
-| F-18 | Certification and submission for QA                         | E-11             | S-054, S-070                                                         | MVP (e-signature Pilot)                                      | Implemented in domain/API |
-| F-19 | QA review and self-approval exceptions                      | E-12             | S-015, S-027, S-055                                                  | MVP                                                          | Implemented in domain/API |
-| F-20 | Report issue (PDF, invoice, email) and reproduction         | E-13, E-14       | S-021, S-028, S-029, S-056, S-057, S-058, S-071, S-072, S-084, S-099 | MVP (amendments, live email Pilot; client portal Production) | Implemented in domain/API |
-| F-21 | Template and rule-set governance                            | E-02, E-13, E-15 | S-003, S-021, S-056, S-059, S-092                                    | MVP                                                          | Partially implemented     |
-| F-22 | Audit trail and security events                             | E-15             | S-017, S-063, S-095                                                  | MVP (SIEM Production)                                        | Implemented in domain/API |
-| F-23 | Legal hold and retention                                    | E-15             | S-077, S-080                                                         | Pilot                                                        | Partially implemented     |
+| ID   | Feature                                                                           | Epic             | Stories                                                              | Release                                                      | Status in this repository |
+| ---- | --------------------------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
+| F-01 | Job creation and allocation (single and portfolio)                                | E-01             | S-025, S-035, S-039, S-082                                           | MVP (bulk import Pilot)                                      | Partially implemented     |
+| F-02 | Engagement acceptance and conflict check                                          | E-01             | S-015, S-035                                                         | MVP                                                          | Partially implemented     |
+| F-03 | Selection and dynamic requirements                                                | E-02             | S-002, S-003, S-004, S-037, S-085, S-086                             | MVP (FL, CGT products Pilot)                                 | Implemented in domain/API |
+| F-04 | Property data capture, provenance and data-source licensing                       | E-03             | S-005, S-038, S-039, S-075                                           | MVP (licensed imports Pilot)                                 | Partially implemented     |
+| F-05 | Planning and hazard adapters with manual fallback                                 | E-04             | S-022, S-040, S-073, S-074, S-093                                    | MVP planning; Pilot hazards                                  | Partially implemented     |
+| F-06 | Permission-aware map                                                              | E-01             | S-036, S-083                                                         | MVP                                                          | Partially implemented     |
+| F-07 | Mobile offline inspection and sync                                                | E-05             | S-020, S-032, S-041, S-042, S-043, S-066, S-083                      | MVP (route planning Pilot)                                   | Partially implemented     |
+| F-08 | Photo capture, quality checks and privacy redaction                               | E-06             | S-019, S-044, S-045, S-046                                           | MVP                                                          | Partially implemented     |
+| F-09 | AI photo suggestions (accept / edit / reject)                                     | E-06             | S-018, S-068, S-069                                                  | Pilot                                                        | Implemented in domain/API |
+| F-10 | Areas & Sketch (import, calibrate, draw, schedule, approve)                       | E-07             | S-011, S-012, S-013, S-026, S-047, S-048, S-049, S-069               | MVP (AI outlines Pilot)                                      | Implemented in domain/API |
+| F-11 | Sales evidence and adjustments                                                    | E-08             | S-007, S-026, S-050, S-075                                           | MVP                                                          | Implemented in domain/API |
+| F-12 | Rental evidence                                                                   | E-08             | S-008, S-050                                                         | MVP                                                          | Implemented in domain/API |
+| F-13 | Traced calculations and overrides                                                 | E-08             | S-005, S-006, S-051                                                  | MVP                                                          | Implemented in domain/API |
+| F-14 | Replacement cost (insurance)                                                      | E-08             | S-009, S-076, S-098                                                  | MVP if in D3; Pilot; Production                              | Partially implemented     |
+| F-15 | Fair value (AASB 13) support                                                      | E-08             | S-010, S-097                                                         | MVP if in D3; Production export                              | Partially implemented     |
+| F-16 | Market commentary modules with date guards                                        | E-09             | S-052                                                                | MVP                                                          | Partially implemented     |
+| F-17 | Validation and acknowledgements                                                   | E-10             | S-014, S-053                                                         | MVP                                                          | Implemented in domain/API |
+| F-18 | Certification and submission for QA                                               | E-11             | S-054, S-070                                                         | MVP (e-signature Pilot)                                      | Implemented in domain/API |
+| F-19 | QA review and self-approval exceptions                                            | E-12             | S-015, S-027, S-055                                                  | MVP                                                          | Implemented in domain/API |
+| F-20 | Report issue (PDF, invoice, email) and reproduction                               | E-13, E-14       | S-021, S-028, S-029, S-056, S-057, S-058, S-071, S-072, S-084, S-099 | MVP (amendments, live email Pilot; client portal Production) | Implemented in domain/API |
+| F-21 | Template and rule-set governance                                                  | E-02, E-13, E-15 | S-003, S-021, S-056, S-059, S-092                                    | MVP                                                          | Partially implemented     |
+| F-22 | Audit trail and security events                                                   | E-15             | S-017, S-063, S-095                                                  | MVP (SIEM Production)                                        | Implemented in domain/API |
+| F-23 | Legal hold and retention                                                          | E-15             | S-077, S-080                                                         | Pilot                                                        | Partially implemented     |
+| F-24 | Work in progress and job/property search                                          | E-01             | S-102, S-106                                                         | MVP                                                          |
+| F-25 | Licensed property data (CoreLogic / Cotality), sample mode and state map services | E-03, E-01       | S-103, S-104, S-105, S-106, S-107                                    | MVP (live data when keys and licence are supplied)           |
 
 ## 2. Feature specifications
 
@@ -264,6 +266,7 @@ As a valuer, I want every datum I capture or import to carry its source, retriev
 9. _(planned)_ Data-source registry. Each source records: kind; licence basis (`licensed`, `open_licence`, `client_supplied`, `public_view_only`, `internal`); `permitsStorage`, `permitsReportReproduction`, `permitsBulkUse`, `expiresOn`, attribution; `freshnessDays` and status. A source without a licence record cannot be enabled (W-19). Public tiles and portals are never treated as granting bulk-data rights (brief §8).
 10. _(planned)_ A person (never AI) marks a value verified (`datasource.verified`). Where a firm uses a separate Field Inspector (optional, 01 D12), values they capture stay "inspector-captured" until the valuer confirms them (A-25).
 11. Fields marked `entry: 'system'` in the catalogue (responsible valuer, QA reviewer, due date, instruction date, coordinates) are filled by the platform and shown read-only; clients never offer them as inputs (01 D9). The preview refuses a typed value and `PUT /fields` returns `422 SYSTEM_FIELD`; job creation and assignment set them.
+12. Values looked up from the property data provider arrive as suggestions with provenance and are saved only when the valuer accepts them through `PUT /fields` (F-25, 01 D15).
 
 **Data fields**
 
@@ -360,6 +363,7 @@ As a valuer or allocator, I want to see the single and portfolio assets I may ac
 6. _(planned)_ Navigation handoff passes only the destination address or coordinates to the device's maps app.
 7. _(planned)_ Provider attribution is shown. Tile caching follows the provider licence (Q-09, Q-10, R-02) `[REVIEW: DATA_LICENSING]`.
 8. PERF-02: for 1,000 assets, feed p95 < 500 ms and first clustered render < 2 s (proposed targets).
+9. `GET /v1/jobs/{jobId}/map` gives one job's map: its state government map service (viewer link and, where published, a basemap with attribution), the subject properties and any sales with coordinates (F-25).
 
 **Data fields**
 Catalogue: `location.coordinates`, `location.address`, `location.geocodeConfidence`. Record `asset`: `latitude`, `longitude`, `risk_level`. Record `job`: `status`, `purpose`, `reference`.
@@ -1183,6 +1187,95 @@ Common errors, plus `409 IMMUTABLE_RECORD` (deletion under hold) and `400 BAD_RE
 
 - `apps/api/test/persistence.test.ts` › "blocks deleting a job under legal hold"; "only administrators can apply legal holds".
 - **Gap:** release; overlapping holds; object-lock; retention dry run and purge; there are no TC IDs for retention in 12 (proposed TC-RET-001…005, §3.7).
+
+### F-24 — Work in progress and job/property search
+
+**Status:** Implemented in domain/API: WIP stages and due states (`packages/domain/src/workflow/wip.ts`), `GET /v1/jobs` with search, stage, valuer and status filters, and `GET /v1/property-search`. The W-23 screen is planned (mobile/web). · E-01 · S-102, S-106 · J-14 · W-23, M-01
+
+**User story**
+As a valuer or allocator, I want to see every job I can work on with its stage and due state, most urgent first, and find any job or property with one search, so that nothing is missed and I do not hunt through lists (01 D14).
+
+**Acceptance criteria**
+
+1. `GET /v1/jobs` returns, for every job the caller may read, the original fields (`id`, `reference`, `status`, `selection`, `responsibleValuerId`) plus `stage`, `due`, `clientName`, `addresses`, `valuerName`, `dueDate` and `inspectionDate`, with top-level `today`, `counts` (per stage) and `overdue`.
+2. The stage is derived, never set by hand: `draft` → New instructions; `active` → To inspect, or In progress once the inspection date is today or earlier; `returned` → Returned by QA; `submitted`/`in_review` → With QA; `approved` → Ready to issue; `issued` → Issued; `cancelled` → Cancelled.
+3. The due state is overdue, due today, due soon (within 2 days), on track, done (issued or cancelled) or none (no due date). Jobs are sorted overdue first, then by due date, then by reference.
+4. `q` matches when every word appears in the reference, client, addresses, valuer, purpose, property type, state or stage. `stage`, `valuerId` and `status` filter the list. Counts are taken after the search and before the stage filter.
+5. "Today" is the date in Australia/Sydney (no per-organisation time zone yet; the product owner may change this).
+6. Visibility is unchanged: restricted-portfolio jobs are hidden from non-members (in the list, the counts and search); non-organisation-wide roles see only jobs they are assigned to or whose portfolio they belong to; clients see no unissued jobs.
+7. `GET /v1/property-search?q=` (2–200 characters) returns the caller's matching jobs (up to 25, as in the list) and the provider's property matches (F-25). With property data off it returns jobs only plus the status; a provider problem is returned as `propertyDataProblem` and never hides the jobs.
+8. _(planned)_ W-23 shows stage chips with counts, the overdue count, filters and one search box (05 J-14).
+
+**Data fields**
+Record `job`: `reference`, `status`, `responsible_valuer_id`, selection. Catalogue: `instruction.dueDate`, `dates.inspection`, `location.address` (formatted addresses). Record `client`: `name`. Record `app_user`: `display_name`.
+
+**Validation**
+Query schema only: `q` ≤ 200 characters; `stage` one of the eight stages; `valuerId` a UUID.
+
+**Permissions**
+`job.read`, applied per job (same rules as job detail). `GET /v1/property-search` also checks `job.read` for the organisation, so CLIENT_READONLY gets `403`.
+
+**Audit events**
+None. Reads are not audited; filtering is silent.
+
+**Offline behaviour**
+_(planned)_ The WIP list is cached read-only on mobile; search of the provider is online only.
+
+**Error states**
+Common errors, plus `400 BAD_REQUEST` (unknown stage, query too short or too long).
+
+**Tests**
+
+- `apps/api/test/wip.test.ts` › "lists jobs with stage, due state and WIP fields, most urgent first"; "searches by address, reference, client and state"; "filters by stage, status and responsible valuer"; "hides restricted-portfolio jobs from non-members, in the list and in search".
+- `apps/api/test/property-data.test.ts` › "property search returns provider matches and existing jobs".
+- `packages/domain/test/wip-profile-integrations.test.ts` › WIP stages, due states and search.
+- **Gap:** W-23 UI and accessibility; pagination beyond the newest 500 jobs (07 §7).
+
+### F-25 — Licensed property data (CoreLogic / Cotality), sample mode and state map services
+
+**Status:** Implemented in domain/API: the provider-neutral contract and suggestions (`integration/property-data.ts`), sample data (`integration/sample-property-data.ts`), state map services (`integration/state-maps.ts`), the CoreLogic connector (`apps/api/src/integrations/corelogic.ts`) and the property data, comparable search, status and job map endpoints. **CoreLogic API keys have not been supplied**, so live data is not configured anywhere; development and test use sample data. M-14 and M-15 are planned (mobile/web). · E-03, E-01 · S-103, S-104, S-105, S-106, S-107 · J-14 · M-14, M-15, W-04
+
+**User story**
+As a valuer, I want property facts, sales history and nearby sales from the licensed property data provider offered as suggestions I check and accept, an automated estimate as a cross-check, and my state's government map for the property, so that I spend less time typing without losing attribution or control (01 D15).
+
+**Acceptance criteria**
+
+1. The provider is chosen from configuration: CoreLogic when `CORELOGIC_CLIENT_ID` and `CORELOGIC_CLIENT_SECRET` are both supplied; otherwise sample data in development and test, or off in production. `PROPERTY_DATA_MODE` (`corelogic`, `sample`, `off`) overrides; `sample` is refused in production. `GET /v1/integrations/status` returns the state (`connected`, `sample`, `not_configured`) with the reason ("CoreLogic API keys not supplied") and the state map services.
+2. `POST /v1/jobs/{jobId}/assets/{assetId}/property-data` (`asset.edit`; the asset must belong to the job) matches the asset's address (or uses the given `propertyId`) and returns the attributes, field suggestions, sales history and, for callers with `valuation.edit` when the estimate's source is active, the automated estimate with the notice "a cross-check only, never the valuation".
+3. Each suggestion carries provenance: `origin: external_source`, `sourceId`, `sourceRef`, `retrievedAt`, `effectiveDate`, `licenceBasis`, `verification: unverified`, `capturedBy`. Judgement values (condition, quality) are never suggested.
+4. Lookups and searches write nothing to the job. The valuer accepts a suggestion through `PUT /fields` with its provenance marked `verified` (F-04), and adds a candidate sale through `POST /sales` (F-11).
+5. `POST /v1/jobs/{jobId}/assets/{assetId}/comparables/search` (`evidence.edit`) takes `radiusKm` 0.5–10 (default 2), `months` 3–36 (default 12) and `limit` 1–20 (default 10), and returns candidates within the radius and period, each with an unverified `SaleComparable`.
+6. Every lookup and search records `property_data.retrieved` in the job stream with the provider, source, property id and counts, never data values.
+7. The provider's data source must be registered and active for the organisation, else `409 DATA_SOURCE_NOT_REGISTERED` before any provider call. The seed registers `ds-corelogic`, `ds-corelogic-avm`, `ds-sample-property-data` and `ds-sample-avm`.
+8. Sample data and automated estimates have `permitsReportReproduction: false`; once relied on, `VAL-PROV-003` blocks issue `[REVIEW: DATA_LICENSING]`.
+9. Every CoreLogic call goes through the connector policy (timeout, retries, rate limit, circuit breaker). The token (OAuth 2.0 client credentials) is cached until shortly before expiry and refreshed once on a `401`. Failures return `502 PROPERTY_DATA_UNAVAILABLE` with `failure` and `fallback: manual_entry`. Keys and response bodies are never logged or returned.
+10. `GET /v1/jobs/{jobId}/map` (`job.read`) returns the state's map service, the subject properties with coordinates, sales with coordinates (none yet: sales do not store them, and a note says so) and notes.
+11. _(planned)_ M-14 and M-15 (05 J-14); sale coordinates (S-107); live data once the licence is confirmed, the endpoint paths are checked and keys are supplied (S-105).
+
+**Data fields**
+Suggested catalogue fields: `land.area`, `land.areaSource`, `location.titleReference`, `location.lga`, `planning.zone`, `improvements.yearBuilt`, `improvements.dwellingType`, `improvements.accommodation`, `improvements.buildingArea`. Record `data_source` (registry). Domain types `PropertyMatch`, `PropertyAttributes`, `ProviderSale`, `AutomatedEstimate`, `FieldSuggestion`, `StateMapService`.
+
+**Validation**
+`VAL-PROV-001` (incomplete provenance on accepted values), `VAL-PROV-002` (unverified evidence), `VAL-PROV-003` (sample data or estimates relied on), `VAL-STALE-002` (past the source's freshness). Request schemas: `propertyId` 1–64 characters; search bounds above.
+
+**Permissions**
+`job.read` (status, search, map); `asset.edit` (lookup); `valuation.edit` additionally to see the automated estimate; `evidence.edit` (comparable search). Proposed `datasource.lookup` (§3.1) would replace `asset.edit` for lookups.
+
+**Audit events**
+`property_data.retrieved`; accepting values and sales emits `field.updated` and `evidence.sale_added`.
+
+**Offline behaviour**
+Online only. Accepted values and sales sync like any other edit.
+
+**Error states**
+Common errors, plus `503 PROPERTY_DATA_NOT_CONFIGURED`; `502 PROPERTY_DATA_UNAVAILABLE`; `409 DATA_SOURCE_NOT_REGISTERED`; `422 NO_PROPERTY_MATCH`; `422 SUBJECT_LOCATION_REQUIRED`; `422 UNKNOWN_ASSET`.
+
+**Tests**
+
+- `apps/api/test/property-data.test.ts` › CoreLogic provider with a stubbed fetch: "requests a client-credentials token and sends it as a bearer token"; "caches the token until shortly before it expires"; "refreshes the token once and retries when the API answers 401"; "retries a 500 and then succeeds"; "does not retry rejected credentials and never puts secrets in the error"; "maps attributes, sales, comparables and the automated estimate defensively"; "maps a timeout to 502 with the manual-entry fallback and no secrets"; "requires the CoreLogic data source to be registered for the organisation".
+- `apps/api/test/property-data.test.ts` › "answers 503 with the reason and still searches jobs"; "suggests fields with provenance and saves nothing until the valuer accepts"; "withholds the automated estimate from people without valuation rights"; "finds comparable sales, adds one as evidence, and VAL-PROV-003 then blocks issue"; "shows the job on its state map service"; "defaults to CoreLogic only when both keys are supplied".
+- `packages/domain/test/wip-profile-integrations.test.ts` › suggestions, sample provider and state map services.
+- **Gap:** live CoreLogic responses (no keys; paths unverified); circuit-breaker half-open probe through the API; M-14/M-15 UI.
 
 ## 3. Gaps and proposed additions
 
