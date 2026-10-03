@@ -6,7 +6,6 @@ import {
   type CalculationRecord,
   type Json,
   type MarketCommentary,
-  type Provenance,
   type RentalComparable,
   type RiskFlag,
   type SaleComparable,
@@ -17,7 +16,14 @@ import { HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
 import { assertAssetInJob, authorizeJob, touchJob, type JobRow } from '../repo/jobs.js';
 import { audit, jobStream } from '../services/audit.js';
-import { JobParams, LocalDateSchema, ProvenanceInput, Uuid, compact } from './schemas.js';
+import {
+  EvidenceProvenance,
+  JobParams,
+  LocalDateSchema,
+  Uuid,
+  compact,
+  provenanceOf,
+} from './schemas.js';
 
 const AdjustmentSchema = z.object({
   factor: z.enum([
@@ -37,10 +43,6 @@ const AdjustmentSchema = z.object({
   kind: z.enum(['percent', 'absolute']),
   value: z.number(),
   rationale: z.string().min(3),
-});
-
-const EvidenceProvenance = ProvenanceInput.extend({
-  origin: z.enum(['external_source', 'client_supplied', 'manual_entry']),
 });
 
 const assetOfJob = (db: Db, job: JobRow, assetId: string): Promise<void> =>
@@ -69,18 +71,6 @@ async function insertCalculation(
     ],
   );
 }
-
-/** The capturing user attests verification, so verified data records who verified it and when. */
-const provenanceOf = (
-  p: z.infer<typeof EvidenceProvenance>,
-  userId: string,
-  now: string,
-): Provenance => ({
-  ...compact(p),
-  ...(p.verification === 'verified' ? { verifiedBy: userId, verifiedAt: now } : {}),
-  capturedBy: userId,
-  capturedAt: now,
-});
 
 export function registerEvidenceRoutes(r: Router): void {
   r.add({

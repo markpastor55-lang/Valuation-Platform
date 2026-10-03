@@ -1,15 +1,20 @@
 import {
   AU_CORE_RULE_SET,
+  COMMENTARY_LIBRARY_SOURCE,
   CORELOGIC_AVM_SOURCE,
   CORELOGIC_SOURCE,
   DEFAULT_TEMPLATE,
+  DEMO_RESEARCH_SOURCE,
+  PUBLIC_RELEASES_SOURCE,
   SAMPLE_AVM_SOURCE,
+  SAMPLE_COMMENTARY_LIBRARY,
   SAMPLE_PROPERTY_SOURCE,
   hashCanonical,
   type DataSource,
   type Role,
 } from '@vp/domain';
 import type { Db } from './db.js';
+import { insertCommentaryModule } from '../repo/commentary.js';
 import { saveValuerProfile } from '../repo/profiles.js';
 
 export interface SeededOrg {
@@ -20,7 +25,8 @@ export interface SeededOrg {
 
 /**
  * Bootstraps an organisation with the seed rule set and template (both **draft** — they must be
- * reviewed and approved by the standards owner before reports can be issued).
+ * reviewed and approved by the standards owner before reports can be issued) and registers the
+ * firm's market commentary library as a data source, so commentary taken from it names its source.
  */
 export async function seedOrganisation(
   db: Db,
@@ -61,6 +67,7 @@ export async function seedOrganisation(
         DEFAULT_TEMPLATE.authoredBy,
       ],
     );
+    await registerDataSource(tx, ids.orgId, COMMENTARY_LIBRARY_SOURCE);
   });
   return ids;
 }
@@ -246,8 +253,19 @@ export async function seedDemo(db: Db): Promise<typeof DEMO> {
     SAMPLE_AVM_SOURCE,
   ])
     await registerDataSource(db, DEMO.orgId, source);
+  // Demonstration market commentary (already approved) and the sources it cites.
+  for (const source of [DEMO_RESEARCH_SOURCE, PUBLIC_RELEASES_SOURCE])
+    await registerDataSource(db, DEMO.orgId, source);
+  await db.transaction(async (tx) => {
+    for (const [i, m] of SAMPLE_COMMENTARY_LIBRARY.entries())
+      await insertCommentaryModule(tx, DEMO.orgId, demoCommentaryId(i), m);
+  });
   return DEMO;
 }
+
+/** Fixed identifiers for the demo library paragraphs, in SAMPLE_COMMENTARY_LIBRARY order. */
+export const demoCommentaryId = (index: number): string =>
+  `00000000-0000-4000-8001-${String(index + 1).padStart(12, '0')}`;
 
 /** Registers a data source (with its licence terms) for an organisation. */
 export async function registerDataSource(db: Db, orgId: string, source: DataSource): Promise<void> {

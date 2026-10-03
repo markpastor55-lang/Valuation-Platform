@@ -7,6 +7,7 @@ import { AuthorizationDenied, toHttpError } from './http/errors.js';
 import { recordDenial } from './repo/jobs.js';
 import { Router } from './http/route.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerCommentaryRoutes } from './routes/commentary.js';
 import { registerEvidenceRoutes } from './routes/evidence.js';
 import { registerInspectionRoutes } from './routes/inspection.js';
 import { registerJobRoutes } from './routes/jobs.js';
@@ -96,6 +97,7 @@ export async function buildApp(
   });
   registerJobRoutes(router);
   registerEvidenceRoutes(router);
+  registerCommentaryRoutes(router);
   registerInspectionRoutes(router);
   registerWorkflowRoutes(router);
   registerReportRoutes(router);

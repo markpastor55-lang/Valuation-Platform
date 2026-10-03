@@ -19,6 +19,7 @@ describe('migrations', () => {
         '0004_cgt_purpose',
         '0005_valuer_profile',
         '0006_residential_unit',
+        '0007_commentary_library',
       ]);
       expect((await migrate(db)).applied).toEqual([]);
       const tampered = (await loadMigrations()).map((m) =>
