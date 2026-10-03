@@ -156,7 +156,7 @@ describe('preview journey (runs the domain engine)', () => {
     const board = buildWip(wipJobs(app), NOW.slice(0, 10));
     expect(board.counts).toMatchObject({
       new: 1,
-      to_inspect: 1,
+      to_inspect: 2,
       in_progress: 1,
       with_qa: 1,
       to_issue: 1,

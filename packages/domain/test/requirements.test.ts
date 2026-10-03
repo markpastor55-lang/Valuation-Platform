@@ -48,7 +48,12 @@ describe('rule set integrity', () => {
             expect(r.fields.length).toBeGreaterThan(10);
             combos++;
           }
-    expect(combos).toBe(8 * 6 * 6 * 4);
+    expect(combos).toBe(
+      JURISDICTIONS.length *
+        REPORT_PURPOSES.length *
+        PROPERTY_TYPES.length *
+        INSPECTION_SCOPES.length,
+    );
   });
 });
 

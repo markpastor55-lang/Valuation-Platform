@@ -51,6 +51,7 @@ export const REPORT_PURPOSE_LABELS: Readonly<Record<ReportPurpose, string>> = {
 export const PROPERTY_TYPES = [
   'VACANT_LAND',
   'RESIDENTIAL',
+  'RESIDENTIAL_UNIT',
   'COMMERCIAL_OFFICE',
   'COMMERCIAL_RETAIL',
   'INDUSTRIAL',
@@ -60,7 +61,8 @@ export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
 export const PROPERTY_TYPE_LABELS: Readonly<Record<PropertyType, string>> = {
   VACANT_LAND: 'Vacant land',
-  RESIDENTIAL: 'Residential',
+  RESIDENTIAL: 'Residential house',
+  RESIDENTIAL_UNIT: 'Unit, apartment or townhouse (incl. strata)',
   COMMERCIAL_OFFICE: 'Commercial — office',
   COMMERCIAL_RETAIL: 'Commercial — retail',
   INDUSTRIAL: 'Industrial',

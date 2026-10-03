@@ -184,6 +184,19 @@ export function suggestFieldsFromAttributes(
       display,
       provenance: provenanceFor(ctx, `${a.propertyId}#${fieldId}`, a.asAt),
     });
+  const isUnit =
+    a.propertyType !== undefined && /unit|apartment|townhouse|flat/i.test(a.propertyType);
+  if (isUnit) {
+    const type = /townhouse/i.test(a.propertyType ?? '') ? 'townhouse' : 'apartment';
+    add('unit.unitType', type, type === 'townhouse' ? 'Townhouse' : 'Apartment');
+    // "Lot 5 SP12345" / "Lot 5 PS 812345": the lot and plan of a strata scheme
+    const lot = /^lot\s+(\S+)\s+((?:SP|PS|BUP|GTP|CTS|SS)\s*\d+)/i.exec(a.titleReference ?? '');
+    if (lot?.[1] && lot[2]) {
+      add('strata.titleType', 'strata_title', 'Strata title');
+      add('strata.lotNumber', lot[1], lot[1]);
+      add('strata.planNumber', lot[2].toUpperCase(), lot[2].toUpperCase());
+    }
+  }
   if (a.landAreaM2 !== undefined) {
     add('land.area', a.landAreaM2, `${a.landAreaM2.toLocaleString('en-AU')} m²`);
     add('land.areaSource', `${ctx.source.name} (as at ${a.asAt})`, ctx.source.name);
@@ -202,7 +215,7 @@ export function suggestFieldsFromAttributes(
   if (rooms.length) add('improvements.accommodation', rooms.join(', '), rooms.join(', '));
   if (a.floorAreaM2 !== undefined)
     add(
-      'improvements.buildingArea',
+      isUnit ? 'unit.internalArea' : 'improvements.buildingArea',
       a.floorAreaM2,
       `${a.floorAreaM2.toLocaleString('en-AU')} m² (provider floor area; check the basis)`,
     );
@@ -227,7 +240,13 @@ export function saleFromProvider(
     provenance: provenanceFor(ctx, s.providerSaleId, s.contractDate),
     comparability: 'comparable',
     adjustments: [],
-    analysisBasis: 'land_rate',
+    // Units have no land of their own: analyse them on internal area
+    analysisBasis:
+      s.landAreaM2 !== undefined
+        ? 'land_rate'
+        : s.floorAreaM2 !== undefined
+          ? 'building_rate'
+          : 'price',
   };
 }
 

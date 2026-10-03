@@ -19,6 +19,7 @@ export const INPUT_TABS = [
     description: 'Address, title, site, planning and occupancy',
     sections: [
       'location',
+      'strata',
       'planning',
       'land',
       'occupancy',

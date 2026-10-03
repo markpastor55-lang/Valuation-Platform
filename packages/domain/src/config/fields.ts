@@ -1,5 +1,5 @@
 import type { SectionId } from './sections.js';
-import type { SpecialistReviewer } from './codes.js';
+import type { PropertyType, SpecialistReviewer } from './codes.js';
 
 export type FieldType =
   | 'text'
@@ -124,6 +124,30 @@ export const COURT_OPTIONS = [
   'FCFCOA_DIVISION_2',
   'FAMILY_COURT_OF_WA',
   'OTHER',
+] as const;
+
+/** How a unit or lot is held. Strata, community and stratum titles bring the owners corporation questions. */
+export const TITLE_TYPE_OPTIONS = [
+  'strata_title',
+  'community_title',
+  'stratum_title',
+  'company_title',
+  'torrens_title',
+] as const;
+
+export const UNIT_TYPE_OPTIONS = [
+  'apartment',
+  'townhouse',
+  'villa_unit',
+  'duplex',
+  'studio_apartment',
+] as const;
+
+export const UNIT_AREA_SOURCE_OPTIONS = [
+  'strata_plan',
+  'measured_on_site',
+  'plans_supplied',
+  'marketing_material',
 ] as const;
 
 export const MEASUREMENT_BASIS_OPTIONS = [
@@ -276,6 +300,24 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
   asset('land.developmentPotential', 'Development potential', 'land', 'longtext'),
 
   // ── Improvements ─────────────────────────────────────────────────────────────
+  // ── Units, apartments and townhouses ─────────────────────────────────────────
+  asset('unit.unitType', 'Unit type', 'improvements', 'enum', { options: UNIT_TYPE_OPTIONS }),
+  asset('unit.level', 'Floor level', 'improvements', 'integer', { help: '0 for ground level' }),
+  asset('unit.internalArea', 'Internal living area', 'improvements', 'area', {
+    unit: 'm2',
+    help: 'Usually from the strata plan; excludes balconies, courtyards and car spaces',
+  }),
+  asset('unit.internalAreaSource', 'Internal area source', 'improvements', 'enum', {
+    options: UNIT_AREA_SOURCE_OPTIONS,
+  }),
+  asset('unit.outdoorArea', 'Balcony or courtyard area', 'improvements', 'area', { unit: 'm2' }),
+  asset('unit.storage', 'Storage', 'improvements', 'text', { help: 'e.g. storage cage on title' }),
+  asset('unit.unitsInComplex', 'Units in the building or complex', 'improvements', 'integer'),
+  asset('unit.buildingAmenities', 'Building amenities', 'improvements', 'text', {
+    help: 'e.g. lift, pool, gym, concierge',
+  }),
+  asset('unit.aspect', 'Aspect and outlook', 'improvements', 'text'),
+
   asset('improvements.dwellingType', 'Dwelling type', 'improvements', 'text'),
   asset('improvements.use', 'Use', 'improvements', 'text'),
   asset('improvements.yearBuilt', 'Year built (approx.)', 'improvements', 'integer'),
@@ -304,6 +346,50 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
     'integer',
   ),
   asset('improvements.parking', 'Car parking', 'improvements', 'text'),
+
+  // ── Strata, community, stratum and company title ─────────────────────────────
+  asset('strata.titleType', 'Title type', 'strata', 'enum', {
+    options: TITLE_TYPE_OPTIONS,
+    help: 'Strata, community and stratum titles add the owners corporation questions',
+  }),
+  asset('strata.planNumber', 'Strata or community plan number', 'strata', 'text', {
+    help: 'e.g. SP 12345 (NSW), PS 123456 (VIC), BUP or CTS (QLD)',
+  }),
+  asset('strata.lotNumber', 'Lot number', 'strata', 'text'),
+  asset('strata.unitEntitlement', 'Unit (lot) entitlement', 'strata', 'text', {
+    help: 'e.g. 25 of 1,000',
+  }),
+  asset('strata.ownersCorporation', 'Owners corporation or body corporate', 'strata', 'text'),
+  asset('strata.adminLevy', 'Administrative fund levy', 'strata', 'money', {
+    unit: 'AUD per year',
+  }),
+  asset('strata.capitalWorksLevy', 'Capital works or sinking fund levy', 'strata', 'money', {
+    unit: 'AUD per year',
+  }),
+  asset('strata.specialLevies', 'Special levies', 'strata', 'longtext'),
+  asset(
+    'strata.buildingDefects',
+    'Known building defects (incl. combustible cladding)',
+    'strata',
+    'longtext',
+    {
+      review: 'API_STANDARDS',
+      help: 'From the owners corporation certificate, minutes or your inspection; write "None known" if none',
+    },
+  ),
+  asset('strata.byLaws', 'By-laws affecting value', 'strata', 'longtext', {
+    help: 'e.g. pets, short-stay letting, renovations',
+  }),
+  asset(
+    'strata.ownersCorporationCertificate',
+    'Owners corporation certificate or strata report',
+    'strata',
+    'document_refs',
+  ),
+  asset('strata.companyTitleDetails', 'Company title details', 'strata', 'longtext', {
+    review: 'LEGAL',
+    help: 'Company, shares held and any restrictions on sale, leasing or lending',
+  }),
   asset('improvements.outdoorImprovements', 'Outdoor improvements', 'improvements', 'longtext'),
   asset('improvements.lettableArea', 'Lettable area (NLA/GLA)', 'areas', 'area', { unit: 'm2' }),
   asset('improvements.floorAreas', 'Floor-by-floor areas', 'areas', 'area_schedule_ref'),
@@ -609,6 +695,10 @@ export const VALUER_JUDGEMENT_SECTIONS: ReadonlySet<SectionId> = new Set<Section
   'risk',
   'specialised',
 ]);
+
+/** The area field a sketch total can fill: internal area for units, building area otherwise. */
+export const sketchAreaFieldFor = (propertyType: PropertyType): string =>
+  propertyType === 'RESIDENTIAL_UNIT' ? 'unit.internalArea' : 'improvements.buildingArea';
 
 export const isValuerJudgementField = (def: FieldDef): boolean =>
   VALUER_JUDGEMENT_SECTIONS.has(def.section);

@@ -12,6 +12,7 @@ export const REPORT_SECTIONS = [
   { id: 'tax_context', title: 'Taxation context' },
   { id: 'retrospective', title: 'Retrospective valuation' },
   { id: 'location', title: 'Location and title' },
+  { id: 'strata', title: 'Strata and owners corporation' },
   { id: 'planning', title: 'Planning controls' },
   { id: 'land', title: 'Site description' },
   { id: 'improvements', title: 'Improvements' },

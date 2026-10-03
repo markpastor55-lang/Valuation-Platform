@@ -262,6 +262,33 @@ export async function seedApp(now: string = new Date().toISOString()): Promise<A
     ),
   );
 
+  const unit = run(
+    newJobState(
+      {
+        id: 'job-0143',
+        reference: 'VAL-2026-0143',
+        clientName: 'Example Lending Pty Ltd',
+        address: 'Unit 5, 18 Harbour View Lane, Exampleton VIC 3000',
+        lat: -37.8152,
+        lng: 144.9581,
+        propertyId: 'S-VIC-0004',
+      },
+      { ...VIC_MV, propertyType: 'RESIDENTIAL_UNIT' },
+      now,
+      { dueDate: addDays(today, 5), inspectionDate: addDays(today, 2) },
+    ),
+    now,
+    { type: 'acceptJob' },
+    { type: 'setField', fieldId: 'strata.titleType', assetId: ASSET_ID, value: 'strata_title' },
+    {
+      type: 'setField',
+      fieldId: 'strata.ownersCorporation',
+      assetId: ASSET_ID,
+      value: 'Owners Corporation PS 812345 (example)',
+    },
+  );
+  jobs.push({ ...unit, lastChange: null });
+
   const cgt = run(
     newJobState(
       {

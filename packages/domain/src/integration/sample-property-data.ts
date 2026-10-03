@@ -48,6 +48,8 @@ interface Place {
   readonly lga: string;
   readonly lat: number;
   readonly lng: number;
+  /** Units are strata lots: no land of their own, valued on internal area. */
+  readonly kind?: 'house' | 'unit';
 }
 
 /** Fictional addresses the sample search recognises. */
@@ -69,6 +71,26 @@ export const SAMPLE_PLACES: readonly Place[] = [
     lga: 'Example City Council',
     lat: -37.8131,
     lng: 144.9652,
+  },
+  {
+    propertyId: 'S-VIC-0004',
+    address: 'Unit 5, 18 Harbour View Lane, Exampleton VIC 3000',
+    suburb: 'Exampleton VIC 3000',
+    jurisdiction: 'VIC',
+    lga: 'Example City Council',
+    lat: -37.8152,
+    lng: 144.9581,
+    kind: 'unit',
+  },
+  {
+    propertyId: 'S-NSW-0002',
+    address: '12/40 Sample Parade, Sampleville NSW 2000',
+    suburb: 'Sampleville NSW 2000',
+    jurisdiction: 'NSW',
+    lga: 'City of Sampleville',
+    lat: -33.8721,
+    lng: 151.2066,
+    kind: 'unit',
   },
   {
     propertyId: 'S-VIC-0003',
@@ -155,6 +177,25 @@ const placeOf = (propertyId: string): Place | undefined =>
 
 function attributesFor(place: Place, asAt: LocalDate): PropertyAttributes {
   const r = rng(place.propertyId);
+  if (place.kind === 'unit') {
+    const beds = Math.floor(between(r, 1, 4));
+    return {
+      propertyId: place.propertyId,
+      address: place.address,
+      propertyType: 'Unit',
+      floorAreaM2: roundTo(between(r, 55, 120), 1),
+      bedrooms: beds,
+      bathrooms: Math.max(1, beds - 1),
+      carSpaces: Math.floor(between(r, 0, 2.99)),
+      yearBuilt: Math.floor(between(r, 1975, 2020)),
+      titleReference: `Lot ${Math.floor(between(r, 1, 80))} ${place.jurisdiction === 'VIC' ? 'PS' : 'SP'}${Math.floor(between(r, 10000, 99999))}`,
+      lga: place.lga,
+      zoning: ZONES[place.jurisdiction],
+      latitude: place.lat,
+      longitude: place.lng,
+      asAt,
+    };
+  }
   const land = roundTo(between(r, 420, 900), 5);
   const beds = Math.floor(between(r, 3, 6));
   return {
@@ -175,6 +216,24 @@ function attributesFor(place: Place, asAt: LocalDate): PropertyAttributes {
     asAt,
   };
 }
+
+/** Rough sample rate per m² of internal area for units, by state (sample numbers only). */
+const UNIT_RATE: Readonly<Record<Jurisdiction, number>> = {
+  VIC: 9500,
+  NSW: 12500,
+  QLD: 8500,
+  WA: 7000,
+  SA: 6500,
+  TAS: 6000,
+  ACT: 8000,
+  NT: 5000,
+};
+
+/** Today's sample value of a place, from land (houses) or internal area (units). */
+const sampleValue = (place: Place, a: PropertyAttributes): number =>
+  place.kind === 'unit'
+    ? (a.floorAreaM2 ?? 80) * UNIT_RATE[place.jurisdiction]
+    : (a.landAreaM2 ?? 600) * LAND_RATE[place.jurisdiction] * 1.25;
 
 /** Rough sample rate per m² of land by state (only to make the sample numbers plausible). */
 const LAND_RATE: Readonly<Record<Jurisdiction, number>> = {
@@ -219,7 +278,7 @@ export function createSamplePropertyDataProvider(today: LocalDate): PropertyData
       if (!place) return Promise.resolve([]);
       const r = rng(`${propertyId}:history`);
       const a = attributesFor(place, today);
-      const current = (a.landAreaM2 ?? 600) * LAND_RATE[place.jurisdiction] * 1.25;
+      const current = sampleValue(place, a);
       const count = 1 + Math.floor(r() * 2.99);
       const sales: ProviderSale[] = [];
       for (let i = 0; i < count; i++) {
@@ -249,10 +308,31 @@ export function createSamplePropertyDataProvider(today: LocalDate): PropertyData
         const lng =
           search.longitude +
           (km / (111 * Math.cos((search.latitude * Math.PI) / 180))) * Math.sin(bearing);
+        const contractDate = addMonths(search.toDate, -Math.floor(between(r, 0, search.months)));
+        const distance =
+          Math.round(
+            distanceKm({ lat: search.latitude, lng: search.longitude }, { lat, lng }) * 100,
+          ) / 100;
+        if (search.propertyType === 'RESIDENTIAL_UNIT') {
+          const floor = roundTo(between(r, 55, 120), 1);
+          const beds = Math.floor(between(r, 1, 4));
+          out.push({
+            providerSaleId: `${search.propertyId}-C${i + 1}`,
+            address: `${Math.floor(between(r, 1, 40))}/${Math.floor(between(r, 1, 120))} ${STREETS[i % STREETS.length] ?? 'Sample Street'}, ${suburb}`,
+            contractDate,
+            price: roundTo(floor * UNIT_RATE[jurisdiction] * between(r, 0.9, 1.15), 5000),
+            floorAreaM2: floor,
+            bedrooms: beds,
+            bathrooms: Math.max(1, beds - 1),
+            latitude: lat,
+            longitude: lng,
+            distanceKm: distance,
+          });
+          continue;
+        }
         const land = roundTo(between(r, 450, 820), 5);
         const beds = Math.floor(between(r, 3, 6));
         const price = roundTo(land * LAND_RATE[jurisdiction] * between(r, 1.1, 1.45), 5000);
-        const contractDate = addMonths(search.toDate, -Math.floor(between(r, 0, search.months)));
         out.push({
           providerSaleId: `${search.propertyId}-C${i + 1}`,
           address: `${Math.floor(between(r, 1, 120))} ${STREETS[i % STREETS.length] ?? 'Sample Street'}, ${suburb}`,
@@ -280,7 +360,7 @@ export function createSamplePropertyDataProvider(today: LocalDate): PropertyData
       const place = placeOf(propertyId);
       if (!place) return Promise.resolve(null);
       const a = attributesFor(place, today);
-      const estimate = roundTo((a.landAreaM2 ?? 600) * LAND_RATE[place.jurisdiction] * 1.27, 5000);
+      const estimate = roundTo(sampleValue(place, a) * 1.016, 5000);
       return Promise.resolve({
         estimate,
         low: roundTo(estimate * 0.92, 5000),

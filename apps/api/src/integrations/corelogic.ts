@@ -64,6 +64,7 @@ export type CoreLogicPaths = Readonly<Record<CoreLogicEndpoint, string>>;
 /** Property type filter sent with comparable searches. [REVIEW: DATA_LICENSING] */
 export const CORELOGIC_PROPERTY_TYPES: Readonly<Record<PropertyType, string | undefined>> = {
   RESIDENTIAL: 'HOUSE',
+  RESIDENTIAL_UNIT: 'UNIT',
   VACANT_LAND: 'LAND',
   COMMERCIAL_OFFICE: 'COMMERCIAL',
   COMMERCIAL_RETAIL: 'COMMERCIAL',

@@ -17,6 +17,7 @@ import {
   SAMPLE_PROPERTY_SOURCE,
   addDays,
   signingProblems,
+  sketchAreaFieldFor,
   valuerIdentityFor,
   FIELD_BY_ID,
   INSPECTION_SCOPE_LABELS,
@@ -941,7 +942,7 @@ export function apply(
         state,
         {
           type: 'setField',
-          fieldId: 'improvements.buildingArea',
+          fieldId: sketchAreaFieldFor(state.selection.propertyType),
           assetId: ASSET_ID,
           value: schedule.totalIncludedM2,
         },

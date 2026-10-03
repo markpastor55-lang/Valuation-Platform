@@ -7,6 +7,7 @@ import {
   centroid,
   edgeLengths,
   polygonArea,
+  sketchAreaFieldFor,
   snapToGrid,
   type Boundary,
   type Point,
@@ -159,8 +160,10 @@ export function SketchNotes(props: {
     d.schedule.rows.filter((r) => r.includedInTotal).map((r) => r.boundaryId),
   );
   const total = d.schedule.totalIncludedM2;
-  const buildingArea = fieldValue(state, 'improvements.buildingArea', ASSET_ID);
-  const areaNeeded = d.requirements.fields.some((f) => f.fieldId === 'improvements.buildingArea');
+  const areaField = sketchAreaFieldFor(state.selection.propertyType);
+  const areaName = areaField === 'unit.internalArea' ? 'internal area' : 'building area';
+  const buildingArea = fieldValue(state, areaField, ASSET_ID);
+  const areaNeeded = d.requirements.fields.some((f) => f.fieldId === areaField);
 
   const toWorld = (e: PointerEvent): Point => {
     const ctm = svgRef.current?.getScreenCTM();
@@ -510,17 +513,20 @@ export function SketchNotes(props: {
           <span class="big-number">{m2(total)}</span>
           {areaNeeded &&
             (buildingArea === total ? (
-              <span class="done small">Used as the building area</span>
+              <span class="done small">Used as the {areaName}</span>
             ) : (
               <button
                 type="button"
                 class="btn primary small"
                 disabled={!canEdit || total <= 0}
                 onClick={() =>
-                  dispatch({ type: 'useSketchArea' }, `Building area set to ${m2(total)}`)
+                  dispatch(
+                    { type: 'useSketchArea' },
+                    `${areaName === 'internal area' ? 'Internal area' : 'Building area'} set to ${m2(total)}`,
+                  )
                 }
               >
-                Use as building area
+                Use as {areaName}
               </button>
             ))}
         </div>

@@ -305,6 +305,7 @@ a separate field inspector is optional (01 D12). Capture screens follow the inpu
 | S-105 | E-03 | As a data-licensing reviewer, I want the CoreLogic (Cotality) licence confirmed, the endpoint paths and response fields checked on the developer portal, and the API keys placed in the secret store, so that live property data can be switched on (04 §4.1). | MVP | Must   | S    | S-103, D15 · `[REVIEW: DATA_LICENSING]`       | To do  |
 | S-106 | E-01 | As a valuer, I want the WIP home, search, property data card and job map in the web portal and mobile app, so that I can use them in the office and in the field (05 J-14).                                                                                    | MVP | Must   | M    | S-032, S-033, S-102–S-104                     | To do  |
 | S-107 | E-08 | As a valuer, I want sales evidence to keep its coordinates, so that comparable sales appear on the job map with their distance from the subject.                                                                                                               | MVP | Should | S    | S-103                                         | To do  |
+| S-108 | E-02 | As a valuer, I want units, apartments and townhouses (including strata, community, stratum and company title) to ask the right questions, so that strata lots are valued on internal area with the scheme's levies and defects recorded.                       | MVP | Must   | M    | S-003                                         | Done   |
 
 ### 3.3 Pilot (To do)
 

@@ -198,6 +198,7 @@
                         "enum": [
                           "VACANT_LAND",
                           "RESIDENTIAL",
+                          "RESIDENTIAL_UNIT",
                           "COMMERCIAL_OFFICE",
                           "COMMERCIAL_RETAIL",
                           "INDUSTRIAL",
@@ -517,6 +518,7 @@
                         "enum": [
                           "VACANT_LAND",
                           "RESIDENTIAL",
+                          "RESIDENTIAL_UNIT",
                           "COMMERCIAL_OFFICE",
                           "COMMERCIAL_RETAIL",
                           "INDUSTRIAL",

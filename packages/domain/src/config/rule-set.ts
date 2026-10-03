@@ -444,6 +444,92 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
       sections: ['improvements'],
     },
     {
+      id: 'REQ-PT-UNIT-001',
+      description:
+        'Unit, apartment or townhouse: the lot, its internal area (usually from the strata plan) and the building it is in.',
+      when: { propertyTypes: ['RESIDENTIAL_UNIT'] },
+      require: [
+        'strata.titleType',
+        'unit.unitType',
+        'improvements.accommodation',
+        'unit.internalArea',
+        'improvements.parking',
+        'improvements.yearBuilt',
+        'improvements.construction',
+        'improvements.condition',
+      ],
+      recommend: [
+        'unit.level',
+        'unit.internalAreaSource',
+        'unit.outdoorArea',
+        'unit.storage',
+        'unit.unitsInComplex',
+        'unit.buildingAmenities',
+        'unit.aspect',
+        'improvements.renovations',
+        'improvements.fixturesFinishes',
+      ],
+      sections: ['improvements', 'strata'],
+      formulas: ['improvements.rate_per_m2', 'comparison.adjusted_rate'],
+    },
+    {
+      id: 'REQ-PT-UNIT-002',
+      description:
+        'Unit valuation analytics: occupancy, with zoning and the site of the complex as context (no land valuation of the lot).',
+      when: {
+        purposes: [...VALUE_PURPOSES, 'RENTAL_ASSESSMENT'],
+        propertyTypes: ['RESIDENTIAL_UNIT'],
+      },
+      require: ['occupancy.status'],
+      recommend: ['planning.zone', 'land.area', 'land.environmental'],
+      sections: ['planning', 'occupancy'],
+    },
+    {
+      id: 'REQ-STRATA-001',
+      description:
+        'Strata, community or stratum title (any property type): the scheme, the lot entitlement, levies and known building defects.',
+      when: {
+        fields: [
+          { fieldId: 'strata.titleType', in: ['strata_title', 'community_title', 'stratum_title'] },
+        ],
+      },
+      require: [
+        'strata.planNumber',
+        'strata.lotNumber',
+        'strata.unitEntitlement',
+        'strata.ownersCorporation',
+        'strata.adminLevy',
+        'strata.capitalWorksLevy',
+        'strata.buildingDefects',
+      ],
+      recommend: ['strata.specialLevies', 'strata.byLaws', 'strata.ownersCorporationCertificate'],
+      sections: ['strata'],
+      warnings: [
+        {
+          code: 'W-STRATA-RECORDS',
+          message:
+            'Check the owners corporation certificate or strata report for special levies, building defects (including combustible cladding) and disputes before relying on the value.',
+          review: 'API_STANDARDS',
+        },
+      ],
+    },
+    {
+      id: 'REQ-STRATA-002',
+      description: 'Company title: the company, shares held and restrictions on sale or lending.',
+      when: { fields: [{ fieldId: 'strata.titleType', equals: 'company_title' }] },
+      require: ['strata.companyTitleDetails'],
+      recommend: ['strata.ownersCorporationCertificate'],
+      sections: ['strata'],
+      warnings: [
+        {
+          code: 'W-COMPANY-TITLE',
+          message:
+            'Company title can restrict who may buy and lend; state any restrictions and how they affect value.',
+          review: 'LEGAL',
+        },
+      ],
+    },
+    {
       id: 'REQ-PT-COM-001',
       description: 'Commercial building description and areas',
       when: { propertyTypes: COMMERCIAL },
@@ -458,7 +544,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'improvements.construction',
         'improvements.condition',
       ],
-      recommend: ['improvements.yearBuilt'],
+      recommend: ['strata.titleType', 'improvements.yearBuilt'],
       sections: ['improvements', 'areas'],
     },
     {
@@ -503,7 +589,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'improvements.functionalObsolescence',
         'planning.useCompliance',
       ],
-      recommend: ['improvements.cranes'],
+      recommend: ['strata.titleType', 'improvements.cranes'],
       sections: ['improvements', 'areas', 'planning'],
     },
     {
@@ -757,6 +843,15 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
       severity: 'warning',
       message:
         'Specialised assets generally require inspection; record why desktop scope is suitable.',
+    },
+    {
+      id: 'SEL-010',
+      description: 'Insurance assessment for a unit',
+      when: { purposes: ['INSURANCE_REPLACEMENT'], propertyTypes: ['RESIDENTIAL_UNIT'] },
+      severity: 'warning',
+      message:
+        'Strata buildings are usually insured by the owners corporation or body corporate. Confirm whether the instruction covers the whole scheme or only the lot owner’s improvements.',
+      review: 'QUANTITY_SURVEYOR',
     },
     {
       id: 'SEL-009',
