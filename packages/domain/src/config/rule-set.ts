@@ -27,6 +27,11 @@ export interface RuleCondition {
   readonly jurisdictions?: readonly Jurisdiction[];
   readonly modes?: readonly AssetMode[];
   readonly fields?: readonly FieldCondition[];
+  /**
+   * Matches retrospective (or current) valuations. Derived from the dates, never selected:
+   * see `retrospectiveStatus`.
+   */
+  readonly retrospective?: boolean;
 }
 
 export interface RuleWarning {
@@ -76,7 +81,7 @@ export interface RuleSetVersion {
 
 const VALUE_PURPOSES: readonly ReportPurpose[] = [
   'MARKET_VALUE',
-  'CGT_RETROSPECTIVE',
+  'CGT',
   'FAMILY_LAW',
   'FINANCIAL_REPORTING',
 ];
@@ -103,16 +108,16 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
   fieldCatalogueVersion: 1,
   authoredBy: 'system-seed',
   notes:
-    'Seed configuration authored from the product brief. Requires API_STANDARDS approval; purpose rules carry their own specialist-review tags.',
+    'Seed configuration authored from the product brief, revised after valuer review (unreleased draft): fewer per-job inputs, CGT as a purpose with retrospective rules derived from the dates, and the sketch kept as working notes. Requires API_STANDARDS approval; purpose rules carry their own specialist-review tags.',
   rules: [
     // ── Base: every job ──────────────────────────────────────────────────────
     {
       id: 'REQ-BASE-001',
-      description: 'Instruction, engagement, key dates, location and assumptions for every job',
+      description:
+        'Instruction, key dates and location for every job. The client is the instructing party; reliance, confidentiality and standard limitations come from approved template clauses, not per-job inputs.',
       when: {},
       require: [
         'instruction.clientEntity',
-        'instruction.instructingParty',
         'instruction.intendedUsers',
         'instruction.intendedUse',
         'instruction.basisOfValue',
@@ -120,23 +125,19 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'instruction.conflictCheck',
         'instruction.responsibleValuer',
         'instruction.engagementDocuments',
-        'instruction.reliance',
-        'instruction.confidentiality',
         'dates.instruction',
         'dates.valuation',
         'location.address',
         'location.titleReference',
-        'location.lga',
-        'assumptions.general',
-        'assumptions.limitations',
       ],
       recommend: [
-        'instruction.feeBasis',
         'instruction.dueDate',
         'instruction.reviewer',
         'instruction.ownership',
+        'location.lga',
         'location.coordinates',
-        'dates.researchCutOff',
+        'assumptions.general',
+        'assumptions.limitations',
       ],
       sections: [
         'instructions',
@@ -236,35 +237,17 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
       id: 'REQ-PUR-MV-001',
       description: 'Market value',
       when: { purposes: ['MARKET_VALUE'] },
-      require: [
-        ...VALUATION_CORE,
-        'valuation.marketability',
-        'valuation.riskCommentary',
-        'market.local',
-        'evidence.sales',
-      ],
-      recommend: ['valuation.crossCheckApproach', 'market.state', 'market.national'],
+      require: [...VALUATION_CORE, 'valuation.marketability', 'market.local', 'evidence.sales'],
+      recommend: ['valuation.crossCheckApproach', 'valuation.riskCommentary'],
       sections: ['market', 'hbu', 'sales_evidence', 'valuation_approach', 'reconciliation', 'risk'],
       specialistReview: ['API_STANDARDS'],
     },
     {
       id: 'REQ-PUR-CGT-001',
       description:
-        'Capital gains tax / retrospective valuation (aligned to ATO minimum report content)',
-      when: { purposes: ['CGT_RETROSPECTIVE'] },
-      require: [
-        ...VALUATION_CORE,
-        'cgt.taxEvent',
-        'cgt.instructingAdviser',
-        'dates.retrospectiveDataCutOff',
-        'cgt.informationCutOffStatement',
-        'cgt.chronology',
-        'cgt.sourceArchive',
-        'cgt.contemporaneousEvidence',
-        'market.local',
-        'evidence.sales',
-      ],
-      recommend: ['market.state'],
+        'Capital gains tax valuation. The client (often the tax agent) instructs; whether it is retrospective follows from the dates (REQ-RETRO-001).',
+      when: { purposes: ['CGT'] },
+      require: [...VALUATION_CORE, 'cgt.taxEvent', 'market.local', 'evidence.sales'],
       sections: [
         'tax_context',
         'market',
@@ -274,12 +257,22 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'reconciliation',
       ],
       specialistReview: ['TAX', 'API_STANDARDS'],
+    },
+    {
+      id: 'REQ-RETRO-001',
+      description:
+        'Retrospective valuation (any purpose): the valuation date is before the inspection date, so the basis of the historical assessment must be stated.',
+      when: { retrospective: true },
+      require: ['retro.evidenceBasis'],
+      recommend: ['dates.retrospectiveDataCutOff', 'retro.chronology'],
+      sections: ['retrospective'],
+      specialistReview: ['API_STANDARDS'],
       warnings: [
         {
-          code: 'W-CGT-HINDSIGHT',
+          code: 'W-RETRO-HINDSIGHT',
           message:
-            'Only information known or reasonably foreseeable at the valuation date may be relied on; later evidence is flagged.',
-          review: 'TAX',
+            'Retrospective valuation: rely only on information known or reasonably foreseeable at the valuation date. Later sales are flagged.',
+          review: 'API_STANDARDS',
         },
       ],
     },
@@ -432,24 +425,23 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
     },
     {
       id: 'REQ-PT-RES-001',
-      description: 'Residential dwelling description and areas',
+      description:
+        'Residential dwelling description. The building area is entered directly (the sketch is working notes and is not reported).',
       when: { propertyTypes: ['RESIDENTIAL'] },
       require: [
         'improvements.dwellingType',
         'improvements.accommodation',
-        'improvements.areaSchedule',
-        'improvements.measurementBasis',
+        'improvements.buildingArea',
         'improvements.yearBuilt',
         'improvements.construction',
         'improvements.condition',
       ],
       recommend: [
-        'improvements.effectiveAge',
         'improvements.renovations',
         'improvements.fixturesFinishes',
         'improvements.outdoorImprovements',
       ],
-      sections: ['improvements', 'areas'],
+      sections: ['improvements'],
     },
     {
       id: 'REQ-PT-COM-001',
@@ -642,7 +634,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
       id: 'REQ-APP-SUM-001',
       description: 'Summation approach inputs',
       when: { fields: [{ fieldId: 'valuation.approaches', includes: 'summation' }] },
-      require: ['land.area', 'improvements.areaSchedule'],
+      require: ['land.area', 'improvements.buildingArea'],
       sections: ['cost_approach'],
     },
     {
@@ -753,7 +745,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
     {
       id: 'SEL-007',
       description: 'Retrospective valuation with a current inspection',
-      when: { purposes: ['CGT_RETROSPECTIVE'], scopes: ['FULL', 'KERBSIDE', 'RESTRICTED'] },
+      when: { retrospective: true, scopes: ['FULL', 'KERBSIDE', 'RESTRICTED'] },
       severity: 'warning',
       message:
         'The inspection records present condition: document known differences between the inspection date and the valuation date.',

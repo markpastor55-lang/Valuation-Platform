@@ -1,30 +1,21 @@
 import { render, type JSX } from 'preact';
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { INPUT_TABS } from '@vp/domain';
 import {
   JOB,
-  PEOPLE,
   apply,
   derive,
   describeError,
   initialState,
+  qaVisible,
   statusLabel,
   type PreviewState,
 } from './model.js';
-import { ChecksScreen } from './screens/checks.js';
-import { FieldsScreen } from './screens/fields.js';
-import { JobScreen } from './screens/job.js';
+import { QaScreen } from './screens/qa.js';
 import { ReportScreen } from './screens/report.js';
-import { SketchScreen } from './screens/sketch.js';
-import {
-  Icon,
-  Pill,
-  ROLE_OPTIONS,
-  STATUS_TONE,
-  Segmented,
-  type Dispatch,
-  type Navigate,
-  type Tab,
-} from './ui.js';
+import { ReviewScreen } from './screens/review.js';
+import { InputTabScreen, JobScreen } from './screens/tabs.js';
+import { Pill, STATUS_TONE, TAB_TITLES, type Dispatch, type Navigate, type Tab } from './ui.js';
 
 const STORE_KEY = 'vp-preview-state';
 
@@ -33,7 +24,7 @@ function load(): PreviewState {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as { schema?: unknown };
-      if (parsed.schema === 1) return parsed as PreviewState;
+      if (parsed.schema === 2) return parsed as PreviewState;
     }
   } catch {
     // storage unavailable or unreadable: start fresh
@@ -49,14 +40,6 @@ function save(state: PreviewState): void {
   }
 }
 
-const TABS: readonly (readonly [Tab, string])[] = [
-  ['job', 'Job'],
-  ['fields', 'Fields'],
-  ['sketch', 'Sketch'],
-  ['checks', 'Checks'],
-  ['report', 'Report'],
-];
-
 function App(): JSX.Element {
   const [state, setState] = useState<PreviewState>(load);
   const stateRef = useRef(state);
@@ -65,6 +48,19 @@ function App(): JSX.Element {
   const [toast, setToast] = useState<{ text: string; error: boolean; n: number } | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const d = useMemo(() => derive(state), [state]);
+  const showQa = qaVisible(state);
+  const tabs: readonly Tab[] = [
+    ...INPUT_TABS.map((t) => t.id),
+    ...(showQa ? (['qa'] as const) : []),
+    'report',
+  ];
+  const current: Tab = tabs.includes(tab) ? tab : 'job';
+
+  useEffect(() => {
+    document
+      .getElementById(`tab-${current}`)
+      ?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [current]);
 
   const showToast = (text: string, error: boolean) => {
     window.clearTimeout(toastTimer.current);
@@ -97,23 +93,35 @@ function App(): JSX.Element {
     if (!id) window.scrollTo({ top: 0 });
   };
 
-  const missing = d.missing.filter((m) => m.level === 'required').length;
-  const stage = state.status === 'approved' || state.status === 'issued' ? 'issue' : 'submit';
-  const blocking = d.validation[stage].blockingCount;
-  const badges: Partial<Record<Tab, number>> = { fields: missing, checks: blocking };
-  const screenProps = { state, d, dispatch, navigate };
+  const badge = (t: Tab): JSX.Element | null => {
+    if (t === 'qa')
+      return state.status === 'submitted' || state.status === 'in_review' ? (
+        <span class="badge" aria-label="needs review">
+          !
+        </span>
+      ) : null;
+    if (t === 'report') return null;
+    const n = d.missingByTab[t] ?? 0;
+    return n > 0 ? (
+      <span class="badge" aria-label={`${n} to do`}>
+        {n}
+      </span>
+    ) : null;
+  };
+
+  const screen = { state, d, dispatch, navigate, focus };
 
   return (
     <div class="shell">
       <div class="preview-strip">
-        <span>Preview with synthetic data. Changes stay in this browser only.</span>
+        <span>Preview with made-up data. Changes stay in this browser only.</span>
         <button
           type="button"
           onClick={() => {
-            if (dispatch({ type: 'reset' }, 'Demo reset to the start')) navigate('job');
+            if (dispatch({ type: 'reset' }, 'Started again')) navigate('job');
           }}
         >
-          Reset demo
+          Start again
         </button>
       </div>
       <header class="appbar">
@@ -124,25 +132,33 @@ function App(): JSX.Element {
           </div>
           <Pill tone={STATUS_TONE[state.status]}>{statusLabel(state.status)}</Pill>
         </div>
-        <div class="role-row">
-          <span class="eyebrow">Viewing as</span>
-          <Segmented
-            full
-            label="Viewing as"
-            value={state.role}
-            options={ROLE_OPTIONS}
-            onChange={(role) =>
-              dispatch({ type: 'setRole', role }, `Now viewing as ${PEOPLE[role].displayName}`)
-            }
-          />
-        </div>
+        <nav class="tabstrip" aria-label="Sections">
+          {tabs.map((t) => (
+            <button
+              key={t}
+              id={`tab-${t}`}
+              type="button"
+              class={`tabstrip-tab ${t === 'qa' ? 'qa' : ''}`}
+              aria-current={current === t ? 'page' : undefined}
+              onClick={() => {
+                navigate(t);
+              }}
+            >
+              {TAB_TITLES[t]}
+              {badge(t)}
+            </button>
+          ))}
+        </nav>
       </header>
       <main>
-        {tab === 'job' && <JobScreen {...screenProps} />}
-        {tab === 'fields' && <FieldsScreen {...screenProps} focus={focus} />}
-        {tab === 'sketch' && <SketchScreen state={state} d={d} dispatch={dispatch} />}
-        {tab === 'checks' && <ChecksScreen {...screenProps} />}
-        {tab === 'report' && <ReportScreen state={state} d={d} />}
+        {current === 'job' && <JobScreen {...screen} />}
+        {(current === 'property' ||
+          current === 'inspection' ||
+          current === 'evidence' ||
+          current === 'valuation') && <InputTabScreen {...screen} tab={current} />}
+        {current === 'review' && <ReviewScreen {...screen} />}
+        {current === 'qa' && <QaScreen {...screen} />}
+        {current === 'report' && <ReportScreen d={d} />}
       </main>
       {toast && (
         <div
@@ -162,25 +178,6 @@ function App(): JSX.Element {
           </button>
         </div>
       )}
-      <nav class="tabbar" aria-label="Sections">
-        <div class="tabbar-inner">
-          {TABS.map(([t, label]) => (
-            <button
-              key={t}
-              type="button"
-              class="tab"
-              aria-current={tab === t ? 'page' : undefined}
-              onClick={() => {
-                navigate(t);
-              }}
-            >
-              <Icon name={t} />
-              {label}
-              {badges[t] ? <span class="badge">{badges[t]}</span> : null}
-            </button>
-          ))}
-        </div>
-      </nav>
     </div>
   );
 }

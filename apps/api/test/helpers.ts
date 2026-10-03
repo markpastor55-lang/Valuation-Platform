@@ -185,6 +185,7 @@ export function marketValueFieldValues(assetId: string) {
     asset('evidence.sales', ['see sales evidence']),
     asset('improvements.dwellingType', 'Detached house'),
     asset('improvements.accommodation', '4 bedrooms, 2 bathrooms'),
+    asset('improvements.buildingArea', 216),
     asset('improvements.yearBuilt', 2005),
     asset('improvements.effectiveAge', 15),
     asset('improvements.construction', 'Brick veneer, tiled roof'),

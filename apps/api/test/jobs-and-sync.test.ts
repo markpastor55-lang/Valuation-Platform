@@ -16,7 +16,7 @@ describe('selection changes, portfolios and offline sync', () => {
       newJobBody({
         selection: {
           jurisdiction: 'VIC',
-          purpose: 'CGT_RETROSPECTIVE',
+          purpose: 'CGT',
           propertyType: 'RESIDENTIAL',
           scope: 'FULL',
           mode: 'SINGLE',
@@ -66,7 +66,7 @@ describe('selection changes, portfolios and offline sync', () => {
       {
         selection: {
           jurisdiction: 'VIC',
-          purpose: 'CGT_RETROSPECTIVE',
+          purpose: 'CGT',
           propertyType: 'RESIDENTIAL',
           scope: 'FULL',
           mode: 'SINGLE',

@@ -2,27 +2,30 @@ import type { JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import {
   FIELD_BY_ID,
+  FIELD_CATALOGUE,
   REPORT_SECTIONS,
   effectiveValue,
   formatAustralianDate,
-  hasValue,
-  isValuerJudgementField,
+  inputTabForField,
   type FieldDef,
   type FieldRequirement,
+  type InputTabId,
   type SectionId,
 } from '@vp/domain';
 import {
   ASSET_ID,
   DATA_SOURCES,
-  PEOPLE,
   SALES,
   SALE_ANALYSES,
-  fieldLockReason,
+  VALUER,
   fieldValue,
+  isLocked,
   type Derived,
   type PreviewState,
 } from '../model.js';
-import { Pill, Segmented, aud, humanise, m2, type Dispatch, type Navigate } from '../ui.js';
+import { Pill, Segmented, aud, humanise, m2, type Dispatch } from '../ui.js';
+
+const CATALOGUE_ORDER = FIELD_CATALOGUE.map((f) => f.id);
 
 interface Item {
   readonly def: FieldDef;
@@ -32,13 +35,13 @@ interface Item {
 }
 
 const UNITS: Partial<Record<FieldDef['type'], string>> = {
-  money: 'AUD',
+  money: '$',
   area: 'm²',
   length: 'm',
   ratio: '0 – 1',
 };
 
-function SalesList(): JSX.Element {
+export function SalesList(): JSX.Element {
   const source = DATA_SOURCES.find((s) => s.id === 'ds-sales');
   return (
     <div class="stack">
@@ -58,7 +61,7 @@ function SalesList(): JSX.Element {
               {rate !== undefined && <> · {aud(Math.round(rate))}/m² land</>}
             </span>
             <span class="muted" style={{ fontSize: '0.8rem' }}>
-              {source?.name} · verified by {PEOPLE.valuer.displayName}
+              {source?.name} · checked by {VALUER.displayName}
               {s.adjustments.map(
                 (a) => ` · ${a.rationale} (${a.value > 0 ? '+' : ''}${a.value * 100}%)`,
               )}
@@ -66,20 +69,20 @@ function SalesList(): JSX.Element {
           </div>
         );
       })}
+      <p class="muted" style={{ fontSize: '0.84rem' }}>
+        In the app you add sales from the licensed data feed or enter them yourself.
+      </p>
     </div>
   );
 }
 
 function FieldInput(props: {
-  item: Item;
+  def: FieldDef;
   value: unknown;
   disabled: boolean;
   commit: (v: unknown) => void;
-  d: Derived;
-  navigate: Navigate;
 }): JSX.Element {
-  const { item, value, disabled, commit } = props;
-  const def = item.def;
+  const { def, value, disabled, commit } = props;
   const id = `in-${def.id}`;
   const key = `${def.id}:${JSON.stringify(value ?? null)}`;
   const text = typeof value === 'string' ? value : '';
@@ -132,6 +135,7 @@ function FieldInput(props: {
       const unit = UNITS[def.type] ?? def.unit;
       return (
         <div class="input-unit">
+          {def.type === 'money' && <span>$</span>}
           <input
             key={key}
             id={id}
@@ -145,7 +149,7 @@ function FieldInput(props: {
               commit(raw === '' ? null : Number(raw));
             }}
           />
-          {unit && <span>{unit}</span>}
+          {unit && def.type !== 'money' && <span>{unit}</span>}
         </div>
       );
     }
@@ -197,8 +201,9 @@ function FieldInput(props: {
             ['yes', 'Yes'],
             ['no', 'No'],
           ]}
+          disabled={disabled}
           onChange={(v) => {
-            if (!disabled) commit(v === 'yes');
+            commit(v === 'yes');
           }}
         />
       );
@@ -208,7 +213,7 @@ function FieldInput(props: {
           key={key}
           id={id}
           rows={2}
-          placeholder="One item per line"
+          placeholder="One per line"
           defaultValue={Array.isArray(value) ? (value as unknown[]).map(String).join('\n') : ''}
           disabled={disabled}
           onChange={(e) => {
@@ -225,13 +230,12 @@ function FieldInput(props: {
         typeof value === 'object' && value !== null
           ? (value as { formatted?: unknown }).formatted
           : undefined;
-      const formatted = typeof raw === 'string' ? raw : '';
       return (
         <input
           key={key}
           id={id}
           type="text"
-          defaultValue={formatted}
+          defaultValue={typeof raw === 'string' ? raw : ''}
           disabled={disabled}
           onChange={(e) => {
             const v = e.currentTarget.value.trim();
@@ -240,113 +244,102 @@ function FieldInput(props: {
         />
       );
     }
-    case 'coordinates': {
-      const c = (value ?? {}) as { lat?: number; lng?: number };
-      return (
-        <span class="mono">
-          {c.lat?.toFixed(5)}, {c.lng?.toFixed(5)}{' '}
-          <span class="muted">(from device location in the app)</span>
-        </span>
-      );
-    }
-    case 'user_ref':
-      return (
-        <select
-          key={key}
-          id={id}
-          value={text}
-          disabled={disabled}
-          onChange={(e) => {
-            commit(e.currentTarget.value);
-          }}
-        >
-          <option value="">Choose…</option>
-          {Object.values(PEOPLE).map((p) => (
-            <option key={p.userId} value={p.userId}>
-              {p.displayName} ({p.roleLabel})
-            </option>
-          ))}
-        </select>
-      );
     case 'evidence_list':
       return def.id === 'evidence.sales' ? (
         <SalesList />
       ) : (
-        <span class="muted">{Array.isArray(value) ? value.length : 0} items</span>
+        <span class="muted">{Array.isArray(value) ? value.length : 0} added</span>
       );
-    case 'area_schedule_ref': {
-      const s = props.d.schedule;
-      return (
-        <div class="row">
-          <span>
-            Sketch v{s.sketchVersionId.replace('sv-', '')}:{' '}
-            <strong class="num">{m2(s.totalIncludedM2)}</strong>{' '}
-            <span class="muted">({humanise(s.basis)})</span>
-          </span>
-          <button
-            type="button"
-            class="link"
-            onClick={() => {
-              props.navigate('sketch');
-            }}
-          >
-            Open sketch
-          </button>
-        </div>
-      );
-    }
     case 'document_refs':
     case 'datasource_refs': {
       const n = Array.isArray(value) ? value.length : 0;
       return (
         <span class="muted">
-          {n} {def.type === 'document_refs' ? 'document' : 'source'}
-          {n === 1 ? '' : 's'} on file
-          {def.type === 'document_refs' && ' (uploads come with the mobile app)'}
+          {n === 0
+            ? 'Nothing attached yet (uploads come with the mobile app)'
+            : `${n} ${def.type === 'document_refs' ? 'document' : 'source'}${n === 1 ? '' : 's'} attached`}
         </span>
       );
     }
-    case 'calculation_ref':
-      return <span class="muted">{text || 'Calculated in the evidence workspace'}</span>;
+    default:
+      return <span class="muted">{text || 'Filled in automatically'}</span>;
   }
+}
+
+/** Shortcuts that save typing for values that are usually the same as another. */
+function Shortcut(props: {
+  def: FieldDef;
+  state: PreviewState;
+  dispatch: Dispatch;
+  disabled: boolean;
+}): JSX.Element | null {
+  const { def, state, dispatch, disabled } = props;
+  const job = state.values.job;
+  if (def.id === 'dates.valuation') {
+    const inspection = job['dates.inspection'];
+    if (typeof inspection !== 'string' || job['dates.valuation'] === inspection) return null;
+    return (
+      <button
+        type="button"
+        class="link small"
+        disabled={disabled}
+        onClick={() =>
+          dispatch({ type: 'setField', fieldId: def.id, assetId: null, value: inspection })
+        }
+      >
+        Same as inspection date
+      </button>
+    );
+  }
+  if (def.id === 'instruction.intendedUsers') {
+    const client = job['instruction.clientEntity'];
+    if (typeof client !== 'string' || !client.trim()) return null;
+    const current = job['instruction.intendedUsers'];
+    if (Array.isArray(current) && current.length === 1 && current[0] === client) return null;
+    return (
+      <button
+        type="button"
+        class="link small"
+        disabled={disabled}
+        onClick={() =>
+          dispatch({ type: 'setField', fieldId: def.id, assetId: null, value: [client] })
+        }
+      >
+        Same as client
+      </button>
+    );
+  }
+  return null;
 }
 
 function FieldRow(props: {
   item: Item;
   state: PreviewState;
-  d: Derived;
   dispatch: Dispatch;
-  navigate: Navigate;
   flash: boolean;
 }): JSX.Element {
   const { item, state, dispatch } = props;
   const { def, req } = item;
   const [error, setError] = useState<string | null>(null);
-  const lock = fieldLockReason(state, def);
-  const value = fieldValue(state, def.id, item.assetId);
+  const locked = isLocked(state);
+  const needed = item.missing && req.level === 'required';
   return (
     <div
       id={`field-${def.id}`}
-      class={`field ${item.missing && req.level === 'required' ? 'missing' : ''} ${props.flash ? 'flash' : ''}`}
+      class={`field ${needed ? 'missing' : ''} ${props.flash ? 'flash' : ''}`}
     >
       <div class="field-head">
-        <label for={`in-${def.id}`}>{def.label}</label>
-        <div class="field-tags">
-          {item.missing && req.level === 'required' && <Pill tone="blocking">Missing</Pill>}
-          {req.level === 'recommended' && <Pill tone="plain">Recommended</Pill>}
-          {isValuerJudgementField(def) && <Pill>Valuer judgement</Pill>}
-          {def.personal && <Pill tone="warning">Personal info</Pill>}
-          {def.review && (
-            <Pill tone="plain">Review: {def.review.replaceAll('_', ' ').toLowerCase()}</Pill>
-          )}
-        </div>
+        <label for={`in-${def.id}`}>
+          {def.label}
+          {req.level === 'recommended' && <span class="optional"> (optional)</span>}
+        </label>
+        {needed && <Pill tone="blocking">To do</Pill>}
       </div>
+      {def.help && <span class="help">{def.help}</span>}
       <FieldInput
-        item={item}
-        value={value}
-        disabled={lock !== undefined}
-        d={props.d}
-        navigate={props.navigate}
+        def={def}
+        value={fieldValue(state, def.id, item.assetId)}
+        disabled={locked}
         commit={(v) => {
           const ok = dispatch({
             type: 'setField',
@@ -357,127 +350,76 @@ function FieldRow(props: {
           setError(ok ? null : 'Not saved. See the message below.');
         }}
       />
+      <Shortcut def={def} state={state} dispatch={dispatch} disabled={locked} />
       {error && <span class="error-text">{error}</span>}
-      {lock && lock.kind === 'role' && (
-        <span class="lock">
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <rect x="5" y="11" width="14" height="10" rx="2" />
-            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-          </svg>
-          {lock.text}
-        </span>
-      )}
-      <span class="mono muted" style={{ fontSize: '0.72rem' }}>
-        {def.id} · {req.ruleIds.join(', ')}
-      </span>
     </div>
   );
 }
 
-export function FieldsScreen(props: {
+/** The fields a job needs on one input tab, grouped by report section. */
+export function InputFields(props: {
+  tab: InputTabId;
   state: PreviewState;
   d: Derived;
   dispatch: Dispatch;
-  navigate: Navigate;
   focus: { id: string; n: number } | null;
-}): JSX.Element {
-  const { state, d } = props;
-  const [filter, setFilter] = useState<'all' | 'missing'>('all');
+  only?: readonly SectionId[];
+}): JSX.Element | null {
+  const { tab, state, d } = props;
   const missingKeys = new Set(d.missing.map((m) => m.fieldId));
   const items: Item[] = d.requirements.fields.flatMap((req) => {
     const def = FIELD_BY_ID.get(req.fieldId);
-    if (!def) return [];
-    const assetId = def.level === 'asset' ? ASSET_ID : null;
-    return [{ def, req, assetId, missing: missingKeys.has(def.id) }];
+    if (!def || def.entry === 'system' || inputTabForField(def.id) !== tab) return [];
+    if (props.only && !props.only.includes(def.section)) return [];
+    return [
+      {
+        def,
+        req,
+        assetId: def.level === 'asset' ? ASSET_ID : null,
+        missing: missingKeys.has(def.id),
+      },
+    ];
   });
-  const shown = filter === 'missing' ? items.filter((i) => i.missing) : items;
   const bySection = new Map<SectionId, Item[]>();
-  for (const i of shown) bySection.set(i.def.section, [...(bySection.get(i.def.section) ?? []), i]);
+  for (const i of items) bySection.set(i.def.section, [...(bySection.get(i.def.section) ?? []), i]);
+  // Catalogue order (the order a valuer works), optional fields last
+  for (const list of bySection.values())
+    list.sort(
+      (a, b) =>
+        Number(a.req.level === 'recommended') - Number(b.req.level === 'recommended') ||
+        CATALOGUE_ORDER.indexOf(a.def.id) - CATALOGUE_ORDER.indexOf(b.def.id),
+    );
   const sections = REPORT_SECTIONS.filter((s) => bySection.has(s.id));
-  const missingCount = items.filter((i) => i.missing).length;
   const focusId = props.focus?.id;
 
   useEffect(() => {
     if (!focusId) return;
     const el = document.getElementById(`field-${focusId}`);
-    const details = el?.closest('details');
-    if (details) details.open = true;
     el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     el?.querySelector<HTMLElement>('input, select, textarea, button')?.focus({
       preventScroll: true,
     });
   }, [focusId, props.focus?.n]);
 
+  if (sections.length === 0) return null;
   return (
     <>
-      <section class="card">
-        <div class="card-head">
-          <h2>Inspection and valuation fields</h2>
-          <Segmented
-            label="Show"
-            value={filter}
-            options={[
-              ['all', `All (${items.length})`],
-              ['missing', `Missing (${missingCount})`],
-            ]}
-            onChange={setFilter}
-          />
-        </div>
-        <p class="muted">
-          Only the fields this job needs are shown, grouped by report section. Each field lists the
-          rule that requires it.
-          {state.role === 'inspector' &&
-            ' As a field inspector you capture facts; valuer judgement fields are locked.'}
-          {state.role === 'reviewer' && ' QA reviewers see content read-only.'}
-        </p>
-        {filter === 'missing' && missingCount === 0 && (
-          <div class="notice ok">Every required and recommended field has a value.</div>
-        )}
-      </section>
-      {sections.map((s) => {
-        const list = bySection.get(s.id) ?? [];
-        const missingHere = list.filter((i) => i.missing && i.req.level === 'required').length;
-        const filled = list.filter((i) => hasValue(fieldValue(state, i.def.id, i.assetId))).length;
-        return (
-          <details
-            key={s.id}
-            class="section"
-            open={missingHere > 0 || filter === 'missing' || list.some((i) => i.def.id === focusId)}
-          >
-            <summary>
-              <h3>{s.title}</h3>
-              {missingHere > 0 ? (
-                <Pill tone="blocking">{missingHere} missing</Pill>
-              ) : (
-                <span class="muted num" style={{ fontSize: '0.84rem' }}>
-                  {filled}/{list.length}
-                </span>
-              )}
-            </summary>
-            <div class="section-body">
-              {list.map((item) => (
-                <FieldRow
-                  key={item.def.id}
-                  item={item}
-                  state={state}
-                  d={d}
-                  dispatch={props.dispatch}
-                  navigate={props.navigate}
-                  flash={item.def.id === focusId}
-                />
-              ))}
-            </div>
-          </details>
-        );
-      })}
+      {sections.map((s) => (
+        <section key={s.id} class="card fields-card" aria-label={s.title}>
+          <h3>{s.title}</h3>
+          <div class="field-list">
+            {(bySection.get(s.id) ?? []).map((item) => (
+              <FieldRow
+                key={item.def.id}
+                item={item}
+                state={state}
+                dispatch={props.dispatch}
+                flash={item.def.id === focusId}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
     </>
   );
 }

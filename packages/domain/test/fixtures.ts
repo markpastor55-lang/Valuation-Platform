@@ -204,6 +204,7 @@ export function marketValueValues(): FieldValues {
         'evidence.sales': ['s1', 's2', 's3'],
         'improvements.dwellingType': 'Detached house',
         'improvements.accommodation': '4 bed, 2 bath',
+        'improvements.buildingArea': 216,
         'improvements.areaSchedule': 'sv1',
         'improvements.measurementBasis': 'BUILDING_AREA',
         'improvements.yearBuilt': 2005,

@@ -9,6 +9,7 @@ import {
   findMissingFields,
   lintRuleSet,
   resolveRequirements,
+  retrospectiveStatus,
   selectRuleSet,
   type FieldValues,
   type JobSelection,
@@ -68,19 +69,49 @@ describe('purpose drives requirements', () => {
     );
   });
 
-  it('CGT retrospective adds tax event, cut-off, chronology and source archive', () => {
-    const f = required({ ...base, purpose: 'CGT_RETROSPECTIVE' });
-    expect(f).toEqual(
-      expect.arrayContaining([
-        'cgt.taxEvent',
-        'dates.retrospectiveDataCutOff',
-        'cgt.chronology',
-        'cgt.sourceArchive',
-      ]),
-    );
-    const r = resolveRequirements({ ...base, purpose: 'CGT_RETROSPECTIVE' }, AU_CORE_RULE_SET);
+  it('CGT adds the CGT event; the client instructs, so there is no tax-agent field', () => {
+    const current: FieldValues = {
+      job: { 'dates.inspection': '2026-09-30', 'dates.valuation': '2026-09-30' },
+      assets: {},
+    };
+    const r = resolveRequirements({ ...base, purpose: 'CGT' }, AU_CORE_RULE_SET, current);
+    const f = r.fields.filter((x) => x.level === 'required').map((x) => x.fieldId);
+    expect(f).toContain('cgt.taxEvent');
+    expect(f).toContain('instruction.clientEntity');
+    expect(r.fields.map((x) => x.fieldId).some((id) => id.startsWith('retro.'))).toBe(false);
+    expect(r.retrospective).toBe(false);
     expect(r.specialistReviews).toContain('TAX');
     expect(r.sections).toContain('tax_context');
+    expect(r.sections).not.toContain('retrospective');
+  });
+
+  it('derives a retrospective valuation from the dates, for any purpose', () => {
+    const dated = (valuation: string, inspection?: string): FieldValues => ({
+      job: {
+        'dates.valuation': valuation,
+        'dates.instruction': '2026-09-25',
+        ...(inspection ? { 'dates.inspection': inspection } : {}),
+      },
+      assets: {},
+    });
+    for (const purpose of ['CGT', 'FAMILY_LAW', 'MARKET_VALUE'] as const) {
+      const r = resolveRequirements(
+        { ...base, purpose },
+        AU_CORE_RULE_SET,
+        dated('2020-07-01', '2026-09-30'),
+      );
+      expect(r.retrospective).toBe(true);
+      expect(r.fields.find((x) => x.fieldId === 'retro.evidenceBasis')?.level).toBe('required');
+      expect(r.sections).toContain('retrospective');
+      expect(r.warnings.map((w) => w.code)).toContain('W-RETRO-HINDSIGHT');
+    }
+    // Same-day valuation is current; desktop jobs compare with the instruction date
+    expect(retrospectiveStatus(dated('2026-09-30', '2026-09-30')).retrospective).toBe(false);
+    expect(retrospectiveStatus(dated('2026-09-01')).comparedWith?.fieldId).toBe(
+      'dates.instruction',
+    );
+    expect(retrospectiveStatus(dated('2026-09-01')).retrospective).toBe(true);
+    expect(retrospectiveStatus({ job: {}, assets: {} }).retrospective).toBe(false);
   });
 
   it('family law requires expert matters and flags legal review', () => {
@@ -253,7 +284,7 @@ describe('completeness and change of selection', () => {
     job: {
       'instruction.clientEntity': 'Example Pty Ltd',
       'cgt.taxEvent': 'CGT event A1',
-      'cgt.chronology': ['2001 acquisition'],
+      'retro.chronology': ['2001 acquisition'],
       'assumptions.general': [],
     },
     assets: { a1: { 'land.area': 650, 'improvements.dwellingType': '  ' } },
@@ -270,23 +301,17 @@ describe('completeness and change of selection', () => {
   });
 
   it('changing purpose updates requirements and sections without losing captured data', () => {
-    const cgt = resolveRequirements(
-      { ...base, purpose: 'CGT_RETROSPECTIVE' },
-      AU_CORE_RULE_SET,
-      values,
-    );
+    const cgt = resolveRequirements({ ...base, purpose: 'CGT' }, AU_CORE_RULE_SET, values);
     const mv = resolveRequirements(base, AU_CORE_RULE_SET, values);
     const diff = diffRequirements(cgt, mv, values);
-    expect(diff.noLongerRequired).toEqual(
-      expect.arrayContaining(['cgt.taxEvent', 'dates.retrospectiveDataCutOff']),
-    );
+    expect(diff.noLongerRequired).toEqual(expect.arrayContaining(['cgt.taxEvent']));
     expect(diff.newlyRequired).toEqual(expect.arrayContaining(['valuation.marketability']));
     expect(diff.sectionsRemoved).toContain('tax_context');
     expect(diff.sectionsAdded).toContain('risk');
     expect(diff.retainedValues).toEqual(
       expect.arrayContaining([
         { fieldId: 'cgt.taxEvent', assetId: null },
-        { fieldId: 'cgt.chronology', assetId: null },
+        { fieldId: 'retro.chronology', assetId: null },
       ]),
     );
     // values object is untouched

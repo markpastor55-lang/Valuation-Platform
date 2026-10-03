@@ -48,7 +48,7 @@ describe('job lifecycle (market value, residential, VIC)', () => {
     expect(res.body.ruleSet).toContain('approved');
     expect(res.body.template).toBe('au-generic v2 (approved)');
     expect(res.body.requirements.sections).toEqual(
-      expect.arrayContaining(['sales_evidence', 'areas', 'certification']),
+      expect.arrayContaining(['sales_evidence', 'improvements', 'certification']),
     );
     expect(res.body.requirements.missingRequired.length).toBeGreaterThan(10);
     jobId = res.body.id;

@@ -6,14 +6,14 @@ Resolved by `resolveRequirements` from the draft AU core rule set. Conditional r
 
 ## 1. Required-field counts (scope FULL, VIC, single asset)
 
-| Purpose \ Property type           | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
-| --------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| Market value                      | 43          | 42          | 53                  | 53                  | 53         | 41                       |
-| Capital gains tax / retrospective | 48          | 47          | 58                  | 58                  | 58         | 46                       |
-| Family law                        | 52          | 51          | 62                  | 62                  | 62         | 50                       |
-| Financial reporting (fair value)  | 51          | 50          | 61                  | 61                  | 61         | 49                       |
-| Rental assessment                 | 48          | 46          | 48                  | 48                  | 54         | 46                       |
-| Insurance / replacement cost      | ⛔          | 41          | 44                  | 44                  | 49         | 41                       |
+| Purpose \ Property type          | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
+| -------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
+| Market value                     | 36          | 34          | 46                  | 46                  | 46         | 34                       |
+| Capital gains tax (CGT)          | 36          | 34          | 46                  | 46                  | 46         | 34                       |
+| Family law                       | 46          | 44          | 56                  | 56                  | 56         | 44                       |
+| Financial reporting (fair value) | 45          | 43          | 55                  | 55                  | 55         | 43                       |
+| Rental assessment                | 42          | 39          | 42                  | 42                  | 48         | 40                       |
+| Insurance / replacement cost     | ⛔          | 36          | 38                  | 38                  | 43         | 35                       |
 
 ## 2. Fields by purpose and property type (scope FULL, VIC)
 
@@ -23,17 +23,18 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 
 | Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
 | ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.general`                 | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r           | r                   | r                   | r          | r                        |
 | `evidence.rentals`                    |             |             | **R**               | **R**               | **R**      |                          |
 | `evidence.sales`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
+| `improvements.areaSchedule`           |             |             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**       |                     |                     |            |                          |
 | `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
 | `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.cranes`                 |             |             |                     |                     | r          |                          |
 | `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
 | `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
 | `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
 | `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
@@ -43,7 +44,7 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
 | `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
 | `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.measurementBasis`       |             |             | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
 | `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
 | `improvements.parking`                |             | **R**       | **R**               | **R**               |            |                          |
@@ -59,7 +60,6 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `income.marketIncome`                 |             |             | **R**               | **R**               | **R**      |                          |
 | `income.terminalYield`                |             |             | r                   | r                   |            |                          |
 | `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
 | `land.access`                         | **R**       |             |                     |                     |            |                          |
@@ -74,9 +74,8 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `land.shape`                          | **R**       |             |                     |                     |            |                          |
 | `land.topography`                     | **R**       |             |                     |                     |            |                          |
 | `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r           | r                   | r                   | r          | r                        |
 | `market.local`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `market.national`                     | r           | r           | r                   | r                   | r          | r                        |
-| `market.state`                        | r           | r           | r                   | r                   | r          | r                        |
 | `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
 | `planning.overlays`                   | **R**       | r           | r                   | r                   | r          | r                        |
@@ -108,30 +107,25 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `valuation.marketability`             | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `valuation.primaryApproach`           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `valuation.reconciliation`            | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `valuation.riskCommentary`            | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| `valuation.riskCommentary`            | r           | r           | r                   | r                   | r          | r                        |
 
-### Capital gains tax / retrospective (`CGT_RETROSPECTIVE`)
+### Capital gains tax (CGT) (`CGT`)
 
 | Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
 | ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `cgt.chronology`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `cgt.contemporaneousEvidence`         | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `cgt.informationCutOffStatement`      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `cgt.instructingAdviser`              | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `cgt.sourceArchive`                   | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| `assumptions.general`                 | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r           | r                   | r                   | r          | r                        |
 | `cgt.taxEvent`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
-| `dates.retrospectiveDataCutOff`       | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `evidence.rentals`                    |             |             | **R**               | **R**               | **R**      |                          |
 | `evidence.sales`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
+| `improvements.areaSchedule`           |             |             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**       |                     |                     |            |                          |
 | `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
 | `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.cranes`                 |             |             |                     |                     | r          |                          |
 | `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
 | `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
 | `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
 | `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
@@ -141,7 +135,7 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
 | `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
 | `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.measurementBasis`       |             |             | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
 | `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
 | `improvements.parking`                |             | **R**       | **R**               | **R**               |            |                          |
@@ -157,7 +151,6 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `income.marketIncome`                 |             |             | **R**               | **R**               | **R**      |                          |
 | `income.terminalYield`                |             |             | r                   | r                   |            |                          |
 | `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
 | `land.access`                         | **R**       |             |                     |                     |            |                          |
@@ -172,8 +165,8 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `land.shape`                          | **R**       |             |                     |                     |            |                          |
 | `land.topography`                     | **R**       |             |                     |                     |            |                          |
 | `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r           | r                   | r                   | r          | r                        |
 | `market.local`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
-| `market.state`                        | r           | r           | r                   | r                   | r          | r                        |
 | `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
 | `planning.overlays`                   | **R**       | r           | r                   | r                   | r          | r                        |
@@ -209,7 +202,8 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 
 | Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
 | ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.general`                 | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r           | r                   | r                   | r          | r                        |
 | `evidence.rentals`                    |             |             | **R**               | **R**               | **R**      |                          |
 | `evidence.sales`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `fl.conferenceOrJointStatement`       | r           | r           | r                   | r                   | r          | r                        |
@@ -225,13 +219,13 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `fl.reasons`                          | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `fl.singleExpert`                     | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
+| `improvements.areaSchedule`           |             |             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**       |                     |                     |            |                          |
 | `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
 | `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.cranes`                 |             |             |                     |                     | r          |                          |
 | `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
 | `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
 | `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
 | `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
@@ -241,7 +235,7 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
 | `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
 | `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.measurementBasis`       |             |             | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
 | `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
 | `improvements.parking`                |             | **R**       | **R**               | **R**               |            |                          |
@@ -257,7 +251,6 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `income.marketIncome`                 |             |             | **R**               | **R**               | **R**      |                          |
 | `income.terminalYield`                |             |             | r                   | r                   |            |                          |
 | `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
 | `land.access`                         | **R**       |             |                     |                     |            |                          |
@@ -272,6 +265,7 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `land.shape`                          | **R**       |             |                     |                     |            |                          |
 | `land.topography`                     | **R**       |             |                     |                     |            |                          |
 | `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r           | r                   | r                   | r          | r                        |
 | `market.local`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
@@ -308,7 +302,8 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 
 | Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
 | ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.general`                 | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r           | r                   | r                   | r          | r                        |
 | `evidence.rentals`                    |             |             | **R**               | **R**               | **R**      |                          |
 | `evidence.sales`                      | r           | r           | r                   | r                   | r          | r                        |
 | `fr.accountingStandard`               | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
@@ -324,13 +319,13 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `fr.valuationPremise`                 | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `fr.valuationTechnique`               | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
+| `improvements.areaSchedule`           |             |             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**       |                     |                     |            |                          |
 | `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
 | `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.cranes`                 |             |             |                     |                     | r          |                          |
 | `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
 | `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
 | `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
 | `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
@@ -340,7 +335,7 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
 | `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
 | `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.measurementBasis`       |             |             | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
 | `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
 | `improvements.parking`                |             | **R**       | **R**               | **R**               |            |                          |
@@ -356,7 +351,6 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `income.marketIncome`                 |             |             | **R**               | **R**               | **R**      |                          |
 | `income.terminalYield`                |             |             | r                   | r                   |            |                          |
 | `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
 | `land.access`                         | **R**       |             |                     |                     |            |                          |
@@ -371,6 +365,7 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `land.shape`                          | **R**       |             |                     |                     |            |                          |
 | `land.topography`                     | **R**       |             |                     |                     |            |                          |
 | `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r           | r                   | r                   | r          | r                        |
 | `market.local`                        | r           | r           | r                   | r                   | r          | r                        |
 | `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
@@ -407,16 +402,17 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 
 | Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
 | ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.general`                 | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r           | r                   | r                   | r          | r                        |
 | `evidence.rentals`                    | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
-| `improvements.areaSchedule`           |             | **R**       |                     |                     | **R**      | **R**                    |
+| `improvements.areaSchedule`           |             |             |                     |                     | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**       |                     |                     |            |                          |
 | `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
 | `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.cranes`                 |             |             |                     |                     | r          |                          |
 | `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
 | `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
 | `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
 | `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
@@ -426,7 +422,7 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `improvements.hardstand`              |             |             |                     |                     | **R**      |                          |
 | `improvements.lettableArea`           |             |             | **R**               | **R**               |            |                          |
 | `improvements.loading`                |             |             |                     |                     | **R**      |                          |
-| `improvements.measurementBasis`       |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.measurementBasis`       |             |             | **R**               | **R**               | **R**      | **R**                    |
 | `improvements.officeArea`             |             |             |                     |                     | **R**      |                          |
 | `improvements.outdoorImprovements`    |             | r           |                     |                     |            |                          |
 | `improvements.parking`                |             |             | **R**               | **R**               |            |                          |
@@ -438,7 +434,6 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `improvements.warehouseArea`          |             |             |                     |                     | **R**      |                          |
 | `improvements.yearBuilt`              |             | **R**       | r                   | r                   |            |                          |
 | `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
 | `land.access`                         | **R**       |             |                     |                     |            |                          |
@@ -453,6 +448,7 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `land.shape`                          | **R**       |             |                     |                     |            |                          |
 | `land.topography`                     | **R**       |             |                     |                     |            |                          |
 | `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r           | r                   | r                   | r          | r                        |
 | `market.local`                        | r           | r           | r                   | r                   | r          | r                        |
 | `occupancy.status`                    |             | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
@@ -490,15 +486,16 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 
 | Field                                 | Vacant land | Residential | Commercial — office | Commercial — retail | Industrial | Specialised or mixed use |
 | ------------------------------------- | ----------- | ----------- | ------------------- | ------------------- | ---------- | ------------------------ |
-| `dates.researchCutOff`                | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.general`                 | r           | r           | r                   | r                   | r          | r                        |
+| `assumptions.limitations`             | r           | r           | r                   | r                   | r          | r                        |
 | `improvements.accommodation`          |             | **R**       |                     |                     |            |                          |
 | `improvements.areaSchedule`           | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
+| `improvements.buildingArea`           |             | **R**       |                     |                     |            |                          |
 | `improvements.clearance`              |             |             |                     |                     | **R**      |                          |
 | `improvements.condition`              |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.construction`           |             | **R**       | **R**               | **R**               | **R**      |                          |
 | `improvements.cranes`                 |             |             |                     |                     | r          |                          |
 | `improvements.dwellingType`           |             | **R**       |                     |                     |            |                          |
-| `improvements.effectiveAge`           |             | r           |                     |                     |            |                          |
 | `improvements.fireServices`           |             |             |                     |                     | **R**      |                          |
 | `improvements.fitout`                 |             |             | **R**               | **R**               |            |                          |
 | `improvements.fixturesFinishes`       |             | r           |                     |                     |            |                          |
@@ -534,7 +531,6 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `ins.services`                        | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `ins.sumInsured`                      | **R**       | **R**       | **R**               | **R**               | **R**      | **R**                    |
 | `instruction.dueDate`                 | r           | r           | r                   | r                   | r          | r                        |
-| `instruction.feeBasis`                | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.ownership`               | r           | r           | r                   | r                   | r          | r                        |
 | `instruction.reviewer`                | r           | r           | r                   | r                   | r          | r                        |
 | `land.access`                         | **R**       |             |                     |                     |            |                          |
@@ -549,6 +545,7 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 | `land.shape`                          | **R**       |             |                     |                     |            |                          |
 | `land.topography`                     | **R**       |             |                     |                     |            |                          |
 | `location.coordinates`                | r           | r           | r                   | r                   | r          | r                        |
+| `location.lga`                        | r           | r           | r                   | r                   | r          | r                        |
 | `planning.instrument`                 | r           | r           | r                   | r                   | r          | r                        |
 | `planning.overlays`                   | **R**       |             |                     |                     |            |                          |
 | `planning.permissibleUses`            | r           |             |                     |                     |            |                          |
@@ -578,8 +575,6 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 
 ## 4. Fields required for every job
 
-- `assumptions.general`
-- `assumptions.limitations`
 - `dates.instruction`
 - `dates.valuation`
 - `desktop.confidenceStatement`
@@ -588,17 +583,13 @@ Legend: **R** required, r recommended, blank not applicable. Base fields require
 - `desktop.informationGaps`
 - `instruction.basisOfValue`
 - `instruction.clientEntity`
-- `instruction.confidentiality`
 - `instruction.conflictCheck`
 - `instruction.engagementDocuments`
-- `instruction.instructingParty`
 - `instruction.intendedUse`
 - `instruction.intendedUsers`
 - `instruction.interestValued`
-- `instruction.reliance`
 - `instruction.responsibleValuer`
 - `location.address`
-- `location.lga`
 - `location.titleReference`
 - `scope.escalationDecision`
 

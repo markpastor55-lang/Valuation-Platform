@@ -10,6 +10,8 @@ import {
   AU_CORE_RULE_SET,
   DEFAULT_CONVENTIONS,
   FIELD_CATALOGUE,
+  INPUT_TABS,
+  inputTabForSection,
   FORMULAS,
   INSPECTION_SCOPES,
   JURISDICTIONS,
@@ -52,6 +54,10 @@ function describeWhen(w: RuleCondition): string {
   if (w.scopes) parts.push(`scope ∈ {${w.scopes.join(', ')}}`);
   if (w.jurisdictions) parts.push(`jurisdiction ∈ {${w.jurisdictions.join(', ')}}`);
   if (w.modes) parts.push(`mode ∈ {${w.modes.join(', ')}}`);
+  if (w.retrospective !== undefined)
+    parts.push(
+      w.retrospective ? 'retrospective (derived from dates)' : 'current (derived from dates)',
+    );
   for (const f of w.fields ?? []) {
     const cond =
       f.equals !== undefined
@@ -73,17 +79,36 @@ function describeWhen(w: RuleCondition): string {
 function fieldCatalogue(): string {
   return (
     HEADER('Field catalogue') +
-    `${FIELD_CATALOGUE.length} fields. \`job\` fields are captured once per job; \`asset\` fields once per asset. ` +
+    '## Input tabs\n\nThe valuer works through these tabs in order. Each report section belongs to one tab, so a job shows only the fields its requirements switch on. QA is not an input tab: it opens when the valuer sends the job to QA.\n\n' +
+    table(
+      ['Tab', 'What it covers', 'Report sections'],
+      INPUT_TABS.map((t) => [t.title, t.description, t.sections.join(', ')]),
+    ) +
+    `\n## Fields\n\n${FIELD_CATALOGUE.length} fields. \`job\` fields are captured once per job; \`asset\` fields once per asset. ` +
+    'Fields marked *system* are filled by the platform and never typed by the valuer. ' +
     'Personal-information fields are masked in logs and restricted in exports. Review tags mark wording that needs specialist sign-off.\n\n' +
     table(
-      ['Field id', 'Label', 'Section', 'Level', 'Type', 'Options / unit', 'Personal', 'Review'],
+      [
+        'Field id',
+        'Label',
+        'Tab',
+        'Section',
+        'Level',
+        'Type',
+        'Options / unit',
+        'Entry',
+        'Personal',
+        'Review',
+      ],
       FIELD_CATALOGUE.map((f) => [
         `\`${f.id}\``,
         f.label,
+        INPUT_TABS.find((t) => t.id === inputTabForSection(f.section))?.title ?? '',
         f.section,
         f.level,
         f.type,
         f.options?.join(', ') ?? f.unit ?? '',
+        f.entry ?? '',
         f.personal ? 'yes' : '',
         f.review ? `[REVIEW: ${f.review}]` : '',
       ]),

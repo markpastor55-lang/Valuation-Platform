@@ -38,6 +38,11 @@ export interface FieldDef {
   readonly help?: string;
   /** Specialist review needed before the field's wording or options are relied upon. */
   readonly review?: SpecialistReviewer;
+  /**
+   * `system`: filled by the platform (assignments, job dates, geocoding), shown read-only and never
+   * typed by the valuer.
+   */
+  readonly entry?: 'system';
 }
 
 type Extra = Omit<FieldDef, 'id' | 'label' | 'section' | 'level' | 'type'>;
@@ -137,7 +142,9 @@ export const MEASUREMENT_BASIS_OPTIONS = [
  */
 export const FIELD_CATALOGUE: readonly FieldDef[] = [
   // ── Instruction and engagement ────────────────────────────────────────────────
-  job('instruction.clientEntity', 'Client / entity', 'instructions', 'text'),
+  job('instruction.clientEntity', 'Client', 'instructions', 'text', {
+    help: 'Who instructs and pays, e.g. the lender, the owner or their tax agent',
+  }),
   job('instruction.instructingParty', 'Instructing party', 'instructions', 'text', {
     personal: true,
   }),
@@ -162,9 +169,11 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
     'instructions',
     'longtext',
   ),
-  job('instruction.responsibleValuer', 'Responsible valuer', 'instructions', 'user_ref'),
-  job('instruction.reviewer', 'QA reviewer', 'instructions', 'user_ref'),
-  job('instruction.dueDate', 'Due date', 'instructions', 'date'),
+  job('instruction.responsibleValuer', 'Responsible valuer', 'instructions', 'user_ref', {
+    entry: 'system',
+  }),
+  job('instruction.reviewer', 'QA reviewer', 'instructions', 'user_ref', { entry: 'system' }),
+  job('instruction.dueDate', 'Due date', 'instructions', 'date', { entry: 'system' }),
   job('instruction.engagementDocuments', 'Engagement documents', 'instructions', 'document_refs'),
   job('instruction.reliance', 'Reliance and third-party limitation', 'assumptions', 'longtext', {
     review: 'LEGAL',
@@ -174,13 +183,13 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
   }),
 
   // ── Key dates ────────────────────────────────────────────────────────────────
-  job('dates.instruction', 'Date of instruction', 'basis', 'date'),
+  job('dates.instruction', 'Date of instruction', 'basis', 'date', { entry: 'system' }),
   job('dates.inspection', 'Date of inspection', 'basis', 'date'),
   job('dates.valuation', 'Date of valuation', 'basis', 'date'),
   job('dates.researchCutOff', 'Research cut-off date', 'basis', 'date'),
   job('dates.review', 'Date of review', 'basis', 'date'),
   job('dates.issue', 'Date of issue', 'basis', 'date'),
-  job('dates.retrospectiveDataCutOff', 'Retrospective data cut-off', 'tax_context', 'date', {
+  job('dates.retrospectiveDataCutOff', 'Information cut-off date', 'retrospective', 'date', {
     help: 'Only information known or reasonably foreseeable at this date may be relied on.',
   }),
 
@@ -225,10 +234,12 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
   ),
 
   // ── Location and title ───────────────────────────────────────────────────────
-  asset('location.address', 'Address (validated)', 'location', 'address'),
-  asset('location.titleReference', 'Title reference (lot/plan, volume/folio)', 'location', 'text'),
-  asset('location.lga', 'Local government area', 'location', 'text'),
-  asset('location.coordinates', 'Latitude / longitude', 'location', 'coordinates'),
+  asset('location.address', 'Address', 'location', 'address'),
+  asset('location.titleReference', 'Title reference (lot/plan)', 'location', 'text'),
+  asset('location.lga', 'Council', 'location', 'text'),
+  asset('location.coordinates', 'Latitude / longitude', 'location', 'coordinates', {
+    entry: 'system',
+  }),
   asset('location.geocodeConfidence', 'Geocode confidence', 'location', 'ratio'),
 
   // ── Planning ─────────────────────────────────────────────────────────────────
@@ -271,6 +282,10 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
   asset('improvements.effectiveAge', 'Effective age (years)', 'improvements', 'integer'),
   asset('improvements.construction', 'Construction', 'improvements', 'longtext'),
   asset('improvements.accommodation', 'Accommodation', 'improvements', 'longtext'),
+  asset('improvements.buildingArea', 'Building area', 'improvements', 'area', {
+    unit: 'm2',
+    help: 'Total building area. The sketch total can be used; the sketch itself is not reported.',
+  }),
   asset('improvements.areaSchedule', 'Improvement area schedule', 'areas', 'area_schedule_ref'),
   asset('improvements.measurementBasis', 'Measurement basis', 'areas', 'enum', {
     options: MEASUREMENT_BASIS_OPTIONS,
@@ -399,28 +414,25 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
     },
   ),
 
-  // ── Capital gains tax / retrospective ────────────────────────────────────────
-  job('cgt.taxEvent', 'Tax provision / CGT event nominated by adviser', 'tax_context', 'text', {
+  // ── Capital gains tax ─────────────────────────────────────────────────────────
+  // The client instructs; there is no separate tax-agent field.
+  job('cgt.taxEvent', 'Reason for the valuation (CGT event)', 'tax_context', 'text', {
     review: 'TAX',
+    help: 'As advised by the client, e.g. property becoming income-producing',
   }),
-  job('cgt.instructingAdviser', 'Instructing tax adviser', 'tax_context', 'text', {
-    personal: true,
+
+  // ── Retrospective valuations (any purpose; derived from the dates) ────────────
+  job(
+    'retro.evidenceBasis',
+    'How the property and market at the valuation date were established',
+    'retrospective',
+    'longtext',
+    { review: 'API_STANDARDS' },
+  ),
+  job('retro.chronology', 'Key events since the valuation date', 'retrospective', 'list', {
+    help: 'e.g. renovations, subdivision, change of use',
   }),
-  job(
-    'cgt.informationCutOffStatement',
-    'Information cut-off statement',
-    'tax_context',
-    'longtext',
-    { review: 'TAX' },
-  ),
-  job('cgt.chronology', 'Chronology of relevant events', 'tax_context', 'list'),
-  job('cgt.sourceArchive', 'Archived sources relied on', 'tax_context', 'document_refs'),
-  job(
-    'cgt.contemporaneousEvidence',
-    'Contemporaneous evidence and market context statement',
-    'tax_context',
-    'longtext',
-  ),
+  job('retro.sourceArchive', 'Archived sources relied on', 'retrospective', 'document_refs'),
 
   // ── Family law ───────────────────────────────────────────────────────────────
   job('fl.court', 'Court', 'expert_compliance', 'enum', {

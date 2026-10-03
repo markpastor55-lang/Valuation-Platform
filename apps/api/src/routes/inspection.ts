@@ -277,7 +277,8 @@ export function registerInspectionRoutes(r: Router): void {
             ...(body.suppliedAreas
               ? { suppliedAreas: body.suppliedAreas.map((s) => compact(s)) }
               : {}),
-            includeInClientReport: body.includeInClientReport ?? true,
+            // Sketches are working notes unless the valuer chooses to include the drawing
+            includeInClientReport: body.includeInClientReport ?? false,
             changeSummary: body.changeSummary,
             createdBy: principal.userId,
             createdAt: now,

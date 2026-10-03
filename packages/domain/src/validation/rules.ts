@@ -8,6 +8,8 @@ import type { FairValueLevel } from '../calc/fair-value.js';
 import { deriveFairValueLevel } from '../calc/fair-value.js';
 import { detectOutliers, withinRange } from '../calc/statistics.js';
 import { findMissingFields } from '../requirements/resolve.js';
+import { retrospectiveStatus } from '../requirements/retrospective.js';
+import type { AreaSchedule } from '../geometry/area-schedule.js';
 import { photoReportEligibility } from '../photo/privacy.js';
 import type { RawFinding, ValidationContext, ValidationRule } from './types.js';
 
@@ -21,12 +23,24 @@ const today = (ctx: ValidationContext): LocalDate => localDateOf(ctx.now, ctx.ti
 const required = (ctx: ValidationContext, fieldId: string): boolean =>
   ctx.requirements.fields.some((f) => f.fieldId === fieldId && f.level === 'required');
 
-/** Retrospective work: CGT purpose, or a valuation date before the inspection/instruction date. */
-export function isRetrospective(ctx: ValidationContext): boolean {
-  if (ctx.selection.purpose === 'CGT_RETROSPECTIVE') return true;
-  const valuation = jobDate(ctx, 'dates.valuation');
-  const reference = jobDate(ctx, 'dates.inspection') ?? jobDate(ctx, 'dates.instruction');
-  return valuation !== undefined && reference !== undefined && isBefore(valuation, reference);
+/** Derived from the dates for any purpose (see `retrospectiveStatus`). */
+export const isRetrospective = (ctx: ValidationContext): boolean =>
+  retrospectiveStatus(ctx.values).retrospective;
+
+/**
+ * Area checks apply only where the report relies on a measured schedule: the rules require one, or
+ * the valuer linked the sketch to the report. A sketch kept as working notes is not checked.
+ */
+function reportedSchedules(ctx: ValidationContext): readonly AreaSchedule[] {
+  return ctx.areaSchedules.filter(
+    (s) =>
+      hasValue(ctx.values.assets[s.assetId]?.['improvements.areaSchedule']) ||
+      ctx.requirements.fields.some(
+        (f) =>
+          f.fieldId === 'improvements.areaSchedule' &&
+          (f.assetIds === null || f.assetIds.includes(s.assetId)),
+      ),
+  );
 }
 
 /** Information after this date may not be relied on for retrospective work. */
@@ -272,29 +286,6 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
             {
               path: 'job/field:dates.retrospectiveDataCutOff',
               message: `cut-off ${cut} is after the valuation date ${v}`,
-            },
-          ]
-        : [];
-    },
-  }),
-  rule({
-    code: 'VAL-DATE-008',
-    title: 'Retrospective purpose with a current valuation date',
-    category: 'dates',
-    severity: 'warning',
-    stages: ALL,
-    acknowledgeable: true,
-    description:
-      'A CGT/retrospective job normally has a valuation date before the inspection date.',
-    evaluate: (ctx) => {
-      if (ctx.selection.purpose !== 'CGT_RETROSPECTIVE') return [];
-      const v = jobDate(ctx, 'dates.valuation');
-      const ref = jobDate(ctx, 'dates.inspection') ?? jobDate(ctx, 'dates.instruction');
-      return v && ref && !isBefore(v, ref)
-        ? [
-            {
-              path: 'job/field:dates.valuation',
-              message: 'valuation date is not before the inspection/instruction date',
             },
           ]
         : [];
@@ -607,7 +598,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     description:
       'The improvement-area schedule has blocking geometry issues or an unconfirmed scale.',
     evaluate: (ctx) =>
-      ctx.areaSchedules
+      reportedSchedules(ctx)
         .filter((s) => !s.reportable)
         .map((s) => ({
           path: `asset:${s.assetId}/sketch:${s.sketchVersionId}`,
@@ -628,7 +619,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     description:
       'Reported areas must trace to a schedule approved by the valuer (matching schedule hash).',
     evaluate: (ctx) =>
-      ctx.areaSchedules
+      reportedSchedules(ctx)
         .filter(
           (s) =>
             !ctx.measurementApprovals.some(
@@ -650,7 +641,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     description:
       'Geometry warnings: implausible dimensions, deductions outside components, differences from supplied or online areas.',
     evaluate: (ctx) =>
-      ctx.areaSchedules.flatMap((s) =>
+      reportedSchedules(ctx).flatMap((s) =>
         s.issues
           .filter((i) => i.severity === 'warning')
           .map((i) => ({
@@ -668,7 +659,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     acknowledgeable: false,
     description: 'The ground-level building footprint exceeds the site area.',
     evaluate: (ctx) =>
-      ctx.areaSchedules.flatMap((s) => {
+      reportedSchedules(ctx).flatMap((s) => {
         const land = ctx.values.assets[s.assetId]?.['land.area'];
         const ground = s.levelTotals.find((l) => /^(ground|gf|level 0)/i.test(l.level));
         return typeof land === 'number' && land > 0 && ground && ground.grossM2 > land

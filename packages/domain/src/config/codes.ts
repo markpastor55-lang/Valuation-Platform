@@ -31,7 +31,7 @@ export const JURISDICTION_TIME_ZONES: Readonly<Record<Jurisdiction, string>> = {
 
 export const REPORT_PURPOSES = [
   'MARKET_VALUE',
-  'CGT_RETROSPECTIVE',
+  'CGT',
   'FAMILY_LAW',
   'FINANCIAL_REPORTING',
   'RENTAL_ASSESSMENT',
@@ -41,7 +41,7 @@ export type ReportPurpose = (typeof REPORT_PURPOSES)[number];
 
 export const REPORT_PURPOSE_LABELS: Readonly<Record<ReportPurpose, string>> = {
   MARKET_VALUE: 'Market value',
-  CGT_RETROSPECTIVE: 'Capital gains tax / retrospective',
+  CGT: 'Capital gains tax (CGT)',
   FAMILY_LAW: 'Family law',
   FINANCIAL_REPORTING: 'Financial reporting (fair value)',
   RENTAL_ASSESSMENT: 'Rental assessment',
