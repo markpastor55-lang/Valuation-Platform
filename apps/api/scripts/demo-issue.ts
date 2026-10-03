@@ -64,6 +64,14 @@ try {
     }),
     'capture fields',
   );
+  // National, state and local commentary from the firm's library, for this property type and suburb
+  must(
+    await t.call('valuer', 'POST', `/v1/jobs/${jobId}/commentary/apply`, {
+      assetId,
+      levels: ['national', 'state', 'local'],
+    }),
+    'use market commentary',
+  );
   must(
     await t.call('valuer', 'POST', `/v1/jobs/${jobId}/engagement/accept`, {}),
     'accept engagement',

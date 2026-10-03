@@ -37,7 +37,8 @@ import {
 } from './model.js';
 
 export interface AppState {
-  readonly schema: 3;
+  /** Bumped when the demo data changes, so saved demos reload with it. */
+  readonly schema: 4;
   readonly jobs: Readonly<Record<string, PreviewState>>;
   readonly profile: ValuerProfile;
   readonly nextNumber: number;
@@ -371,7 +372,7 @@ export async function seedApp(now: string = new Date().toISOString()): Promise<A
     ),
   );
   return {
-    schema: 3,
+    schema: 4,
     jobs: Object.fromEntries(jobs.map((j) => [j.job.id, j])),
     profile,
     nextNumber: 145,

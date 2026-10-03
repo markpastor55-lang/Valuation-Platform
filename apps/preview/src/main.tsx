@@ -19,7 +19,7 @@ function load(): AppState | null {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as { schema?: unknown };
-      if (parsed.schema === 3) return parsed as AppState;
+      if (parsed.schema === 4) return parsed as AppState;
     }
   } catch {
     // storage unavailable or unreadable: start fresh
