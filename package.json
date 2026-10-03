@@ -1,0 +1,31 @@
+{
+  "name": "valuation-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Australian property valuation inspection, workflow and reporting platform",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run docs:check",
+    "docs:generate": "pnpm --filter @vp/api exec tsx --conditions=source scripts/generate-docs.ts && prettier --write docs/spec/generated docs/spec/02-personas-and-permissions.md --log-level warn",
+    "docs:check": "pnpm run docs:generate && git diff --exit-code -- docs/spec/generated docs/spec/02-personas-and-permissions.md"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@types/node": "^22.19.0",
+    "eslint": "^10.11.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  }
+}

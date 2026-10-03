@@ -1,0 +1,29 @@
+{
+  "name": "@vp/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Valuation platform API: persistence, authentication, workflow orchestration and deterministic PDF issue",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "dev": "tsx --conditions=source watch src/server.ts",
+    "start": "node dist/server.js",
+    "migrate": "tsx --conditions=source src/db/migrate-cli.ts",
+    "demo": "tsx --conditions=source scripts/demo-issue.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@vp/domain": "workspace:*",
+    "fastify": "^5.12.5",
+    "jose": "^6.2.12",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.23.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15"
+  }
+}
