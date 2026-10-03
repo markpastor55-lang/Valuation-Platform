@@ -17,7 +17,7 @@ Permissions listed under "Key tasks" are indicative. The authoritative matrix is
 | Administrator      | `ADMINISTRATOR`   | Web                                            | Weekly; on demand              | Organisation configuration, users, data sources, retention, legal hold, audit |
 | Allocator          | `ALLOCATOR`       | Web; phone for notifications                   | Daily, continuous              | Intake and allocation of all jobs not in restricted portfolios                |
 | Valuer             | `VALUER`          | Phone and tablet in the field; web at the desk | Daily                          | Jobs where they are the responsible valuer, co-signatory or assigned          |
-| Field Inspector    | `FIELD_INSPECTOR` | Phone; tablet for sketching                    | Daily, in the field            | Assigned inspections only                                                     |
+| Field Inspector    | `FIELD_INSPECTOR` | Phone; tablet for sketching                    | Daily, in the field            | Assigned inspections only. Optional role (01 D12)                             |
 | QA Reviewer        | `QA_REVIEWER`     | Web (large or dual screen)                     | Daily, queue-driven            | Jobs in `submitted` / `in_review` / `returned` assigned to them               |
 | Finance            | `FINANCE`         | Web                                            | Daily / weekly                 | Invoices and the commercial fields of jobs                                    |
 | Client (read-only) | `CLIENT_READONLY` | Desktop or mobile browser                      | Occasional                     | Issued reports and invoices for their own client entities                     |
@@ -25,14 +25,14 @@ Permissions listed under "Key tasks" are indicative. The authoritative matrix is
 
 ### Job relationships used by permission checks
 
-| Relationship                | Set by                                             | Effect                                                                                                                             |
-| --------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Responsible valuer          | Allocator (`job.allocate`)                         | The only person who can `certification.sign` for the job. Excluded from `qa.approve` on the job unless an exception is authorised. |
-| Co-signatory                | Allocator, at the responsible valuer's request     | Signs their own co-signatory statement. Excluded from QA on the job (SoD-07, proposed).                                            |
-| Assigned inspector          | Allocator                                          | Field Inspector access to that job's inspection, photos and sketch.                                                                |
-| Assigned QA reviewer        | Allocator or QA queue pick-up                      | `qa.review` / `qa.approve` on that job.                                                                                            |
-| Version author              | System (creator of a template or rule-set version) | Excluded from `template.approve` / `ruleset.approve` for that version.                                                             |
-| Restricted-portfolio member | Administrator (`user.manage`)                      | Required to see any job in a restricted portfolio, whatever the role.                                                              |
+| Relationship                | Set by                                             | Effect                                                                                                                              |
+| --------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Responsible valuer          | Allocator (`job.allocate`)                         | The only person who can `certification.sign` for the job. Excluded from `qa.approve` on the job unless an exception is authorised.  |
+| Co-signatory                | Allocator, at the responsible valuer's request     | Signs their own co-signatory statement. Excluded from QA on the job (SoD-07, proposed).                                             |
+| Assigned inspector          | Allocator                                          | Field Inspector access to that job's inspection, photos and sketch. Optional: in the default workflow the valuer inspects (01 D12). |
+| Assigned QA reviewer        | Allocator or QA queue pick-up                      | `qa.review` / `qa.approve` on that job.                                                                                             |
+| Version author              | System (creator of a template or rule-set version) | Excluded from `template.approve` / `ruleset.approve` for that version.                                                              |
+| Restricted-portfolio member | Administrator (`user.manage`)                      | Required to see any job in a restricted portfolio, whatever the role.                                                               |
 
 ## 2. Personas
 
@@ -97,25 +97,25 @@ Critical controls:
 
 | Attribute     | Detail                                                                                                                                                                                                                                                 |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Who           | API member, typically a Certified Practising Valuer (CPV), with registration where a jurisdiction requires it (01 A-15). Accountable for the opinion of value.                                                                                         |
+| Who           | API member, typically a Certified Practising Valuer (CPV), with registration where a jurisdiction requires it (01 A-15). Accountable for the opinion of value. In the default workflow the valuer also inspects (01 D12).                              |
 | Goals         | Produce a defensible, well-evidenced valuation efficiently. Reuse field data without re-keying. Know before QA that nothing blocking is missing. Keep professional judgement visible and attributed.                                                   |
 | Devices       | Phone for kerbside and quick capture; tablet for full inspections and sketching; web for analysis, certification and QA responses.                                                                                                                     |
 | Frequency     | Daily. Several residential inspections per day, or fewer, longer commercial jobs.                                                                                                                                                                      |
 | Pain points   | Double entry between field notes and report. Poor signal on site. Slow photo handling. Not knowing why a field became required after a selection change. Outlier warnings without context. QA findings arriving by email instead of against the field. |
 | Accessibility | One-handed phone operation. Outdoor-contrast mode. Dictation for notes. Dynamic type to 200 %. Numeric entry as an alternative to dragging on the sketch canvas.                                                                                       |
 
-| Key task                                                                    | Permission(s)                                                       | Screen      |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------- |
-| Declare conflicts and independence; accept the engagement                   | `engagement.accept`                                                 | W-03        |
-| Set or change purpose, property type, scope, jurisdiction, template version | `job.update`                                                        | M-03        |
-| Edit asset data; inspect; capture photos and documents; flag and redact     | `asset.edit`, `inspection.capture`, `photo.capture`, `photo.redact` | M-05 – M-08 |
-| Decide AI suggestions                                                       | `ai.decide`                                                         | M-09        |
-| Sketch, confirm calibration, approve the area schedule                      | `sketch.edit`, `measurement.approve`                                | M-10 – M-12 |
-| Enter sales and rental evidence; run and override calculations; reconcile   | `evidence.edit`, `calculation.run`, `calculation.override`          | W-04 – W-07 |
-| Acknowledge non-blocking validations with a reason                          | `validation.acknowledge`                                            | W-10        |
-| Sign the certification as responsible valuer (MFA step-up)                  | `certification.sign`                                                | W-11        |
-| Generate draft previews; respond to QA findings                             | `report.generate_draft`, `job.update`                               | W-13, W-14  |
-| Issue and send, where firm policy allows                                    | `report.issue`, `email.send`                                        | W-15        |
+| Key task                                                                                                             | Permission(s)                                                       | Screen      |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------- |
+| Declare conflicts and independence; accept the engagement                                                            | `engagement.accept`                                                 | W-03        |
+| Set or change purpose, property type, scope, jurisdiction, template version                                          | `job.update`                                                        | M-03        |
+| Edit asset data; inspect; capture photos and documents; flag and redact                                              | `asset.edit`, `inspection.capture`, `photo.capture`, `photo.redact` | M-05 – M-08 |
+| Decide AI suggestions                                                                                                | `ai.decide`                                                         | M-09        |
+| Sketch as working notes; where the report relies on a measured schedule, confirm calibration and approve it (01 D11) | `sketch.edit`, `measurement.approve`                                | M-10 – M-12 |
+| Enter sales and rental evidence; run and override calculations; reconcile                                            | `evidence.edit`, `calculation.run`, `calculation.override`          | W-04 – W-07 |
+| Acknowledge non-blocking validations with a reason                                                                   | `validation.acknowledge`                                            | W-10        |
+| Sign the certification as responsible valuer and send the job to QA (MFA step-up)                                    | `certification.sign`                                                | W-11        |
+| Generate draft previews; respond to QA findings                                                                      | `report.generate_draft`, `job.update`                               | W-13, W-14  |
+| Issue and send, where firm policy allows                                                                             | `report.issue`, `email.send`                                        | W-15        |
 
 Critical controls:
 
@@ -127,6 +127,10 @@ Critical controls:
 - Credentials and their expiry are shown on the certification; expired credentials block signing.
 
 ### P-04 Field Inspector (`FIELD_INSPECTOR`)
+
+Optional role. In the default workflow the responsible valuer inspects and values, and the QA
+reviewer is the only other person on the job (01 D12). This persona applies only where a firm uses
+separate inspectors.
 
 | Attribute     | Detail                                                                                                                                                |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -166,7 +170,7 @@ Critical controls:
 
 | Key task                                                   | Permission(s)                         | Screen     |
 | ---------------------------------------------------------- | ------------------------------------- | ---------- |
-| Pick up submitted jobs                                     | `qa.review`                           | W-12       |
+| Pick up jobs the valuer has signed and sent to QA          | `qa.review`                           | W-12       |
 | Work the checklist; raise findings with severity           | `qa.review`                           | W-13       |
 | Inspect calculation traces, evidence and job audit history | `job.read`, `audit.read` (job-scoped) | W-06, W-21 |
 | View unredacted photos where needed (logged)               | `photo.view_unredacted`               | M-08       |

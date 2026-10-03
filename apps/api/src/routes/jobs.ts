@@ -4,6 +4,7 @@ import {
   isValuerJudgementField,
   INSPECTION_SCOPE_LABELS,
   JURISDICTION_LABELS,
+  JURISDICTION_TIME_ZONES,
   PROPERTY_TYPE_LABELS,
   REPORT_PURPOSE_LABELS,
   REPORT_SECTIONS,
@@ -12,6 +13,7 @@ import {
   checkTransition,
   diffRequirements,
   findMissingFields,
+  localDateOf,
   resolveRequirements,
   selectRuleSet,
   selectTemplate,
@@ -51,6 +53,7 @@ import { writeField } from '../services/fields.js';
 import {
   AssetInput,
   JobParams,
+  LocalDateSchema,
   ProvenanceInput,
   SelectionSchema,
   Uuid,
@@ -248,6 +251,9 @@ export function registerJobRoutes(r: Router): void {
       reviewerId: Uuid.optional(),
       inspectorIds: z.array(Uuid).default([]),
       feeCents: z.number().int().min(0).optional(),
+      /** Date the client instructed; defaults to today in the property's jurisdiction. */
+      instructedOn: LocalDateSchema.optional(),
+      dueDate: LocalDateSchema.optional(),
       assets: z.array(AssetInput).min(1).max(500),
     }),
     handler: async ({ ctx, principal, body }) => {
@@ -353,6 +359,20 @@ export function registerJobRoutes(r: Router): void {
             fieldId: 'instruction.reviewer',
             assetId: null,
             value: body.reviewerId,
+          });
+        // System-filled fields: set here, never typed by the valuer (see FieldDef.entry)
+        await writeField(tx, ctx, principal, job, {
+          fieldId: 'dates.instruction',
+          assetId: null,
+          value:
+            body.instructedOn ??
+            localDateOf(ctx.clock.now(), JURISDICTION_TIME_ZONES[body.selection.jurisdiction]),
+        });
+        if (body.dueDate)
+          await writeField(tx, ctx, principal, job, {
+            fieldId: 'instruction.dueDate',
+            assetId: null,
+            value: body.dueDate,
           });
         for (const a of body.assets) await insertAsset(tx, ctx, principal, job, a);
       });
@@ -611,6 +631,14 @@ export function registerJobRoutes(r: Router): void {
           await authorizeJob(ctx, tx, principal, 'valuation.edit', params.jobId);
         }
         assertEditable(job.status);
+        const system = body.values.find((v) => FIELD_BY_ID.get(v.fieldId)?.entry === 'system');
+        if (system) {
+          throw new HttpError(
+            422,
+            'SYSTEM_FIELD',
+            `${FIELD_BY_ID.get(system.fieldId)?.label ?? system.fieldId} is filled in by the platform (job creation, assignment or the asset location)`,
+          );
+        }
         let changed = 0;
         for (const v of body.values) {
           const res = await writeField(

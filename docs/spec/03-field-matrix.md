@@ -7,12 +7,12 @@ asset mode** (brief §2). That selection drives the required fields, warnings, c
 tests, certification wording and report sections. This section explains how; the authoritative tables
 are generated from the rule set that the software enforces:
 
-| Generated table                                                                          | Content                                                                                                                                           |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`generated/field-matrix.md`](generated/field-matrix.md)                                 | Required-field counts per purpose × type; field-by-field matrices per purpose; scope, jurisdiction and mode deltas; fields required for every job |
-| [`generated/requirement-rules.md`](generated/requirement-rules.md)                       | Every requirement rule and selection rule with its conditions, fields, sections, warnings and specialist reviewers                                |
-| [`generated/field-catalogue.md`](generated/field-catalogue.md)                           | All 189 catalogued fields with section, level (job/asset), type, options, personal-information flag and review tag                                |
-| [`generated/formulas-conventions-clauses.md`](generated/formulas-conventions-clauses.md) | Formulas made available by the rules, measurement conventions and clause seeds                                                                    |
+| Generated table                                                                          | Content                                                                                                                                                        |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`generated/field-matrix.md`](generated/field-matrix.md)                                 | Required-field counts per purpose × type; field-by-field matrices per purpose; scope, jurisdiction and mode deltas; fields required for every job              |
+| [`generated/requirement-rules.md`](generated/requirement-rules.md)                       | Every requirement rule and selection rule with its conditions, fields, sections, warnings and specialist reviewers                                             |
+| [`generated/field-catalogue.md`](generated/field-catalogue.md)                           | The input tabs, then all 188 catalogued fields with tab, section, level (job/asset), type, options, entry (`system`), personal-information flag and review tag |
+| [`generated/formulas-conventions-clauses.md`](generated/formulas-conventions-clauses.md) | Formulas made available by the rules, measurement conventions and clause seeds                                                                                 |
 
 ## 1. How the matrix is expressed
 
@@ -21,14 +21,14 @@ versioned document of rules of the form:
 
 ```ts
 {
-  id: 'REQ-PUR-CGT-001',
-  when: { purposes: ['CGT_RETROSPECTIVE'] },          // any of: purposes, propertyTypes, scopes,
-                                                      // jurisdictions, modes, fields (value conditions)
-  require: ['cgt.taxEvent', 'dates.retrospectiveDataCutOff', ...],
-  recommend: ['market.state'],
-  sections: ['tax_context', 'market', ...],
-  warnings: [{ code: 'W-CGT-HINDSIGHT', message: '…', review: 'TAX' }],
-  specialistReview: ['TAX', 'API_STANDARDS'],
+  id: 'REQ-RETRO-001',
+  when: { retrospective: true },        // any of: purposes, propertyTypes, scopes, jurisdictions,
+                                        // modes, fields (value conditions), retrospective (derived)
+  require: ['retro.evidenceBasis'],
+  recommend: ['dates.retrospectiveDataCutOff', 'retro.chronology'],
+  sections: ['retrospective'],
+  warnings: [{ code: 'W-RETRO-HINDSIGHT', message: '…', review: 'API_STANDARDS' }],
+  specialistReview: ['API_STANDARDS'],
   formulas: [...],
 }
 ```
@@ -39,6 +39,10 @@ versioned document of rules of the form:
   (traceability to the rule set version);
 - **field-value conditions** (`when.fields`) are evaluated per asset, so a requirement can apply to
   some assets in a portfolio and not others (e.g. lease facts only for leased assets);
+- **`retrospective`** is derived from the dates, never selected: a valuation of any purpose is
+  retrospective when `dates.valuation` is earlier than `dates.inspection` (or `dates.instruction`
+  when there is no inspection). The resolver returns it as `retrospective` and matches rules on it
+  (01 D8) `[REVIEW: API_STANDARDS]`;
 - **selection rules** add blocking or warning issues for combinations (e.g. `SEL-001` blocks
   insurance replacement cost for vacant land; `SEL-006` warns that WA family-law matters are generally
   heard by the Family Court of Western Australia `[REVIEW: FAMILY_LAW]`);
@@ -47,18 +51,26 @@ versioned document of rules of the form:
 The same pure function runs on the device (offline), in the web portal and in the API, so all three
 always agree.
 
+The resolved fields are presented on **input tabs** (`INPUT_TABS`, 01 D10): Job, Property,
+Inspection, Sales & market, Valuation and Review. Every report section belongs to exactly one tab,
+so a job shows only the fields its requirements switch on, grouped where the valuer works on them.
+Fields marked `entry: 'system'` (responsible valuer, QA reviewer, due date, instruction date,
+coordinates) are filled by the platform and shown read-only. The tab of every field is listed in
+[`generated/field-catalogue.md`](generated/field-catalogue.md).
+
 ## 2. Layers of the matrix
 
-| Layer                     | Rules                                                                                         | Effect                                                                                                                                                                                                                                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base (every job)          | `REQ-BASE-001/002`                                                                            | Instruction, intended use/users, basis of value, interest valued, conflict check, responsible valuer, engagement documents, reliance and confidentiality, instruction and valuation dates, location/title/LGA, assumptions and limitations                                                                           |
-| Inspection scope          | `REQ-SCOPE-*`                                                                                 | FULL: inspection date and areas inspected. KERBSIDE/RESTRICTED: areas not inspected, obstruction notes, internal-condition assumption, access attempts, escalation decision. DESKTOP: data-source register, imagery dates, information gaps, confidence statement, escalation decision; inspection date not required |
-| Report purpose            | `REQ-PUR-*`                                                                                   | Market value; CGT/retrospective (aligned to ATO minimum report content `[REVIEW: TAX]`); family law (expert matters `[REVIEW: FAMILY_LAW]`); financial reporting (AASB 13 inputs, configurable `[REVIEW: ACCOUNTING]`); rental assessment; insurance replacement cost `[REVIEW: QUANTITY_SURVEYOR]`                  |
-| Property type — physical  | `REQ-PT-*-001`                                                                                | Description and areas for vacant land, residential, commercial (office/retail), industrial, specialised; apply to every purpose                                                                                                                                                                                      |
-| Property type — analytics | `REQ-PT-VAL-LAND-001`, `REQ-PT-*-002`                                                         | Site/planning/occupancy, income analytics (tenancy schedule, WALE, cap rate, leasing evidence) only for value purposes, so an insurance assessment of an office does not demand a WALE                                                                                                                               |
-| Captured values           | `REQ-OCC-001`, `REQ-INT-001`, `REQ-APP-*`, `REQ-UNC-001`, `REQ-BASE-002`, `REQ-SCOPE-ESC-001` | Leased → lease facts; DCF selected → discount rate and terminal yield; capitalisation → market income and cap rate; disclosed conflict → disclosure; proceeding without escalation → justification                                                                                                                   |
-| Asset mode                | `REQ-MODE-PF-001`                                                                             | Portfolio aggregation basis and summary schedule `[REVIEW: API_STANDARDS]`                                                                                                                                                                                                                                           |
-| Jurisdiction              | `REQ-JUR-*`, `SEL-005`, `SEL-006`                                                             | VIC planning property report and NSW planning certificate recommended; QLD planning scheme; ACT Crown leasehold check; WA family-law court check                                                                                                                                                                     |
+| Layer                     | Rules                                                                                         | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base (every job)          | `REQ-BASE-001/002`                                                                            | Required: client, intended users and use, basis of value, interest valued, conflict check, responsible valuer, engagement documents, instruction and valuation dates, address, title reference. Recommended: due date, QA reviewer, registered proprietor, council, coordinates, assumptions and limitations. The client is the instructing party; reliance, confidentiality and standard limitations come from approved template clauses (01 D9) |
+| Inspection scope          | `REQ-SCOPE-*`                                                                                 | FULL: inspection date and areas inspected. KERBSIDE/RESTRICTED: areas not inspected, obstruction notes, internal-condition assumption, access attempts, escalation decision. DESKTOP: data-source register, imagery dates, information gaps, confidence statement, escalation decision; inspection date not required                                                                                                                              |
+| Report purpose            | `REQ-PUR-*`                                                                                   | Market value; CGT (the CGT event, aligned to ATO minimum report content `[REVIEW: TAX]`); family law (expert matters `[REVIEW: FAMILY_LAW]`); financial reporting (AASB 13 inputs, configurable `[REVIEW: ACCOUNTING]`); rental assessment; insurance replacement cost `[REVIEW: QUANTITY_SURVEYOR]`                                                                                                                                              |
+| Retrospective (derived)   | `REQ-RETRO-001`, `SEL-007`                                                                    | Any purpose with a valuation date before the inspection (or instruction) date: how the property and market at the valuation date were established; information cut-off date and key events since (recommended); `retrospective` section; hindsight warning `[REVIEW: API_STANDARDS]`                                                                                                                                                              |
+| Property type — physical  | `REQ-PT-*-001`                                                                                | Description and areas for vacant land, residential (building area entered directly; the sketch is working notes, 01 D11), commercial (office/retail), industrial, specialised; apply to every purpose                                                                                                                                                                                                                                             |
+| Property type — analytics | `REQ-PT-VAL-LAND-001`, `REQ-PT-*-002`                                                         | Site/planning/occupancy, income analytics (tenancy schedule, WALE, cap rate, leasing evidence) only for value purposes, so an insurance assessment of an office does not demand a WALE                                                                                                                                                                                                                                                            |
+| Captured values           | `REQ-OCC-001`, `REQ-INT-001`, `REQ-APP-*`, `REQ-UNC-001`, `REQ-BASE-002`, `REQ-SCOPE-ESC-001` | Leased → lease facts; DCF selected → discount rate and terminal yield; capitalisation → market income and cap rate; disclosed conflict → disclosure; proceeding without escalation → justification                                                                                                                                                                                                                                                |
+| Asset mode                | `REQ-MODE-PF-001`                                                                             | Portfolio aggregation basis and summary schedule `[REVIEW: API_STANDARDS]`                                                                                                                                                                                                                                                                                                                                                                        |
+| Jurisdiction              | `REQ-JUR-*`, `SEL-005`, `SEL-006`                                                             | VIC planning property report and NSW planning certificate recommended; QLD planning scheme; ACT Crown leasehold check; WA family-law court check                                                                                                                                                                                                                                                                                                  |
 
 ## 3. Changing the selection without losing data
 

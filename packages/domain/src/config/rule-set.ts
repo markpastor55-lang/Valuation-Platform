@@ -108,7 +108,7 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
   fieldCatalogueVersion: 1,
   authoredBy: 'system-seed',
   notes:
-    'Seed configuration authored from the product brief, revised after valuer review (unreleased draft): fewer per-job inputs, CGT as a purpose with retrospective rules derived from the dates, and the sketch kept as working notes. Requires API_STANDARDS approval; purpose rules carry their own specialist-review tags.',
+    'Seed configuration authored from the product brief, revised after product owner review (unreleased draft): fewer per-job inputs, CGT as a purpose with retrospective rules derived from the dates, and the sketch kept as working notes. Requires API_STANDARDS approval; purpose rules carry their own specialist-review tags.',
   rules: [
     // ── Base: every job ──────────────────────────────────────────────────────
     {

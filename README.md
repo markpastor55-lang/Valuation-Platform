@@ -58,9 +58,12 @@ curl -s localhost:3000/v1/reference/selection \
 ```
 
 `pnpm --filter @vp/preview build` writes `apps/preview/dist/index.html`, a self-contained page that
-runs the domain engine in the browser with synthetic data: change the selection and watch the
-requirements change, capture fields by role, draw and approve areas, clear validation findings, sign,
-submit, review as QA and issue. Nothing is sent to a server; state stays in the browser.
+runs the domain engine in the browser with synthetic data. You work as the valuer through the input
+tabs (Job, Property, Inspection, Sales & market, Valuation, Review): change the selection and watch
+the requirements change, see a retrospective valuation detected from the dates, keep a sketch as
+working notes and use its total as the building area, clear validation findings, then sign and send
+to QA. A QA tab appears once the job is sent; review as QA, then issue. Nothing is sent to a server;
+state stays in the browser.
 
 The OpenAPI contract is served at `/v1/openapi.json` and committed at
 [`docs/spec/generated/openapi.json`](docs/spec/generated/openapi.json). Demo user ids are listed in

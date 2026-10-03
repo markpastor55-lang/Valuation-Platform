@@ -59,7 +59,7 @@ does not yet enforce this (gap G09-08). A change always means a new version (J-1
 
 | Field       | Values                                                      | Behaviour                                                                                                                                                                                        |
 | ----------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `sectionId` | One of the 34 ids in `config/sections.ts` (§2, `SectionId`) | Unknown ids and duplicates are rejected by lint.                                                                                                                                                 |
+| `sectionId` | One of the 35 ids in `config/sections.ts` (§2, `SectionId`) | Unknown ids and duplicates are rejected by lint.                                                                                                                                                 |
 | `title?`    | string                                                      | Overrides `sectionTitle(sectionId)`. Not placeholder-resolved.                                                                                                                                   |
 | `include`   | `always`                                                    | Rendered whatever the requirements (seed: `certification`, `audit_metadata`).                                                                                                                    |
 |             | `when_required`                                             | Rendered only if `requirements.sections` (the requirement resolver output) contains the id.                                                                                                      |
@@ -79,7 +79,7 @@ does not yet enforce this (gap G09-08). A change always means a new version (J-1
 | `rental_table`      | —                                             | `table`: Address, Lease start, Face rent p.a., Basis, Area, Rate (face rent ÷ area), Incentive, Comparability. Most recent lease start first, ties by rental id                                                                          | Note "No rental evidence recorded."                                                                                                      | —                         |
 | `calculation_trace` | `formulaIds?` (all calculations when omitted) | `table` "Calculation trace": Formula (`id@version: expression`), Inputs (`name = value unit`, with `(default)` where defaulted), Result, Override (`effective value — reason`)                                                           | Nothing                                                                                                                                  | —                         |
 | `area_schedule`     | —                                             | One `table` per reporting schedule (§5.4)                                                                                                                                                                                                | Nothing                                                                                                                                  | `TPL-AREA-NOT-REPORTABLE` |
-| `sketch`            | —                                             | `image` ref `sketch` per reporting sketch version, if `includeInClientReport` is set or the audience is `internal` (§5.5)                                                                                                                | Nothing                                                                                                                                  | —                         |
+| `sketch`            | —                                             | `image` ref `sketch` per reporting sketch version, if `includeInClientReport` is set (API default `false`) or the audience is `internal` (§5.5). Not used by the seed template: the sketch is working notes (01 D11)                     | Nothing                                                                                                                                  | —                         |
 | `photo_grid`        | `columns?` (2 or 3)                           | `image` ref `photo` per eligible photo, sorted by `sequence` (§5.6)                                                                                                                                                                      | Nothing                                                                                                                                  | —                         |
 | `map`               | —                                             | One `image` ref `map` (job id) if the job has at least one asset                                                                                                                                                                         | Nothing                                                                                                                                  | —                         |
 | `certification`     | —                                             | `key_value` (§5.7)                                                                                                                                                                                                                       | Placeholder paragraph `[Certification not yet signed]`                                                                                   | `TPL-NO-CERTIFICATION`    |
@@ -225,7 +225,7 @@ today the route checks only the presence of `templateId`/`sections`/`clauses`, t
     "ReportPurpose": {
       "enum": [
         "MARKET_VALUE",
-        "CGT_RETROSPECTIVE",
+        "CGT",
         "FAMILY_LAW",
         "FINANCIAL_REPORTING",
         "RENTAL_ASSESSMENT",
@@ -265,6 +265,7 @@ today the route checks only the presence of `templateId`/`sections`/`clauses`, t
         "basis",
         "expert_compliance",
         "tax_context",
+        "retrospective",
         "location",
         "planning",
         "land",
@@ -493,16 +494,17 @@ specialists who must clear content for each purpose (`specialistReview` on `REQ-
 whose `appliesTo.purposes` includes a purpose below must list these roles. This is not yet derived
 automatically (gap G09-01).
 
-| Purpose / content                                   | Required review roles                                                | Seed clause                                               |
-| --------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------- |
-| Every template                                      | `[REVIEW: API_STANDARDS]` `[REVIEW: LEGAL]` (seed `requiredReviews`) | `certification-core`, `limitations-core`, `reliance-core` |
-| `MARKET_VALUE`, `RENTAL_ASSESSMENT`                 | `[REVIEW: API_STANDARDS]`                                            | —                                                         |
-| `CGT_RETROSPECTIVE`                                 | `[REVIEW: TAX]` `[REVIEW: API_STANDARDS]`                            | `retrospective-cutoff`                                    |
-| `FAMILY_LAW`                                        | `[REVIEW: FAMILY_LAW]` `[REVIEW: API_STANDARDS]`                     | `expert-declaration`                                      |
-| `FINANCIAL_REPORTING`                               | `[REVIEW: ACCOUNTING]` `[REVIEW: API_STANDARDS]`                     | `fair-value-disclosure`                                   |
-| `INSURANCE_REPLACEMENT`                             | `[REVIEW: QUANTITY_SURVEYOR]`                                        | `insurance-cost-data`                                     |
-| AI-assistance disclosure                            | `[REVIEW: PRIVACY]`                                                  | `ai-assistance`                                           |
-| Map, planning and third-party data attribution text | `[REVIEW: DATA_LICENSING]`                                           | —                                                         |
+| Purpose / content                                                                              | Required review roles                                                | Seed clause                                               |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------- |
+| Every template                                                                                 | `[REVIEW: API_STANDARDS]` `[REVIEW: LEGAL]` (seed `requiredReviews`) | `certification-core`, `limitations-core`, `reliance-core` |
+| `MARKET_VALUE`, `RENTAL_ASSESSMENT`                                                            | `[REVIEW: API_STANDARDS]`                                            | —                                                         |
+| `CGT`                                                                                          | `[REVIEW: TAX]` `[REVIEW: API_STANDARDS]`                            | —                                                         |
+| Retrospective valuations (any purpose; derived from the dates, 01 D8; `retrospective` section) | `[REVIEW: API_STANDARDS]`; the clause also lists `[REVIEW: TAX]`     | `retrospective-cutoff`                                    |
+| `FAMILY_LAW`                                                                                   | `[REVIEW: FAMILY_LAW]` `[REVIEW: API_STANDARDS]`                     | `expert-declaration`                                      |
+| `FINANCIAL_REPORTING`                                                                          | `[REVIEW: ACCOUNTING]` `[REVIEW: API_STANDARDS]`                     | `fair-value-disclosure`                                   |
+| `INSURANCE_REPLACEMENT`                                                                        | `[REVIEW: QUANTITY_SURVEYOR]`                                        | `insurance-cost-data`                                     |
+| AI-assistance disclosure                                                                       | `[REVIEW: PRIVACY]`                                                  | `ai-assistance`                                           |
+| Map, planning and third-party data attribution text                                            | `[REVIEW: DATA_LICENSING]`                                           | —                                                         |
 
 ## 5. Composition rules (`composeReport`)
 
@@ -555,6 +557,14 @@ one per component (Use carries ` (excluded)` when not counted by the convention)
 and approval are in spec 10 §6 and §9.
 
 ### 5.5 Sketch images
+
+The seed template (`DEFAULT_TEMPLATE`) has **no `sketch` block**: the valuer's sketch is working
+notes (01 D11). Its `areas` section renders the field table, the `area_schedule` table and clause
+`area-disclaimer`, and is included only when the requirements switch it on (e.g.
+`INSURANCE_REPLACEMENT`, `INDUSTRIAL`, `SPECIALISED_MIXED_USE`; residential reports state
+`improvements.buildingArea` in the `improvements` section instead). The `tax_context` section
+renders only its field table; clause `retrospective-cutoff` belongs to the `retrospective` section.
+A firm template may add a `sketch` block; the rules below then apply.
 
 The reporting sketch for an asset is the **latest version** of the sketch referenced by the asset
 field `improvements.areaSchedule`. A sketch with `includeInClientReport = false` (a working sketch)
@@ -662,6 +672,6 @@ non-embedded standard fonts; reconcile when fonts are pinned (S-056).
 | G09-10 | Long invoice descriptions are not wrapped (`invoiceDescription` has no length limit) and can run off the page. (Sanitisation: **fixed in iteration 1**: invoice text uses the report sanitiser, so a non-WinAnsi character no longer makes the issue fail.)                                                            | Reuse the report wrapping; bound the description length.                                                            | MVP               |
 | G09-11 | Template date at creation is the UTC date, not the jurisdiction date. No effective-date overlap check at approval (J-12 E2). No retire endpoint.                                                                                                                                                                       | Use `jurisdictionToday`; add an overlap blocker; add retire.                                                        | MVP (S-059)       |
 | G09-12 | Table rows and key-value rows taller than a page overflow the bottom margin.                                                                                                                                                                                                                                           | Split rows across pages.                                                                                            | MVP               |
-| G09-13 | All sketch levels are drawn overlaid in one box; there is no scale bar or legend table.                                                                                                                                                                                                                                | One drawing per level plus a legend (spec 10 §10).                                                                  | MVP (S-056)       |
+| G09-13 | All sketch levels are drawn overlaid in one box; there is no scale bar or legend table. Affects only firm templates that add a `sketch` block (the seed template has none, 01 D11).                                                                                                                                    | One drawing per level plus a legend (spec 10 §10).                                                                  | MVP (S-056)       |
 | G09-14 | Map placeholder lists at most four assets.                                                                                                                                                                                                                                                                             | Paginate the portfolio location table.                                                                              | MVP               |
 | G09-15 | **Partly fixed in iteration 1:** reproduce compares `snapshot.renderer` with `RENDERER_VERSION`, reports `renderer.match` and returns `reproducible: false` on a mismatch. Still open: superseded renderer versions are not retained, so older reports cannot be re-rendered byte for byte.                            | Keep every issued renderer version runnable (renderer registry, pinned `pdf-lib`) and dispatch to the recorded one. | MVP (S-057)       |

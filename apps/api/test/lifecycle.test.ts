@@ -171,6 +171,8 @@ describe('job lifecycle (market value, residential, VIC)', () => {
       version: { id: string; sketchId: string };
       schedule: { totalIncludedM2: number; reportable: boolean };
     }>('inspector', 'POST', `/v1/jobs/${jobId}/assets/${assetId}/sketches`, {
+      // This job reports measured areas, so the schedule is linked and must be approved
+      useForReport: true,
       units: 'metres',
       basis: 'BUILDING_AREA',
       conventionId: 'res-under-main-roof',

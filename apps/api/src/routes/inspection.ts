@@ -145,7 +145,8 @@ export function registerInspectionRoutes(r: Router): void {
         .optional(),
       includeInClientReport: z.boolean().optional(),
       changeSummary: z.string().min(3),
-      useForReport: z.boolean().default(true),
+      /** Link the sketch's schedule to the report (it is then checked and must be approved). */
+      useForReport: z.boolean().default(false),
     }),
     handler: async ({ ctx, principal, params, body }) =>
       ctx.db.transaction(async (tx) => {

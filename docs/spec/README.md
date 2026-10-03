@@ -26,7 +26,7 @@
 
 These tables are produced by `pnpm docs:generate` from the code that enforces them and checked in CI:
 
-- [Field catalogue](generated/field-catalogue.md)
+- [Input tabs and field catalogue](generated/field-catalogue.md)
 - [Requirement and selection rules](generated/requirement-rules.md)
 - [Field matrix](generated/field-matrix.md)
 - [Permission matrix and workflow transitions](generated/permission-matrix.md)

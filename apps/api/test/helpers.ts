@@ -130,6 +130,8 @@ export function newJobBody(over: Record<string, unknown> = {}) {
     reviewerId: DEMO.users.reviewer,
     inspectorIds: [DEMO.users.inspector],
     feeCents: 88_000,
+    instructedOn: '2026-09-25',
+    dueDate: '2026-10-05',
     assets: [
       {
         label: '10 Sample Road, Exampleton VIC 3000',
@@ -157,8 +159,6 @@ export function marketValueFieldValues(assetId: string) {
     job('instruction.reliance', 'Reliance is limited to the intended users named in this report.'),
     job('instruction.confidentiality', 'Confidential to the intended users.'),
     job('instruction.feeBasis', 'Fixed fee'),
-    job('instruction.dueDate', '2026-10-05'),
-    job('dates.instruction', '2026-09-25'),
     job('dates.inspection', '2026-09-30'),
     job('dates.valuation', '2026-09-30'),
     job('dates.researchCutOff', '2026-10-01'),
