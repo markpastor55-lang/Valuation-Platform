@@ -75,7 +75,7 @@ These apply to every API-backed feature. Each feature lists only its own additio
 | F-13 | Traced calculations and overrides                                                 | E-08             | S-005, S-006, S-051                                                  | MVP                                                          | Implemented in domain/API |
 | F-14 | Replacement cost (insurance)                                                      | E-08             | S-009, S-076, S-098                                                  | MVP if in D3; Pilot; Production                              | Partially implemented     |
 | F-15 | Fair value (AASB 13) support                                                      | E-08             | S-010, S-097                                                         | MVP if in D3; Production export                              | Partially implemented     |
-| F-16 | Market commentary modules with date guards                                        | E-09             | S-052                                                                | MVP                                                          | Partially implemented     |
+| F-16 | Market commentary library by property type and location, with date guards         | E-09             | S-052, S-109, S-110, S-111, S-112                                    | MVP (the firm's own library content Pilot)                   | Implemented in domain/API |
 | F-17 | Validation and acknowledgements                                                   | E-10             | S-014, S-053                                                         | MVP                                                          | Implemented in domain/API |
 | F-18 | Certification and submission for QA                                               | E-11             | S-054, S-070                                                         | MVP (e-signature Pilot)                                      | Implemented in domain/API |
 | F-19 | QA review and self-approval exceptions                                            | E-12             | S-015, S-027, S-055                                                  | MVP                                                          | Implemented in domain/API |
@@ -811,44 +811,56 @@ The F-04 field errors. Planned endpoints return `422 INVALID_ARGUMENT` for inval
 - `packages/domain/test/requirements.test.ts` › "financial reporting requires AASB 13 inputs including hierarchy level and sensitivity".
 - TC-CALC-007, TC-FLD-002. **Gap:** `VAL-FR-001` has no test that references the code; no API route; disclosure export.
 
-### F-16 — Market commentary modules with date guards
+### F-16 — Market commentary library by property type and location, with date guards
 
-**Status:** Partially implemented. Implemented: per-job dated commentary modules (national, state, local) with as-at date, author and sourced provenance, and the `VAL-DATE-004` retrospective guard. Planned: the reusable library (W-08) and a research cut-off guard for every purpose. · E-09 · S-052 · J-07 · W-08
+**Status:** Implemented in domain/API: the library and matching (`packages/domain/src/evidence/commentary-library.ts`), the demonstration library (`sample-commentary-library.ts`), `VAL-MKT-001`, `VAL-STALE-003` and the `VAL-DATE-004` retrospective guard, the `market_commentary` report block, the `commentary_module` table (migration 0007) and the library and job commentary endpoints (07 §6.6). The browser preview has the Market commentary card. Planned: the card in the web portal and mobile app (S-052), a library screen with draft edit and withdrawal (S-110), retiring versions (S-111), the firm's own commentary (S-112) and a research cut-off guard for every purpose. · E-09 · S-052, S-109, S-110, S-111, S-112 · J-07, J-12 · W-08, W-18
 
 **User story**
-As a valuer, I want to assemble national, state and local market commentary with its date, source and author, so that commentary fits the valuation date and never relies on hindsight in retrospective work.
+As a valuer, I want national, state and local market commentary from the firm's approved library, matched to the property type and location as at the valuation date, that I use with one tap and then tailor, so that every report has consistent commentary with its date, sources and author, and retrospective work never relies on hindsight (01 D17).
+
+As a standards owner, I want to write dated library paragraphs that a second standards owner approves, so that valuers are offered only reviewed commentary.
 
 **Acceptance criteria**
 
-1. `POST /commentary` {`level` (national, state, local), `assetId`?, `asAtDate`, `text` (≥ 10 characters), `sources[]` (provenance)} stores the module with `authoredBy` and `authoredAt`, and records `evidence.commentary_added`.
-2. `MARKET_VALUE`, `CGT` and `FAMILY_LAW` require `market.local`. State and national commentary are no longer requested by the seed purpose rules (01 D9).
-3. For a retrospective valuation (any purpose; derived from the dates, 01 D8), a module whose `asAtDate` is after the valuation date or information cut-off triggers `VAL-DATE-004`, blocking at draft, submit and issue. A module dated exactly on the valuation date is accepted `[REVIEW: TAX]`.
-4. _(planned)_ For any purpose, a module dated after `dates.researchCutOff` is blocked (proposed `VAL-DATE-010`). The research cut-off is no longer requested per job (01 D9), so this applies only where it is recorded.
-5. Sources of external origin need full provenance (`VAL-PROV-001`). Sources whose licence restricts reproduction trigger `VAL-PROV-003` `[REVIEW: DATA_LICENSING]`.
-6. _(planned)_ Library modules are authored under `template.edit`, filtered by jurisdiction, property type and purpose, and versioned and approved. A job inserts a pinned copy, which it can then edit.
+1. `MARKET_VALUE`, `CGT` and `FAMILY_LAW` require `market.national`, `market.state` and `market.local`. `FINANCIAL_REPORTING` and `RENTAL_ASSESSMENT` recommend them. Other purposes do not request them (01 D17, which replaces the D9 position that only local commentary was required).
+2. A standards owner writes a library paragraph with `POST /v1/commentary-library` (`template.edit`): level; title; state (state and local paragraphs); suburbs, towns or councils (local only); property types (omitted for an overview); as-at date; text (at least 80 characters); and at least one source with full provenance from a registered data source. It is saved as a `draft` and as the paragraph's next version, and keeps the level and state of earlier versions. Problems return `422 INVALID_COMMENTARY` with the list. Audited `commentary.version_created`.
+3. A different standards owner approves the draft with MFA (`template.approve`). The author is refused (`403 SEPARATION_OF_DUTIES`). Only a draft can be approved (`409 IMMUTABLE_RECORD`). An approved version cannot be edited or deleted, only retired, and a retired version is frozen (database trigger); a new view is a new version. Audited `commentary.version_approved`.
+4. `GET /v1/jobs/{jobId}/commentary/suggestions` offers, for each level, the latest approved version of each paragraph that matches the property type, the state, and the asset's suburb or council, dated on or before the valuation date (else the inspection date, else today). The overview comes first, then paragraphs written for the property type. Each level has a heading, the text, the as-at date (the oldest paragraph's), its age in months, the topics to cover and notes for gaps, dated commentary or a missing property-type paragraph. Nothing is saved.
+5. `POST /v1/jobs/{jobId}/commentary/apply` {`assetId`, `levels`} (`evidence.edit`, editable job) recomputes the suggestions on the server. In one transaction it writes each level's text to its field with library provenance (`ds-commentary-library`, a `sourceRef` naming the paragraph versions, verified by the valuer), and adds a dated `market_commentary` record with the paragraphs' sources and `library[]` refs. If a chosen level has no paragraph, the request fails with `422 NO_LIBRARY_COMMENTARY` and nothing is written.
+6. `POST /v1/jobs/{jobId}/commentary` {`level`, `assetId`?, `asAtDate`, `text` (≥ 10 characters), `sources[]`} still records commentary the valuer writes, with `authoredBy` and `authoredAt`, and `evidence.commentary_added`.
+7. The current record is the latest for each level (and asset, for local commentary); earlier records stay on file. For a retrospective valuation (any purpose; 01 D8), a current record dated after the valuation date or information cut-off triggers `VAL-DATE-004` (blocking at draft, submit and issue). A record dated on the valuation date is accepted `[REVIEW: TAX]`.
+8. `VAL-STALE-003` warns when the current record is dated more than 6 months (national, state) or 4 months (local) before the valuation date. `VAL-MKT-001` warns when commentary is under 300 characters and lists the topics for the level and property type. Both can be acknowledged with a reason `[REVIEW: API_STANDARDS]`.
+9. The `market_commentary` template block prints each level under its own heading ("National market", "State market — <state>", "Local market — <suburb>"), one paragraph per paragraph of text, then "Commentary as at <date>. Sources: <sources>." from the current record. Missing required commentary prints `[Not provided]` and blocks a final report (`TPL-MISSING-REQUIRED`) (09 §1.4).
+10. Sources of external origin need full provenance (`VAL-PROV-001`). Sources whose licence restricts reproduction trigger `VAL-PROV-003`; quoting provider figures needs a licence that permits it `[REVIEW: DATA_LICENSING]`.
+11. The preview's Market commentary card on the Sales & market tab shows each level with **Use**, **Use all** or **Replace my text**, the paragraph titles and as-at date, notes, "Read the firm's text" and the "Cover:" topics. _(planned)_ The same card in the web portal and mobile app (S-052).
+12. _(planned)_ A library screen to list, write, edit, withdraw and approve versions (S-110); retiring a version (S-111); the firm's own commentary replacing the demonstration library, which is placeholder text (S-112).
+13. _(planned)_ For any purpose, commentary dated after `dates.researchCutOff` is blocked (proposed `VAL-DATE-010`). The research cut-off is no longer requested per job (01 D9), so this applies only where it is recorded.
 
 **Data fields**
-Catalogue: `market.national`, `market.state`, `market.local`, `dates.valuation`, `dates.retrospectiveDataCutOff`, `dates.researchCutOff`, `retro.evidenceBasis`. Record `market_commentary`: `level`, `assetId`, `asAtDate`, `text`, `authoredBy`, `authoredAt`, `sources`.
+Catalogue: `market.national`, `market.state`, `market.local`, `dates.valuation`, `dates.inspection`, `dates.retrospectiveDataCutOff`, `dates.researchCutOff`, `location.address`, `location.lga`, `retro.evidenceBasis`. Record `market_commentary`: `level`, `assetId`, `asAtDate`, `text`, `authoredBy`, `authoredAt`, `sources`, `library[{ moduleId, version }]`. Record `commentary_module`: `moduleId`, `version`, `level`, `title`, `jurisdiction`, `localities`, `propertyTypes`, `asAtDate`, `text`, `sources`, `status` (draft, approved, retired), `authoredBy`, `authoredAt`, `approvedBy`, `approvedAt`. Data sources: `ds-commentary-library` (every organisation); `ds-demo-research` and `ds-public-releases` (demonstration only).
 
 **Validation**
-`VAL-DATE-004` `[REVIEW: TAX]`, `VAL-PROV-001`, `VAL-PROV-003`, `VAL-REQ-001`, `VAL-REQ-002`. Proposed: `VAL-DATE-010`.
+`VAL-MKT-001`, `VAL-STALE-003`, `VAL-DATE-004` `[REVIEW: TAX]`, `VAL-PROV-001`, `VAL-PROV-003`, `VAL-REQ-001`, `VAL-REQ-002`; composition `TPL-MISSING-REQUIRED`. Library paragraphs: `commentaryModuleProblems` plus registered sources (`422 INVALID_COMMENTARY`). Proposed: `VAL-DATE-010`.
 
 **Permissions**
-`evidence.edit` (VALUER) for job commentary. W-08 lists `job.update`; see §3.6. `template.edit` (STANDARDS_OWNER) for the library _(planned)_.
+`evidence.edit` (VALUER, assigned) to use or write job commentary. `job.read` for suggestions and to list the library. `template.edit` (STANDARDS_OWNER) to list and write the library. `template.approve` (STANDARDS_OWNER, human, MFA, never the author) to approve it.
 
 **Audit events**
-`evidence.commentary_added`. Library versions would use `template.version_created` and `template.version_approved` if the library is modelled as template content.
+`commentary.version_created` and `commentary.version_approved` (organisation stream); `evidence.commentary_added`, with the level, as-at date and `library[]` in its metadata when taken from the library; `field.updated` for the `market.*` text; `auth.denied` for refusals.
 
 **Offline behaviour**
-W-08 is online only. Commentary text can be edited offline on tablet as job fields (`market.*`).
+Suggestions and the library are online only. The `market.*` text can be edited offline on tablet as job fields. The dated record is created online, when the library commentary is used.
 
 **Error states**
-Common errors, plus `422 INVALID_REFERENCE` (unknown `assetId`), `400 BAD_REQUEST` (text too short, date not ISO) and `409 RECORD_LOCKED`.
+Common errors, plus `422 INVALID_COMMENTARY`, `422 NO_LIBRARY_COMMENTARY`, `422 UNKNOWN_ASSET`, `409 IMMUTABLE_RECORD` (approving a version that is not a draft), `409 CONFLICT` (two drafts of one paragraph saved at once), `409 RECORD_LOCKED` and `400 BAD_REQUEST` (text too long, date not ISO). `POST /commentary` also returns `422 INVALID_REFERENCE` (unknown `assetId`) and `400 BAD_REQUEST` (text under 10 characters).
 
 **Tests**
 
+- `packages/domain/test/commentary.test.ts` › "matches national, state and local paragraphs to the property type and suburb"; "gives a retrospective valuation the commentary of its day, never later"; "flags commentary that is dated for the valuation date"; "reports gaps instead of guessing when nothing fits"; "offers only approved paragraphs"; "keeps the demonstration library valid and full enough for every demo suburb"; "finds the suburb and council for an address"; "requires national, state and local commentary for value reports"; "asks for brief commentary to be expanded, naming the topics for the property type"; "flags dated commentary and ignores superseded records"; "prints each level under its own heading with the as-at date and sources"; "marks missing required commentary and blocks a final report".
+- `apps/api/test/commentary.test.ts` › "is seeded with the approved demonstration library"; "a standards owner writes a draft; another standards owner approves it"; "refuses paragraphs with problems and lists them"; "never changes an approved version (database guard)"; "only standards owners write the library; clients cannot read it"; "suggests the approved paragraphs for the property type, state and suburb"; "applies the library commentary: fields, dated records, audit and the report"; "gives a retrospective valuation only the commentary of its day"; "refuses a level the library has no commentary for, and changes nothing"; "applies only for the assigned valuer on an editable job".
+- `apps/preview/test/journey.test.ts` › "offers national, state and local commentary for the property type and suburb"; "gives the retrospective CGT job the commentary of its valuation date"; "puts the firm commentary into the seeded issued report".
 - `packages/domain/test/validation.test.ts` › "blocks commentary dated after the cut-off".
-- TC-DATE-002. **Gap:** API test for `/commentary` and its audit event; same-day boundary; library; research cut-off guard.
+- TC-DATE-002, TC-COM-001…015. **Gap:** an API test for the manual `POST /commentary` route and its audit event (TC-COM-001); the research cut-off guard; W-08 in the web portal and mobile app, with accessibility checks.
 
 ### F-17 — Validation and acknowledgements
 
@@ -1303,7 +1315,7 @@ Each item below needs a change to the named source: the code (then `pnpm docs:ge
 | `VAL-SYNC-001`  | blocking · submit               | Unresolved sync conflicts exist on the job (UX-10)                                                                                                   | F-07       |
 | `VAL-INSP-001`  | warning · submit, issue         | Inspection finished with checklist gaps; a reason is recorded per gap (J-04 step 11)                                                                 | F-07       |
 | `VAL-AREA-005`  | blocking · draft, submit, issue | Calibration check dimension deviates beyond tolerance (default 2 %) without recalibration or reason (J-06 E2). Matching code `GEO-CALIBRATION-CHECK` | F-10       |
-| `VAL-DATE-010`  | blocking · draft, submit, issue | Commentary or evidence dated after `dates.researchCutOff` (any purpose; J-07 step 8)                                                                 | F-16       |
+| `VAL-DATE-010`  | blocking · draft, submit, issue | Commentary or evidence dated after `dates.researchCutOff` (any purpose; J-07 E6)                                                                     | F-16       |
 | `VAL-AI-002`    | blocking · submit, issue        | Accepted facts conflict within one area (J-05 E4)                                                                                                    | F-09       |
 | `VAL-AI-003`    | warning · submit, issue         | An inspector-accepted fact has not been confirmed by the valuer (A-25)                                                                               | F-09       |
 | `VAL-AI-004`    | warning · submit, issue         | An accepted fact's source photo was later redacted or excluded (J-05 E3)                                                                             | F-09       |
@@ -1324,7 +1336,6 @@ Each item below needs a change to the named source: the code (then `pnpm docs:ge
 | Provenance origin `site_capture`                                                                                       | `DataOrigin` value            | F-08       | Used in 05 J-04 step 9; missing from `core/provenance.ts`                      |
 | Legal hold `matterReference`, `requestingParty`, `reviewDate`, `releaseReason`; scopes `asset`, `user`, `organisation` | record attributes             | F-23       | J-13 and 11 §5.3                                                               |
 | Data-source `rateLimit`, `cachingRights`, `rawPayloadRetentionDays`                                                    | record attributes             | F-04, F-05 | 04 §5.5, RC-15                                                                 |
-| Commentary library module (`id`, `version`, scope, `asAtDate`, author, approval)                                       | record                        | F-16       | W-08 library                                                                   |
 
 ### 3.4 Audit actions
 
@@ -1354,7 +1365,7 @@ The following are new proposals, not in 00 §8. Each needs a 00 revision before 
 - **F-09:** fact confirmation.
 - **F-11, F-12:** edit and soft-delete of sales and rentals.
 - **F-15:** fair-value derivation and sensitivity.
-- **F-16:** commentary library.
+- **F-16:** edit or withdraw a commentary library draft, and retire an approved version (S-110, S-111).
 - **F-19:** self-approval exception request; reviewer reassignment.
 - **F-20:** invoice management (send, credit note, accounting export); recipient revocation.
 - **F-21:** rule-set version creation.
@@ -1367,7 +1378,7 @@ The following are new proposals, not in 00 §8. Each needs a 00 revision before 
 2. **QA severity and disposition names.** The code uses severities `critical`, `major`, `minor`, `observation` and dispositions `resolved`, `accepted`, `withdrawn`. J-09 proposes `CRITICAL`, `MAJOR`, `MINOR`, `ADVISORY` and `ACCEPTED_AS_IS`, with the final list deferred to spec 06. Align 05 with the code values (also used in 07).
 3. **Blocked selections.** J-03 E1 says a blocked combination saves nothing. `PATCH /selection` saves it, returns `selectionIssues`, and relies on `VAL-SEL-001` to block later.
 4. **Issue permissions.** J-10 says an allocator with `report.issue` and `email.send` can issue. The matrix grants `report.issue` only to ADMINISTRATOR and VALUER, and the issue route does not check `email.send`.
-5. **Commentary permission.** W-08 requires `job.update`; the API uses `evidence.edit`.
+5. **Commentary permission.** Fixed: W-08 now lists `evidence.edit`, which the API uses (05 §2.2).
 6. **Sync audit events.** Assets and photos created through `/v1/sync` emit only `sync.operation_applied`, not `asset.created` or `photo.captured`. Decide whether to emit both.
 7. **Legal hold scopes.** The API supports job, client and portfolio. 11 §5.3 also lists organisation, asset and user.
 8. **Record attributes.** Record attributes here are cited from the API schemas and migrations. `06-data-model-and-audit.md` is the normative data model; any difference should be resolved there.
@@ -1384,6 +1395,8 @@ The following are new proposals, not in 00 §8. Each needs a 00 revision before 
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | --- |
 | TC-ENG-001…003 | Conflict search matching; outcome rules disable acceptance; re-check required after instruction change                                                                                                   | L1/L2 | P1  |
 | TC-RET-001…005 | Hold blocks deletion and retention; overlapping holds; release by a different user; dry-run → approval → purge; stream checkpoint keeps chain verifiable                                                 | L2/L3 | P1  |
-| TC-COM-001     | Commentary route stores author and date and emits `evidence.commentary_added`; same-day boundary                                                                                                         | L2    | P2  |
 | TC-PHOTO-004   | API de-duplication by hash; privacy actions audited; redacted derivative used in PDF                                                                                                                     | L2/L8 | P1  |
 | TC-VAL-005     | One passing and one failing fixture for each catalogue code not referenced by a test today (`VAL-AREA-003`, `VAL-DATE-009`, `VAL-FR-001`, `VAL-INS-001`, `VAL-PHOTO-002`, `VAL-RENT-001`, `VAL-SEL-002`) | L1    | P1  |
+
+TC-COM-001 (the manual commentary route) has moved into 12 §3.16 with the other market commentary
+tests.

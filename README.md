@@ -19,13 +19,15 @@ invoicing and a tamper-evident audit trail.
 | `@vp/domain` — rules, calculations, geometry, workflow, permissions, audit, validation, AI governance, sync, report composition | Implemented, 200+ unit tests                          |
 | `@vp/api` — Fastify service, PostgreSQL schema, auth, workflow endpoints, deterministic PDF/invoice issue, offline sync         | Implemented, end-to-end tests on embedded PostgreSQL  |
 | `@vp/preview` — clickable browser preview running `@vp/domain` on synthetic data (no server)                                    | Implemented, journey tests                            |
+| Market commentary library — national, state and local, by property type and suburb (D17)                                        | Implemented; demonstration text only                  |
 | Mobile app (iOS/Android, offline capture, sketch canvas)                                                                        | Planned — next iteration                              |
 | Web portal (allocation, QA, administration)                                                                                     | Planned                                               |
 | Live data integrations, e-signature, object storage, AI models                                                                  | Planned (interfaces and policies in place)            |
 
-See [`docs/spec/13-backlog.md`](docs/spec/13-backlog.md) for the release plan and
+See [`docs/spec/13-backlog.md`](docs/spec/13-backlog.md) for the release plan,
 [`docs/spec/01-assumptions-and-decisions.md`](docs/spec/01-assumptions-and-decisions.md) for the
-decisions that need an owner.
+decisions that need an owner, and [`docs/go-live-checklist.md`](docs/go-live-checklist.md) for
+what's needed to run it for real.
 
 ## Repository layout
 
@@ -60,8 +62,8 @@ curl -s localhost:3000/v1/reference/selection \
 `pnpm --filter @vp/preview build` writes `apps/preview/dist/index.html`, a self-contained page that
 runs the domain engine in the browser with synthetic data. You work as the valuer through the input
 tabs (Job, Property, Inspection, Sales & market, Valuation, Review): change the selection and watch
-the requirements change, see a retrospective valuation detected from the dates, keep a sketch as
-working notes and use its total as the building area, clear validation findings, then sign and send
+the requirements change, see a retrospective valuation detected from the dates, use the firm's market commentary for the
+property type and suburb, keep a sketch as working notes and use its total as the building area, clear validation findings, then sign and send
 to QA. A QA tab appears once the job is sent; review as QA, then issue. Nothing is sent to a server;
 state stays in the browser.
 
@@ -70,7 +72,9 @@ The OpenAPI contract is served at `/v1/openapi.json` and committed at
 `apps/api/src/db/seed.ts`.
 The demo valuers have signing profiles (`GET /v1/me/profile`): placeholder API member numbers, a
 typed signature and, for `valuer@example.com`, placeholder QLD and WA registration numbers, so demo
-jobs can be signed in any state.
+jobs can be signed in any state. The demo organisation also has an approved demonstration market
+commentary library (placeholder text, `GET /v1/commentary-library`), which a firm replaces with its
+own before live use.
 
 ### Configuration
 

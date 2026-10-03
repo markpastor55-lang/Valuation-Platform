@@ -75,7 +75,7 @@ in the docs with **`[REVIEW: <role>]`** where `<role>` is one of the specialist 
 | Section IDs           | `snake_case`                                                                       | `sales_evidence`, `fair_value`, `restricted_access`                   |
 | Requirement rule IDs  | `REQ-<AREA>-<NNN>`                                                                 | `REQ-PUR-MV-001`, `REQ-PT-IND-001`                                    |
 | Selection rule IDs    | `SEL-<NNN>`                                                                        | `SEL-001` (insurance + vacant land)                                   |
-| Validation rule codes | `VAL-<CATEGORY>-<NNN>`                                                             | `VAL-DATE-004`, `VAL-AREA-002`                                        |
+| Validation rule codes | `VAL-<CATEGORY>-<NNN>`                                                             | `VAL-DATE-004`, `VAL-AREA-002`, `VAL-MKT-001`                         |
 | Geometry issue codes  | `GEO-<NAME>`                                                                       | `GEO-OVERLAP`, `GEO-SCALE-UNVERIFIED`                                 |
 | Formula IDs           | `<domain>.<name>` + integer version                                                | `land.rate_per_m2@1`                                                  |
 | Audit actions         | `<entity>.<past_tense_verb>`                                                       | `job.created`, `certification.signed`, `report.issued`                |
@@ -126,7 +126,8 @@ as **scopes**, because any purpose can (subject to rules) be performed at any sc
 
 ### Property types
 
-`VACANT_LAND`, `RESIDENTIAL`, `COMMERCIAL_OFFICE`, `COMMERCIAL_RETAIL`, `INDUSTRIAL`,
+`VACANT_LAND`, `RESIDENTIAL`, `RESIDENTIAL_UNIT` (units, apartments and townhouses, including
+strata units; 01 D16), `COMMERCIAL_OFFICE`, `COMMERCIAL_RETAIL`, `INDUSTRIAL`,
 `SPECIALISED_MIXED_USE`
 
 ### Asset mode
@@ -153,7 +154,9 @@ generated table is in `generated/permission-matrix.md`. Separation-of-duties rul
   suggestion submission; system: email delivery callback).
 - `qa.approve` — never the responsible valuer, unless a documented self-approval exception
   authorised by a different user holding `qa.self_approval_exception` exists.
-- `template.approve` / `ruleset.approve` — never the author of that version.
+- `template.approve` / `ruleset.approve` — never the author of that version. Market commentary
+  library versions are written under `template.edit` and approved under `template.approve`, so the
+  same rule applies to them (01 D17).
 - `CLIENT_READONLY` sees only issued reports and invoices for its own client entities.
 - Restricted portfolios require explicit membership even for organisation-wide roles.
 
@@ -207,7 +210,11 @@ Actions emitted by the iteration-1 API (see `06-data-model-and-audit.md` for whe
 `sync.operation_applied`, `sync.conflict_detected`, `auth.denied`, `profile.updated` (a valuer
 changed their own signing profile, 01 D13), `property_data.retrieved` (property data or comparable
 sales were looked up from the property data provider for an asset; metadata holds the provider,
-source, property id and counts, never data values; 01 D15).
+source, property id and counts, never data values; 01 D15), `commentary.version_created` (a
+standards owner wrote a draft version of a market commentary library paragraph; organisation
+stream; 01 D17), `commentary.version_approved` (a different standards owner approved it, with MFA;
+organisation stream; 01 D17). When a valuer uses library commentary on a job, the existing
+`evidence.commentary_added` is emitted, with the library paragraphs and versions in its metadata.
 
 Planned (later iterations): `asset.updated`, `datasource.used`, `datasource.lookup_failed`,
 `datasource.fallback_task_created`, `datasource.verified`, `datasource.config_changed`,
