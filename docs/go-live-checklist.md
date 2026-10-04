@@ -14,6 +14,33 @@ app:
 Never send passwords, API keys or secrets by chat or email. Each service below lets you add a
 person or a role instead. Keys go straight into the hosting provider's secret store.
 
+## Answers so far (4 October 2026)
+
+| Item                        | Answer                                                                                                                                                                                                                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Firm name                   | Not chosen yet. Working name for the app and reports: **Fair Market Valuations**; change it any time before go-live.                                                                                                                                                              |
+| Domain (1.2)                | `fairmarketvaluations.com.au`, registered and DNS-hosted at GoDaddy. The app will live on a subdomain such as `app.fairmarketvaluations.com.au`, so the website and email are not touched.                                                                                        |
+| Microsoft 365               | Email for the domain runs on Microsoft 365, bought through GoDaddy. GoDaddy keeps some admin control of these accounts, which can block app sign-in (1.3) and sending as a mailbox. We'll test this first; the fix, if needed, is to move the subscription to Microsoft directly. |
+| Email sending (1.4)         | Deferred. App emails will come from `info@fairmarketvaluations.com.au` through Microsoft 365. (The spelling `fairmarketvaluation.com.au`, without the "s", does not exist as a domain.)                                                                                           |
+| Standards owner (section 2) | Mark Pastor, with Ben as the second approver. The app won't let anyone approve their own work, so one writes and the other approves.                                                                                                                                              |
+
+### Adding DNS records at GoDaddy
+
+You don't need to give anyone your GoDaddy login. When the app is ready to deploy, we'll send a
+short list of records (usually one to three: type, name and value). To add them:
+
+1. Sign in at godaddy.com and go to **My Products**.
+2. Next to `fairmarketvaluations.com.au`, open **DNS** (sometimes shown as **Manage DNS**).
+3. Choose **Add New Record**, pick the type (for example CNAME or TXT), and paste the name and
+   value exactly as sent. Save.
+
+Changes usually take effect within an hour. Leave the existing MX, TXT and root A records alone:
+they run your email and website.
+
+If someone else (for example Ben or an IT helper) should do this, GoDaddy's **Delegate Access**
+(under Account Settings) lets you invite them with access to products and domains only. Never
+share your own password.
+
 ## 1. Accounts and services (in the firm's name)
 
 | #   | What                                      | Why the app needs it                                                                                                  | Suggested choice                                                                                        | What to give us                                                                                           |
