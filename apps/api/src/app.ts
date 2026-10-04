@@ -7,13 +7,20 @@ import { AuthorizationDenied, toHttpError } from './http/errors.js';
 import { recordDenial } from './repo/jobs.js';
 import { Router } from './http/route.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerCommentaryRoutes } from './routes/commentary.js';
 import { registerEvidenceRoutes } from './routes/evidence.js';
 import { registerInspectionRoutes } from './routes/inspection.js';
 import { registerJobRoutes } from './routes/jobs.js';
+import { registerProfileRoutes } from './routes/profile.js';
+import { registerPropertyDataRoutes } from './routes/property-data.js';
 import { registerReportRoutes } from './routes/reports.js';
 import { registerSyncRoutes } from './routes/sync.js';
 import { registerWorkflowRoutes } from './routes/workflow.js';
 import { RecordingEmailTransport, type EmailTransport } from './services/email.js';
+import {
+  createPropertyDataService,
+  type PropertyDataService,
+} from './integrations/property-data.js';
 
 export interface BuildOptions {
   readonly config: AppConfig;
@@ -23,6 +30,8 @@ export interface BuildOptions {
   readonly email?: EmailTransport;
   readonly auth?: Authenticator;
   readonly logger?: boolean;
+  /** Property data provider (defaults to the one chosen from configuration). */
+  readonly propertyData?: PropertyDataService;
 }
 
 export async function buildApp(
@@ -88,11 +97,17 @@ export async function buildApp(
   });
   registerJobRoutes(router);
   registerEvidenceRoutes(router);
+  registerCommentaryRoutes(router);
   registerInspectionRoutes(router);
   registerWorkflowRoutes(router);
   registerReportRoutes(router);
   registerAdminRoutes(router);
   registerSyncRoutes(router);
+  registerProfileRoutes(router);
+  registerPropertyDataRoutes(
+    router,
+    opts.propertyData ?? createPropertyDataService(config.propertyData),
+  );
   router.addPublic({
     method: 'GET',
     url: '/v1/openapi.json',

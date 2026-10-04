@@ -1,4 +1,5 @@
 import {
+  PROPERTY_TYPES,
   analyseSale,
   assertEditable,
   overrideCalculation,
@@ -6,7 +7,6 @@ import {
   type CalculationRecord,
   type Json,
   type MarketCommentary,
-  type Provenance,
   type RentalComparable,
   type RiskFlag,
   type SaleComparable,
@@ -17,7 +17,15 @@ import { HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
 import { assertAssetInJob, authorizeJob, touchJob, type JobRow } from '../repo/jobs.js';
 import { audit, jobStream } from '../services/audit.js';
-import { JobParams, LocalDateSchema, ProvenanceInput, Uuid, compact } from './schemas.js';
+import { writeField } from '../services/fields.js';
+import {
+  EvidenceProvenance,
+  JobParams,
+  LocalDateSchema,
+  Uuid,
+  compact,
+  provenanceOf,
+} from './schemas.js';
 
 const AdjustmentSchema = z.object({
   factor: z.enum([
@@ -37,10 +45,6 @@ const AdjustmentSchema = z.object({
   kind: z.enum(['percent', 'absolute']),
   value: z.number(),
   rationale: z.string().min(3),
-});
-
-const EvidenceProvenance = ProvenanceInput.extend({
-  origin: z.enum(['external_source', 'client_supplied', 'manual_entry']),
 });
 
 const assetOfJob = (db: Db, job: JobRow, assetId: string): Promise<void> =>
@@ -70,18 +74,6 @@ async function insertCalculation(
   );
 }
 
-/** The capturing user attests verification, so verified data records who verified it and when. */
-const provenanceOf = (
-  p: z.infer<typeof EvidenceProvenance>,
-  userId: string,
-  now: string,
-): Provenance => ({
-  ...compact(p),
-  ...(p.verification === 'verified' ? { verifiedBy: userId, verifiedAt: now } : {}),
-  capturedBy: userId,
-  capturedAt: now,
-});
-
 export function registerEvidenceRoutes(r: Router): void {
   r.add({
     method: 'POST',
@@ -98,14 +90,7 @@ export function registerEvidenceRoutes(r: Router): void {
       settlementDate: LocalDateSchema.optional(),
       price: z.number().positive(),
       interest: z.string().min(2),
-      propertyType: z.enum([
-        'VACANT_LAND',
-        'RESIDENTIAL',
-        'COMMERCIAL_OFFICE',
-        'COMMERCIAL_RETAIL',
-        'INDUSTRIAL',
-        'SPECIALISED_MIXED_USE',
-      ]),
+      propertyType: z.enum(PROPERTY_TYPES),
       landAreaM2: z.number().positive().optional(),
       buildingAreaM2: z.number().positive().optional(),
       zoning: z.string().optional(),
@@ -149,6 +134,58 @@ export function registerEvidenceRoutes(r: Router): void {
           after: sale as unknown as Json,
         });
         return { sale, analysis };
+      }),
+  });
+
+  r.add({
+    method: 'DELETE',
+    url: '/v1/jobs/:jobId/sales/:saleId',
+    summary:
+      'Remove a sale from the evidence while the job is editable; its analysed rates go with it and it leaves the evidence list',
+    tags: ['evidence'],
+    permission: 'evidence.edit',
+    params: z.object({ jobId: Uuid, saleId: Uuid }),
+    handler: async ({ ctx, principal, params }) =>
+      ctx.db.transaction(async (tx) => {
+        const { job } = await authorizeJob(ctx, tx, principal, 'evidence.edit', params.jobId, {
+          forUpdate: true,
+        });
+        assertEditable(job.status);
+        const { rows } = await tx.query<{ data: SaleComparable }>(
+          'SELECT data FROM sale_comparable WHERE id = $1 AND job_id = $2',
+          [params.saleId, job.id],
+        );
+        const sale = rows[0]?.data;
+        if (!sale) throw notFound('sale');
+        // The sale's analysed rates go with it; the audit event keeps the removed sale.
+        await tx.query('DELETE FROM calculation WHERE sale_id = $1', [sale.id]);
+        await tx.query('DELETE FROM sale_comparable WHERE id = $1', [sale.id]);
+        const listed = await tx.query<{ value: unknown }>(
+          "SELECT value FROM field_value WHERE job_id = $1 AND asset_id = $2 AND field_id = 'evidence.sales'",
+          [job.id, sale.assetId],
+        );
+        const ids = listed.rows[0]?.value;
+        if (Array.isArray(ids) && ids.includes(sale.id)) {
+          const rest = ids.filter((id) => id !== sale.id);
+          await writeField(tx, ctx, principal, job, {
+            fieldId: 'evidence.sales',
+            assetId: sale.assetId,
+            value: rest.length ? rest : null,
+            reason: 'Sale removed from the evidence',
+          });
+        }
+        await touchJob(tx, job.id, ctx.clock.now());
+        await audit(tx, ctx, {
+          orgId: job.org_id,
+          streamId: jobStream(job.id),
+          actor: principal,
+          action: 'evidence.sale_removed',
+          entityType: 'sale_comparable',
+          entityId: sale.id,
+          before: sale as unknown as Json,
+          after: null,
+        });
+        return { removed: sale.id };
       }),
   });
 

@@ -19,6 +19,16 @@ import type { FieldValues, ResolvedRequirements } from '../requirements/resolve.
 import { formatArea, formatAud, formatNumber, formatPercent } from '../units/units.js';
 import type { Certification } from '../workflow/certification.js';
 import type { TemplateBlock, TemplateVersion } from './template.js';
+import { VALUER_REGISTRATION_RULES } from '../workflow/valuer-profile.js';
+import type { MarketCommentary } from '../evidence/market.js';
+import { currentCommentary } from '../evidence/market.js';
+import {
+  COMMENTARY_FIELDS,
+  COMMENTARY_LEVELS,
+  commentaryHeading,
+  commentaryLocalities,
+  commentaryNote,
+} from '../evidence/commentary-library.js';
 
 /** Everything a report is rendered from. Issued reports render from an immutable snapshot of this. */
 export interface ReportData {
@@ -42,6 +52,8 @@ export interface ReportData {
   readonly sales: readonly SaleComparable[];
   readonly saleAnalyses: readonly SaleAnalysis[];
   readonly rentals: readonly RentalComparable[];
+  /** Dated commentary records (as-at dates and sources for the market section). */
+  readonly commentary?: readonly MarketCommentary[];
   readonly calculations: readonly CalculationRecord[];
   readonly areaSchedules: readonly AreaSchedule[];
   readonly sketches: readonly {
@@ -87,7 +99,10 @@ export type RenderBlock =
     }
   | {
       readonly kind: 'image';
-      readonly ref: { readonly type: 'photo' | 'sketch' | 'map'; readonly id: string };
+      readonly ref: {
+        readonly type: 'photo' | 'sketch' | 'map' | 'signature';
+        readonly id: string;
+      };
       readonly caption: string;
     }
   | { readonly kind: 'page_break' };
@@ -119,6 +134,9 @@ export interface ReportModel {
     readonly watermark: string;
     readonly footer: string;
     readonly firmName: string;
+    /** Website, email, phone and ABN as one line under the firm name (when the template has them). */
+    readonly firmContact?: string;
+    readonly logoDataUrl?: string;
     readonly primaryColour: string;
     readonly templateId: string;
     readonly templateVersion: number;
@@ -130,6 +148,11 @@ export interface ReportModel {
   /** Must be empty before a final report can be issued. */
   readonly problems: readonly ComposeProblem[];
 }
+
+const registrationLabel = (jurisdiction: string): string =>
+  (VALUER_REGISTRATION_RULES as Readonly<Record<string, { label: string } | undefined>>)[
+    jurisdiction
+  ]?.label ?? `${jurisdiction} registration number`;
 
 const humanise = (v: string): string => {
   const s = v.replaceAll('_', ' ').toLowerCase();
@@ -314,13 +337,16 @@ export function composeReport(
           return [];
         if (c.status !== 'approved')
           problem('TPL-UNAPPROVED-CLAUSE', `clause ${c.clauseId}@${c.version} is ${c.status}`);
-        return [
-          {
+        // A clause may hold several paragraphs, separated by a blank line.
+        return c.text
+          .split(/\n\s*\n/)
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .map((t): RenderBlock => ({
             kind: 'paragraph',
-            text: resolvePlaceholders(c.text, data),
+            text: resolvePlaceholders(t, data),
             style: c.status === 'approved' ? 'normal' : 'placeholder',
-          },
-        ];
+          }));
       }
       case 'sales_table': {
         if (!data.sales.length)
@@ -397,6 +423,52 @@ export function composeReport(
               ]),
           },
         ];
+      }
+      case 'market_commentary': {
+        const out: RenderBlock[] = [];
+        const records = currentCommentary(data.commentary ?? []);
+        for (const level of COMMENTARY_LEVELS) {
+          const fieldId = COMMENTARY_FIELDS[level];
+          const req = requirementByField.get(fieldId);
+          if (!req) continue;
+          const targets =
+            level === 'local' ? (req.assetIds ?? data.assets.map((a) => a.id)) : [null];
+          for (const assetId of targets) {
+            const value =
+              assetId === null ? data.values.job[fieldId] : data.values.assets[assetId]?.[fieldId];
+            const address =
+              assetId === null ? undefined : data.values.assets[assetId]?.['location.address'];
+            const formatted =
+              typeof address === 'object' && address !== null
+                ? (address as { formatted?: unknown }).formatted
+                : address;
+            const locality =
+              level === 'local' && multiAsset
+                ? data.assets.find((a) => a.id === assetId)?.label
+                : typeof formatted === 'string'
+                  ? commentaryLocalities(formatted)[0]
+                  : undefined;
+            const heading = commentaryHeading(level, data.job.selection.jurisdiction, locality);
+            if (typeof value !== 'string' || !value.trim()) {
+              if (req.level !== 'required') continue;
+              out.push({ kind: 'heading', text: heading, level: 3 });
+              out.push({ kind: 'paragraph', text: '[Not provided]', style: 'placeholder' });
+              problem('TPL-MISSING-REQUIRED', `${heading} commentary is required`);
+              continue;
+            }
+            out.push({ kind: 'heading', text: heading, level: 3 });
+            for (const para of value.split(/\n\s*\n/)) {
+              const text = para.trim();
+              if (text) out.push({ kind: 'paragraph', text, style: 'normal' });
+            }
+            const record = records.find(
+              (c) => c.level === level && (c.assetId ?? null) === assetId,
+            );
+            if (record)
+              out.push({ kind: 'paragraph', text: commentaryNote(record), style: 'note' });
+          }
+        }
+        return out;
       }
       case 'calculation_trace': {
         const calcs = data.calculations.filter(
@@ -526,11 +598,14 @@ export function composeReport(
             rows: [
               ['Valuer', c.valuer.fullName],
               ['Credentials', c.valuer.credentials.join(', ')],
+              ...(c.valuer.apiMemberNumber
+                ? [['API member number', c.valuer.apiMemberNumber] as [string, string]]
+                : []),
               ...(c.valuer.registration
                 ? [
                     [
-                      'Registration',
-                      `${c.valuer.registration.jurisdiction} ${c.valuer.registration.number}`,
+                      registrationLabel(c.valuer.registration.jurisdiction),
+                      c.valuer.registration.number,
                     ] as [string, string],
                   ]
                 : []),
@@ -558,6 +633,15 @@ export function composeReport(
               ],
             ],
           },
+          ...(c.valuer.signatureSha256
+            ? [
+                {
+                  kind: 'image',
+                  ref: { type: 'signature', id: c.valuer.signatureSha256 },
+                  caption: `Signature of ${c.valuer.fullName}`,
+                } as RenderBlock,
+              ]
+            : []),
         ];
       }
       case 'audit_metadata':
@@ -597,6 +681,10 @@ export function composeReport(
         problem('TPL-MISSING-REQUIRED', `calculation ${v} referenced by ${fieldId} is missing`);
   }
 
+  const b = template.branding;
+  const firmContact = [b.website, b.email, b.phone, b.abn ? `ABN ${b.abn}` : undefined]
+    .filter(Boolean)
+    .join(' · ');
   const sel = data.job.selection;
   const watermark = final
     ? resolvePlaceholders(template.watermarks.final, data)
@@ -610,6 +698,8 @@ export function composeReport(
       watermark,
       footer: `${template.branding.footerText} · ${data.job.reference} · ${data.report.id} v${data.report.version}${data.snapshotHash ? ` · ${data.snapshotHash.slice(0, 12)}` : ''}`,
       firmName: template.branding.firmName,
+      ...(firmContact ? { firmContact } : {}),
+      ...(template.branding.logoDataUrl ? { logoDataUrl: template.branding.logoDataUrl } : {}),
       primaryColour: template.branding.primaryColour,
       templateId: template.templateId,
       templateVersion: template.version,

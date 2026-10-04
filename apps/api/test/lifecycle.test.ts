@@ -48,7 +48,7 @@ describe('job lifecycle (market value, residential, VIC)', () => {
     expect(res.body.ruleSet).toContain('approved');
     expect(res.body.template).toBe('au-generic v2 (approved)');
     expect(res.body.requirements.sections).toEqual(
-      expect.arrayContaining(['sales_evidence', 'areas', 'certification']),
+      expect.arrayContaining(['sales_evidence', 'improvements', 'certification']),
     );
     expect(res.body.requirements.missingRequired.length).toBeGreaterThan(10);
     jobId = res.body.id;
@@ -171,6 +171,8 @@ describe('job lifecycle (market value, residential, VIC)', () => {
       version: { id: string; sketchId: string };
       schedule: { totalIncludedM2: number; reportable: boolean };
     }>('inspector', 'POST', `/v1/jobs/${jobId}/assets/${assetId}/sketches`, {
+      // This job reports measured areas, so the schedule is linked and must be approved
+      useForReport: true,
       units: 'metres',
       basis: 'BUILDING_AREA',
       conventionId: 'res-under-main-roof',
@@ -321,8 +323,8 @@ describe('job lifecycle (market value, residential, VIC)', () => {
     expect(again.body).toMatchObject({ blockingCount: 0, unacknowledgedWarningCount: 0 });
   });
 
+  // The valuer's identity and signature come from their saved profile, not the request.
   const certification = {
-    valuer: { fullName: 'Val Valuer', credentials: ['AAPI', 'CPV'] },
     inspectionScopeStatement: 'Full internal and external inspection on 30 September 2026.',
     valuationDate: '2026-09-30',
     basisOfValue: 'Market value',
@@ -348,13 +350,18 @@ describe('job lifecycle (market value, residential, VIC)', () => {
     expect(noMfa.body.error.code).toBe('MFA_REQUIRED');
     const other = await t.call('valuer2', 'POST', `/v1/jobs/${jobId}/certification`, certification);
     expect(other.status).toBe(403);
-    const cert = await t.call<{ snapshotHash: string }>(
-      'valuer',
-      'POST',
-      `/v1/jobs/${jobId}/certification`,
-      certification,
-    );
+    const cert = await t.call<{
+      snapshotHash: string;
+      valuer: { fullName: string; apiMemberNumber?: string; registration?: unknown };
+    }>('valuer', 'POST', `/v1/jobs/${jobId}/certification`, certification);
     expect(cert.status).toBe(200);
+    expect(cert.body.valuer).toMatchObject({
+      fullName: 'Val Valuer',
+      apiMemberNumber: '00000-DEMO',
+      signatureSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+    });
+    // VIC needs no state registration, so none is printed even though the valuer holds QLD and WA.
+    expect(cert.body.valuer.registration).toBeUndefined();
     const submit = await t.call<{ status: string; snapshotHash: string }>(
       'valuer',
       'POST',

@@ -73,7 +73,7 @@ export const DEFAULT_QA_CHECKLIST: readonly Pick<QaChecklistItem, 'id' | 'label'
     id: 'QA-09',
     label: 'Assumptions, special assumptions and limitations are appropriate and disclosed',
   },
-  { id: 'QA-10', label: 'Areas are measured on the stated basis and approved' },
+  { id: 'QA-10', label: 'Areas are stated on a clear basis and consistent with the inspection' },
   { id: 'QA-11', label: 'Photographs are appropriate and privacy-redacted' },
   { id: 'QA-12', label: 'Certification is complete and consistent with the report' },
   { id: 'QA-13', label: 'Independence and conflicts are addressed' },

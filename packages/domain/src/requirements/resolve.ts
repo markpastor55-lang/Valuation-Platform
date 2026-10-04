@@ -9,6 +9,7 @@ import type {
 } from '../config/rule-set.js';
 import type { SectionId } from '../config/sections.js';
 import { sortSections } from '../config/sections.js';
+import { retrospectiveStatus } from './retrospective.js';
 
 /** Captured values used to evaluate conditional rules and completeness. */
 export interface FieldValues {
@@ -40,6 +41,8 @@ export interface ResolvedRequirements {
   readonly ruleSetId: string;
   readonly ruleSetVersion: string;
   readonly selection: JobSelection;
+  /** Derived from the dates (see `retrospectiveStatus`); retrospective rules apply when true. */
+  readonly retrospective: boolean;
   readonly fields: readonly FieldRequirement[];
   readonly sections: readonly SectionId[];
   readonly warnings: readonly (RuleWarning & { ruleId: string })[];
@@ -53,8 +56,9 @@ function matchesList<T>(list: readonly T[] | undefined, value: T): boolean {
   return list === undefined || list.includes(value);
 }
 
-function matchesSelection(when: RuleCondition, s: JobSelection): boolean {
+function matchesSelection(when: RuleCondition, s: JobSelection, retrospective: boolean): boolean {
   return (
+    (when.retrospective === undefined || when.retrospective === retrospective) &&
     matchesList(when.purposes, s.purpose) &&
     matchesList(when.propertyTypes, s.propertyType) &&
     matchesList(when.scopes, s.scope) &&
@@ -136,6 +140,7 @@ export function resolveRequirements(
   const reviews = new Set<SpecialistReviewer>();
   const formulas = new Set<string>();
   const applied: string[] = [];
+  const { retrospective } = retrospectiveStatus(values);
 
   const apply = (rule: RequirementRule, scope: readonly string[] | null): void => {
     applied.push(rule.id);
@@ -149,7 +154,7 @@ export function resolveRequirements(
   };
 
   for (const rule of ruleSet.rules) {
-    if (!matchesSelection(rule.when, selection)) continue;
+    if (!matchesSelection(rule.when, selection, retrospective)) continue;
     if (!rule.when.fields || rule.when.fields.length === 0) {
       apply(rule, null);
       continue;
@@ -160,7 +165,7 @@ export function resolveRequirements(
 
   const selectionIssues: SelectionIssue[] = [];
   for (const rule of ruleSet.selectionRules) {
-    if (!matchesSelection(rule.when, selection)) continue;
+    if (!matchesSelection(rule.when, selection, retrospective)) continue;
     if (rule.when.fields && evaluateFieldConditions(rule.when.fields, values, assetIds) === false)
       continue;
     selectionIssues.push({
@@ -184,6 +189,7 @@ export function resolveRequirements(
     ruleSetId: ruleSet.id,
     ruleSetVersion: ruleSet.version,
     selection,
+    retrospective,
     fields: fieldList,
     sections: sortSections(sections),
     warnings,

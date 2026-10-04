@@ -1,16 +1,24 @@
 import type { ComponentChildren, JSX } from 'preact';
 import {
   FIELD_BY_ID,
+  INPUT_TABS,
   REPORT_SECTIONS,
   formatAud,
+  type InputTabId,
   type JobStatus,
   type SectionId,
 } from '@vp/domain';
-import type { PreviewAction, PreviewRole } from './model.js';
+import type { PreviewAction } from './model.js';
 
 export type Dispatch = (action: PreviewAction, success?: string) => boolean;
-export type Tab = 'job' | 'fields' | 'sketch' | 'checks' | 'report';
+export type Tab = InputTabId | 'qa' | 'report';
 export type Navigate = (tab: Tab, focus?: string) => void;
+
+export const TAB_TITLES: Readonly<Record<Tab, string>> = {
+  ...(Object.fromEntries(INPUT_TABS.map((t) => [t.id, t.title])) as Record<InputTabId, string>),
+  qa: 'QA',
+  report: 'Report',
+};
 
 export const humanise = (v: string): string => {
   const s = v.replaceAll('_', ' ').toLowerCase();
@@ -25,13 +33,12 @@ export const sectionLabel = (id: SectionId): string =>
 export const aud = (n: number): string => formatAud(n);
 
 export const m2 = (n: number): string =>
-  `${n.toLocaleString('en-AU', { minimumFractionDigits: 1, maximumFractionDigits: 2 })} m²`;
+  `${n.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} m²`;
 
 export const shortHash = (h: string): string => `${h.slice(0, 10)}…`;
 
 export function when(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString('en-AU', {
+  return new Date(iso).toLocaleString('en-AU', {
     day: 'numeric',
     month: 'short',
     hour: 'numeric',
@@ -41,10 +48,12 @@ export function when(iso: string): string {
 
 /** Rewrites raw field ids in engine messages into the labels people see on screen. */
 export function readable(message: string): string {
-  const text = message.replace(/\b([a-z]+\.[A-Za-z]+)\b/g, (m: string) => {
-    const def = FIELD_BY_ID.get(m);
-    return def ? def.label : m;
-  });
+  const text = message
+    .replace(/\s*\((REQ|SEL)-[A-Z0-9-]+\)/g, '')
+    .replace(/\b([a-z]+\.[A-Za-z]+)\b/g, (m: string) => {
+      const def = FIELD_BY_ID.get(m);
+      return def ? def.label : m;
+    });
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -68,15 +77,16 @@ export function Segmented<T extends string>(props: {
   options: readonly (readonly [T, string])[];
   onChange: (v: T) => void;
   label: string;
-  full?: boolean;
+  disabled?: boolean;
 }): JSX.Element {
   return (
-    <div class={`seg ${props.full ? 'full' : ''}`} role="group" aria-label={props.label}>
+    <div class="seg" role="group" aria-label={props.label}>
       {props.options.map(([v, text]) => (
         <button
           key={v}
           type="button"
           aria-pressed={props.value === v}
+          disabled={props.disabled}
           onClick={() => {
             props.onChange(v);
           }}
@@ -88,32 +98,18 @@ export function Segmented<T extends string>(props: {
   );
 }
 
-const ICON_PATHS: Readonly<Record<Tab, string>> = {
-  job: 'M4 7h16v12H4zM9 7V5h6v2M4 12h16',
-  fields: 'M5 4h14v16H5zM8 9h8M8 13h8M8 17h5',
-  sketch: 'M4 20V4h9v6h7v10zM13 4v6M4 13h9',
-  checks: 'M5 12l4 4 10-10M5 20h14',
-  report: 'M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h7',
-};
-
-export function Icon(props: { name: Tab }): JSX.Element {
+export function NextButton(props: { to: Tab; navigate: Navigate }): JSX.Element {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.7"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-    >
-      <path d={ICON_PATHS[props.name]} />
-    </svg>
+    <div class="next-row">
+      <button
+        type="button"
+        class="btn primary"
+        onClick={() => {
+          props.navigate(props.to);
+        }}
+      >
+        Next: {TAB_TITLES[props.to]} →
+      </button>
+    </div>
   );
 }
-
-export const ROLE_OPTIONS: readonly (readonly [PreviewRole, string])[] = [
-  ['valuer', 'Valuer'],
-  ['inspector', 'Inspector'],
-  ['reviewer', 'QA reviewer'],
-];

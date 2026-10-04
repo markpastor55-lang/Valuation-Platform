@@ -8,6 +8,7 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { FIRM_TEMPLATE } from '@vp/domain';
 import {
   ASSET_ID,
   approveConfiguration,
@@ -29,7 +30,8 @@ function must<T>(res: { status: number; body: T }, step: string): T {
 }
 
 try {
-  await approveConfiguration(t);
+  // Fair Market Valuations' template, with its draft standard clauses approved for the demo
+  await approveConfiguration(t, { template: FIRM_TEMPLATE });
   must(
     await t.call('allocator', 'POST', `/v1/admin/clients/${DEMO.clientId}/recipients`, {
       email: 'credit@lender.example',
@@ -63,6 +65,14 @@ try {
       values: marketValueFieldValues(assetId),
     }),
     'capture fields',
+  );
+  // National, state and local commentary from the firm's library, for this property type and suburb
+  must(
+    await t.call('valuer', 'POST', `/v1/jobs/${jobId}/commentary/apply`, {
+      assetId,
+      levels: ['national', 'state', 'local'],
+    }),
+    'use market commentary',
   );
   must(
     await t.call('valuer', 'POST', `/v1/jobs/${jobId}/engagement/accept`, {}),
@@ -182,8 +192,8 @@ try {
     );
   }
   must(
+    // Name, designations, API member number and signature come from the valuer's saved profile.
     await t.call('valuer', 'POST', `/v1/jobs/${jobId}/certification`, {
-      valuer: { fullName: 'Val Valuer', credentials: ['AAPI', 'CPV'] },
       inspectionScopeStatement: 'Full internal and external inspection on 30 September 2026.',
       valuationDate: '2026-09-30',
       basisOfValue: 'Market value',

@@ -1,5 +1,5 @@
 import type { SectionId } from './sections.js';
-import type { SpecialistReviewer } from './codes.js';
+import type { PropertyType, SpecialistReviewer } from './codes.js';
 
 export type FieldType =
   | 'text'
@@ -38,6 +38,11 @@ export interface FieldDef {
   readonly help?: string;
   /** Specialist review needed before the field's wording or options are relied upon. */
   readonly review?: SpecialistReviewer;
+  /**
+   * `system`: filled by the platform (assignments, job dates, geocoding), shown read-only and never
+   * typed by the valuer.
+   */
+  readonly entry?: 'system';
 }
 
 type Extra = Omit<FieldDef, 'id' | 'label' | 'section' | 'level' | 'type'>;
@@ -121,6 +126,30 @@ export const COURT_OPTIONS = [
   'OTHER',
 ] as const;
 
+/** How a unit or lot is held. Strata, community and stratum titles bring the owners corporation questions. */
+export const TITLE_TYPE_OPTIONS = [
+  'strata_title',
+  'community_title',
+  'stratum_title',
+  'company_title',
+  'torrens_title',
+] as const;
+
+export const UNIT_TYPE_OPTIONS = [
+  'apartment',
+  'townhouse',
+  'villa_unit',
+  'duplex',
+  'studio_apartment',
+] as const;
+
+export const UNIT_AREA_SOURCE_OPTIONS = [
+  'strata_plan',
+  'measured_on_site',
+  'plans_supplied',
+  'marketing_material',
+] as const;
+
 export const MEASUREMENT_BASIS_OPTIONS = [
   'GFA',
   'GBA',
@@ -137,7 +166,9 @@ export const MEASUREMENT_BASIS_OPTIONS = [
  */
 export const FIELD_CATALOGUE: readonly FieldDef[] = [
   // ── Instruction and engagement ────────────────────────────────────────────────
-  job('instruction.clientEntity', 'Client / entity', 'instructions', 'text'),
+  job('instruction.clientEntity', 'Client', 'instructions', 'text', {
+    help: 'Who instructs and pays, e.g. the lender, the owner or their tax agent',
+  }),
   job('instruction.instructingParty', 'Instructing party', 'instructions', 'text', {
     personal: true,
   }),
@@ -162,9 +193,11 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
     'instructions',
     'longtext',
   ),
-  job('instruction.responsibleValuer', 'Responsible valuer', 'instructions', 'user_ref'),
-  job('instruction.reviewer', 'QA reviewer', 'instructions', 'user_ref'),
-  job('instruction.dueDate', 'Due date', 'instructions', 'date'),
+  job('instruction.responsibleValuer', 'Responsible valuer', 'instructions', 'user_ref', {
+    entry: 'system',
+  }),
+  job('instruction.reviewer', 'QA reviewer', 'instructions', 'user_ref', { entry: 'system' }),
+  job('instruction.dueDate', 'Due date', 'instructions', 'date', { entry: 'system' }),
   job('instruction.engagementDocuments', 'Engagement documents', 'instructions', 'document_refs'),
   job('instruction.reliance', 'Reliance and third-party limitation', 'assumptions', 'longtext', {
     review: 'LEGAL',
@@ -174,13 +207,13 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
   }),
 
   // ── Key dates ────────────────────────────────────────────────────────────────
-  job('dates.instruction', 'Date of instruction', 'basis', 'date'),
+  job('dates.instruction', 'Date of instruction', 'basis', 'date', { entry: 'system' }),
   job('dates.inspection', 'Date of inspection', 'basis', 'date'),
   job('dates.valuation', 'Date of valuation', 'basis', 'date'),
   job('dates.researchCutOff', 'Research cut-off date', 'basis', 'date'),
   job('dates.review', 'Date of review', 'basis', 'date'),
   job('dates.issue', 'Date of issue', 'basis', 'date'),
-  job('dates.retrospectiveDataCutOff', 'Retrospective data cut-off', 'tax_context', 'date', {
+  job('dates.retrospectiveDataCutOff', 'Information cut-off date', 'retrospective', 'date', {
     help: 'Only information known or reasonably foreseeable at this date may be relied on.',
   }),
 
@@ -225,10 +258,12 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
   ),
 
   // ── Location and title ───────────────────────────────────────────────────────
-  asset('location.address', 'Address (validated)', 'location', 'address'),
-  asset('location.titleReference', 'Title reference (lot/plan, volume/folio)', 'location', 'text'),
-  asset('location.lga', 'Local government area', 'location', 'text'),
-  asset('location.coordinates', 'Latitude / longitude', 'location', 'coordinates'),
+  asset('location.address', 'Address', 'location', 'address'),
+  asset('location.titleReference', 'Title reference (lot/plan)', 'location', 'text'),
+  asset('location.lga', 'Council', 'location', 'text'),
+  asset('location.coordinates', 'Latitude / longitude', 'location', 'coordinates', {
+    entry: 'system',
+  }),
   asset('location.geocodeConfidence', 'Geocode confidence', 'location', 'ratio'),
 
   // ── Planning ─────────────────────────────────────────────────────────────────
@@ -265,12 +300,34 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
   asset('land.developmentPotential', 'Development potential', 'land', 'longtext'),
 
   // ── Improvements ─────────────────────────────────────────────────────────────
+  // ── Units, apartments and townhouses ─────────────────────────────────────────
+  asset('unit.unitType', 'Unit type', 'improvements', 'enum', { options: UNIT_TYPE_OPTIONS }),
+  asset('unit.level', 'Floor level', 'improvements', 'integer', { help: '0 for ground level' }),
+  asset('unit.internalArea', 'Internal living area', 'improvements', 'area', {
+    unit: 'm2',
+    help: 'Usually from the strata plan; excludes balconies, courtyards and car spaces',
+  }),
+  asset('unit.internalAreaSource', 'Internal area source', 'improvements', 'enum', {
+    options: UNIT_AREA_SOURCE_OPTIONS,
+  }),
+  asset('unit.outdoorArea', 'Balcony or courtyard area', 'improvements', 'area', { unit: 'm2' }),
+  asset('unit.storage', 'Storage', 'improvements', 'text', { help: 'e.g. storage cage on title' }),
+  asset('unit.unitsInComplex', 'Units in the building or complex', 'improvements', 'integer'),
+  asset('unit.buildingAmenities', 'Building amenities', 'improvements', 'text', {
+    help: 'e.g. lift, pool, gym, concierge',
+  }),
+  asset('unit.aspect', 'Aspect and outlook', 'improvements', 'text'),
+
   asset('improvements.dwellingType', 'Dwelling type', 'improvements', 'text'),
   asset('improvements.use', 'Use', 'improvements', 'text'),
   asset('improvements.yearBuilt', 'Year built (approx.)', 'improvements', 'integer'),
   asset('improvements.effectiveAge', 'Effective age (years)', 'improvements', 'integer'),
   asset('improvements.construction', 'Construction', 'improvements', 'longtext'),
   asset('improvements.accommodation', 'Accommodation', 'improvements', 'longtext'),
+  asset('improvements.buildingArea', 'Building area', 'improvements', 'area', {
+    unit: 'm2',
+    help: 'Total building area. The sketch total can be used; the sketch itself is not reported.',
+  }),
   asset('improvements.areaSchedule', 'Improvement area schedule', 'areas', 'area_schedule_ref'),
   asset('improvements.measurementBasis', 'Measurement basis', 'areas', 'enum', {
     options: MEASUREMENT_BASIS_OPTIONS,
@@ -289,6 +346,50 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
     'integer',
   ),
   asset('improvements.parking', 'Car parking', 'improvements', 'text'),
+
+  // ── Strata, community, stratum and company title ─────────────────────────────
+  asset('strata.titleType', 'Title type', 'strata', 'enum', {
+    options: TITLE_TYPE_OPTIONS,
+    help: 'Strata, community and stratum titles add the owners corporation questions',
+  }),
+  asset('strata.planNumber', 'Strata or community plan number', 'strata', 'text', {
+    help: 'e.g. SP 12345 (NSW), PS 123456 (VIC), BUP or CTS (QLD)',
+  }),
+  asset('strata.lotNumber', 'Lot number', 'strata', 'text'),
+  asset('strata.unitEntitlement', 'Unit (lot) entitlement', 'strata', 'text', {
+    help: 'e.g. 25 of 1,000',
+  }),
+  asset('strata.ownersCorporation', 'Owners corporation or body corporate', 'strata', 'text'),
+  asset('strata.adminLevy', 'Administrative fund levy', 'strata', 'money', {
+    unit: 'AUD per year',
+  }),
+  asset('strata.capitalWorksLevy', 'Capital works or sinking fund levy', 'strata', 'money', {
+    unit: 'AUD per year',
+  }),
+  asset('strata.specialLevies', 'Special levies', 'strata', 'longtext'),
+  asset(
+    'strata.buildingDefects',
+    'Known building defects (incl. combustible cladding)',
+    'strata',
+    'longtext',
+    {
+      review: 'API_STANDARDS',
+      help: 'From the owners corporation certificate, minutes or your inspection; write "None known" if none',
+    },
+  ),
+  asset('strata.byLaws', 'By-laws affecting value', 'strata', 'longtext', {
+    help: 'e.g. pets, short-stay letting, renovations',
+  }),
+  asset(
+    'strata.ownersCorporationCertificate',
+    'Owners corporation certificate or strata report',
+    'strata',
+    'document_refs',
+  ),
+  asset('strata.companyTitleDetails', 'Company title details', 'strata', 'longtext', {
+    review: 'LEGAL',
+    help: 'Company, shares held and any restrictions on sale, leasing or lending',
+  }),
   asset('improvements.outdoorImprovements', 'Outdoor improvements', 'improvements', 'longtext'),
   asset('improvements.lettableArea', 'Lettable area (NLA/GLA)', 'areas', 'area', { unit: 'm2' }),
   asset('improvements.floorAreas', 'Floor-by-floor areas', 'areas', 'area_schedule_ref'),
@@ -346,9 +447,15 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
   asset('retail.centreMetrics', 'Centre metrics (where authorised)', 'retail_metrics', 'longtext'),
 
   // ── Market commentary and evidence ───────────────────────────────────────────
-  job('market.national', 'National market commentary', 'market', 'longtext'),
-  job('market.state', 'State market commentary', 'market', 'longtext'),
-  asset('market.local', 'Local market commentary', 'market', 'longtext'),
+  job('market.national', 'National market commentary', 'market', 'longtext', {
+    help: 'Start from the firm’s commentary for this property type, then tailor it',
+  }),
+  job('market.state', 'State market commentary', 'market', 'longtext', {
+    help: 'The state or territory the property is in, for this property type',
+  }),
+  asset('market.local', 'Local market commentary', 'market', 'longtext', {
+    help: 'The suburb and council area: sales activity, supply and demand',
+  }),
   asset('evidence.sales', 'Sales evidence', 'sales_evidence', 'evidence_list'),
   asset('evidence.rentals', 'Rental / leasing evidence', 'rental_evidence', 'evidence_list'),
 
@@ -399,28 +506,25 @@ export const FIELD_CATALOGUE: readonly FieldDef[] = [
     },
   ),
 
-  // ── Capital gains tax / retrospective ────────────────────────────────────────
-  job('cgt.taxEvent', 'Tax provision / CGT event nominated by adviser', 'tax_context', 'text', {
+  // ── Capital gains tax ─────────────────────────────────────────────────────────
+  // The client instructs; there is no separate tax-agent field.
+  job('cgt.taxEvent', 'Reason for the valuation (CGT event)', 'tax_context', 'text', {
     review: 'TAX',
+    help: 'As advised by the client, e.g. property becoming income-producing',
   }),
-  job('cgt.instructingAdviser', 'Instructing tax adviser', 'tax_context', 'text', {
-    personal: true,
+
+  // ── Retrospective valuations (any purpose; derived from the dates) ────────────
+  job(
+    'retro.evidenceBasis',
+    'How the property and market at the valuation date were established',
+    'retrospective',
+    'longtext',
+    { review: 'API_STANDARDS' },
+  ),
+  job('retro.chronology', 'Key events since the valuation date', 'retrospective', 'list', {
+    help: 'e.g. renovations, subdivision, change of use',
   }),
-  job(
-    'cgt.informationCutOffStatement',
-    'Information cut-off statement',
-    'tax_context',
-    'longtext',
-    { review: 'TAX' },
-  ),
-  job('cgt.chronology', 'Chronology of relevant events', 'tax_context', 'list'),
-  job('cgt.sourceArchive', 'Archived sources relied on', 'tax_context', 'document_refs'),
-  job(
-    'cgt.contemporaneousEvidence',
-    'Contemporaneous evidence and market context statement',
-    'tax_context',
-    'longtext',
-  ),
+  job('retro.sourceArchive', 'Archived sources relied on', 'retrospective', 'document_refs'),
 
   // ── Family law ───────────────────────────────────────────────────────────────
   job('fl.court', 'Court', 'expert_compliance', 'enum', {
@@ -597,6 +701,10 @@ export const VALUER_JUDGEMENT_SECTIONS: ReadonlySet<SectionId> = new Set<Section
   'risk',
   'specialised',
 ]);
+
+/** The area field a sketch total can fill: internal area for units, building area otherwise. */
+export const sketchAreaFieldFor = (propertyType: PropertyType): string =>
+  propertyType === 'RESIDENTIAL_UNIT' ? 'unit.internalArea' : 'improvements.buildingArea';
 
 export const isValuerJudgementField = (def: FieldDef): boolean =>
   VALUER_JUDGEMENT_SECTIONS.has(def.section);

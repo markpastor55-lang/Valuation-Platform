@@ -12,6 +12,29 @@ export interface MarketCommentary {
   readonly authoredBy: string;
   readonly authoredAt: Instant;
   readonly sources: readonly Provenance[];
+  /** Library paragraphs the text was taken from, when it came from the firm's library. */
+  readonly library?: readonly { readonly moduleId: string; readonly version: number }[];
+}
+
+/**
+ * The commentary the job relies on: the latest record for each level (and asset, for local
+ * commentary). Earlier records stay on file but are superseded.
+ */
+export function currentCommentary(records: readonly MarketCommentary[]): MarketCommentary[] {
+  const latest = new Map<string, MarketCommentary>();
+  for (const c of records) {
+    const key = `${c.level}|${c.assetId ?? ''}`;
+    const prev = latest.get(key);
+    // Latest record wins; records made in the same instant prefer the later as-at date.
+    if (
+      !prev ||
+      c.authoredAt > prev.authoredAt ||
+      (c.authoredAt === prev.authoredAt &&
+        (c.asAtDate > prev.asAtDate || (c.asAtDate === prev.asAtDate && c.id > prev.id)))
+    )
+      latest.set(key, c);
+  }
+  return [...latest.values()];
 }
 
 export interface RiskFlag {

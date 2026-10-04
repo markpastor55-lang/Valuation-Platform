@@ -31,7 +31,7 @@ export const JURISDICTION_TIME_ZONES: Readonly<Record<Jurisdiction, string>> = {
 
 export const REPORT_PURPOSES = [
   'MARKET_VALUE',
-  'CGT_RETROSPECTIVE',
+  'CGT',
   'FAMILY_LAW',
   'FINANCIAL_REPORTING',
   'RENTAL_ASSESSMENT',
@@ -41,7 +41,7 @@ export type ReportPurpose = (typeof REPORT_PURPOSES)[number];
 
 export const REPORT_PURPOSE_LABELS: Readonly<Record<ReportPurpose, string>> = {
   MARKET_VALUE: 'Market value',
-  CGT_RETROSPECTIVE: 'Capital gains tax / retrospective',
+  CGT: 'Capital gains tax (CGT)',
   FAMILY_LAW: 'Family law',
   FINANCIAL_REPORTING: 'Financial reporting (fair value)',
   RENTAL_ASSESSMENT: 'Rental assessment',
@@ -51,6 +51,7 @@ export const REPORT_PURPOSE_LABELS: Readonly<Record<ReportPurpose, string>> = {
 export const PROPERTY_TYPES = [
   'VACANT_LAND',
   'RESIDENTIAL',
+  'RESIDENTIAL_UNIT',
   'COMMERCIAL_OFFICE',
   'COMMERCIAL_RETAIL',
   'INDUSTRIAL',
@@ -60,7 +61,8 @@ export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
 export const PROPERTY_TYPE_LABELS: Readonly<Record<PropertyType, string>> = {
   VACANT_LAND: 'Vacant land',
-  RESIDENTIAL: 'Residential',
+  RESIDENTIAL: 'Residential house',
+  RESIDENTIAL_UNIT: 'Unit, apartment or townhouse (incl. strata)',
   COMMERCIAL_OFFICE: 'Commercial — office',
   COMMERCIAL_RETAIL: 'Commercial — retail',
   INDUSTRIAL: 'Industrial',

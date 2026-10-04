@@ -9,6 +9,7 @@ import {
   resolveRequirements,
   runCalculation,
   runValidation,
+  isRetrospective,
   validationCatalogue,
   type FieldValues,
   type ValidationContext,
@@ -56,7 +57,7 @@ describe('completeness', () => {
   it('blocks on missing mandatory fields and warns on recommended ones', () => {
     const ctx = withValues((v) => {
       delete (v.assets['a1'] as Record<string, unknown>)['valuation.highestAndBestUse'];
-      delete (v.job as Record<string, unknown>)['instruction.feeBasis'];
+      delete (v.assets['a1'] as Record<string, unknown>)['location.lga'];
     });
     const r = runValidation(ctx);
     expect(r.findings).toContainEqual(
@@ -68,7 +69,7 @@ describe('completeness', () => {
     expect(r.findings).toContainEqual(
       expect.objectContaining({
         code: 'VAL-REQ-002',
-        path: 'job/field:instruction.feeBasis',
+        path: 'asset:a1/field:location.lga',
         severity: 'warning',
       }),
     );
@@ -129,8 +130,8 @@ describe('date logic', () => {
     expect(c).toContain('VAL-DATE-003');
   });
 
-  describe('retrospective (CGT)', () => {
-    const cgt = { ...selection, purpose: 'CGT_RETROSPECTIVE' as const };
+  describe('retrospective (derived from the dates)', () => {
+    const cgt = { ...selection, purpose: 'CGT' as const };
     const cgtCtx = (
       mutate: (v: FieldValues) => void = () => undefined,
       over: Partial<ValidationContext> = {},
@@ -139,12 +140,9 @@ describe('date logic', () => {
       Object.assign(values.job as Record<string, unknown>, {
         'dates.valuation': '2019-06-30',
         'dates.retrospectiveDataCutOff': '2019-06-30',
-        'cgt.taxEvent': 'Event nominated by adviser',
-        'cgt.instructingAdviser': 'Adviser',
-        'cgt.informationCutOffStatement': 'Information known at 30 June 2019 only',
-        'cgt.chronology': ['2001 acquired'],
-        'cgt.sourceArchive': ['doc-archive'],
-        'cgt.contemporaneousEvidence': 'Contemporaneous sales 2018–2019',
+        'cgt.taxEvent': 'Property became income-producing',
+        'retro.chronology': ['2021 kitchen renovation'],
+        'retro.evidenceBasis': 'Contemporaneous sales 2018–2019 and the owner’s 2019 photographs',
       });
       mutate(values);
       const sales = [
@@ -164,6 +162,29 @@ describe('date logic', () => {
 
     it('passes with contemporaneous evidence', () => {
       expect(codes(cgtCtx()).filter((c) => c.startsWith('VAL-DATE'))).toEqual([]);
+    });
+
+    it('treats a CGT valuation dated at inspection as current', () => {
+      const ctx = cgtCtx((v) => {
+        (v.job as Record<string, unknown>)['dates.valuation'] = '2026-09-30';
+        delete (v.job as Record<string, unknown>)['dates.retrospectiveDataCutOff'];
+      });
+      expect(isRetrospective(ctx)).toBe(false);
+      expect(ctx.requirements.retrospective).toBe(false);
+    });
+
+    it('treats a family law valuation dated before inspection as retrospective', () => {
+      const fl = { ...selection, purpose: 'FAMILY_LAW' as const };
+      const values = marketValueValues();
+      (values.job as Record<string, unknown>)['dates.valuation'] = '2019-06-30';
+      const ctx = cleanContext({
+        selection: fl,
+        values,
+        requirements: resolveRequirements(fl, AU_CORE_RULE_SET, values),
+      });
+      expect(isRetrospective(ctx)).toBe(true);
+      // the 2026 sales post-date the valuation date and have no check-only reason
+      expect(codes(ctx)).toContain('VAL-DATE-005');
     });
 
     it('blocks commentary dated after the cut-off', () => {

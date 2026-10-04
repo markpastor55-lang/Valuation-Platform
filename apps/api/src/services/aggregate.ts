@@ -16,6 +16,7 @@ import {
   type DataSource,
   type FieldValues,
   type JobSelection,
+  type CommentaryModule,
   type MarketCommentary,
   type MeasurementApproval,
   type PhotoRecord,
@@ -74,6 +75,8 @@ export interface JobAggregate {
   readonly calculations: readonly CalculationRecord[];
   readonly saleAnalyses: readonly SaleAnalysis[];
   readonly commentary: readonly MarketCommentary[];
+  /** The organisation's approved commentary library (to tell whether newer local commentary exists). */
+  readonly commentaryLibrary: readonly CommentaryModule[];
   readonly riskFlags: readonly RiskFlag[];
   readonly photos: readonly PhotoRecord[];
   readonly aiSuggestions: readonly AiSuggestion[];
@@ -116,6 +119,7 @@ export async function loadAggregate(db: Db, jobId: string, job?: JobRow): Promis
     qa,
     sources,
     users,
+    library,
   ] = await Promise.all([
     db.query<{ content: RuleSetVersion; status: RuleSetVersion['status'] }>(
       'SELECT content, status FROM rule_set_version WHERE id = $1',
@@ -193,6 +197,10 @@ export async function loadAggregate(db: Db, jobId: string, job?: JobRow): Promis
       'SELECT id, display_name FROM app_user WHERE org_id = $1',
       [j.org_id],
     ),
+    db.query<{ data: CommentaryModule }>(
+      "SELECT data FROM commentary_module WHERE org_id = $1 AND status = 'approved' ORDER BY module_id, version",
+      [j.org_id],
+    ),
   ]);
   const ruleSetRow = ruleSet.rows[0];
   if (!ruleSetRow) throw new Error(`rule set ${j.rule_set_version_id} missing`);
@@ -254,6 +262,7 @@ export async function loadAggregate(db: Db, jobId: string, job?: JobRow): Promis
     calculations,
     saleAnalyses,
     commentary: data<MarketCommentary>(commentary.rows),
+    commentaryLibrary: library.rows.map((r) => r.data),
     riskFlags: data<RiskFlag>(risks.rows),
     photos: data<PhotoRecord>(photos.rows),
     aiSuggestions: data<AiSuggestion>(ai.rows),
@@ -380,6 +389,7 @@ export function validationContextOf(
     rentals: agg.rentals,
     calculations: agg.calculations,
     commentary: agg.commentary,
+    commentaryLibrary: agg.commentaryLibrary,
     areaSchedules: agg.schedules,
     measurementApprovals: agg.approvals,
     photos: agg.photos,
@@ -526,6 +536,8 @@ export function reportDataOf(
     sales: agg.sales,
     saleAnalyses: agg.saleAnalyses,
     rentals: agg.rentals,
+    // dated commentary records: the report prints each level's as-at date and sources
+    commentary: agg.commentary,
     calculations: agg.calculations,
     areaSchedules: agg.schedules,
     sketches: agg.reportingSketches.map((s) => ({

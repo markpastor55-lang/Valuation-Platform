@@ -1,5 +1,5 @@
 import type { Instant, LocalDate } from '../core/dates.js';
-import { isAfter, monthsBetween } from '../core/dates.js';
+import { isAfter, isLocalDate, monthsBetween } from '../core/dates.js';
 import type { Provenance } from '../core/provenance.js';
 import type { PropertyType } from '../config/codes.js';
 import type { CalculationInput, CalculationRecord } from '../calc/calculation.js';
@@ -184,3 +184,78 @@ export const saleAgeMonths = (
 
 /** True when the evidence post-dates the cut-off (hindsight evidence for retrospective work). */
 export const isPostCutOff = (date: LocalDate, cutOff: LocalDate): boolean => isAfter(date, cutOff);
+
+/** A sale the valuer types in from their own enquiries (agent, title search, own records). */
+export interface SaleEntry {
+  readonly address: string;
+  readonly contractDate: LocalDate;
+  readonly price: number;
+  readonly landAreaM2?: number;
+  /** Building area, or internal living area for a unit. */
+  readonly buildingAreaM2?: number;
+  /** Where the valuer got the sale, e.g. "Selling agent", "Title search". */
+  readonly source: string;
+  readonly comparability: Comparability;
+}
+
+/** Problems that stop a typed-in sale being added (`today` is the calendar date in the jurisdiction). */
+export function saleEntryProblems(e: SaleEntry, today: LocalDate): string[] {
+  const problems: string[] = [];
+  if (e.address.trim().length < 5) problems.push('Enter the sale address');
+  if (!isLocalDate(e.contractDate)) problems.push('Enter the contract date');
+  else if (isAfter(e.contractDate, today)) problems.push('The contract date is in the future');
+  if (!(e.price > 0)) problems.push('Enter the sale price');
+  if (e.landAreaM2 !== undefined && !(e.landAreaM2 > 0)) problems.push('Land area must be above 0');
+  if (e.buildingAreaM2 !== undefined && !(e.buildingAreaM2 > 0))
+    problems.push('Building area must be above 0');
+  if (e.source.trim().length < 3) problems.push('Say where the sale came from');
+  return problems;
+}
+
+/**
+ * A typed-in sale as evidence. It is recorded as the valuer's own entry, naming its source, and
+ * stays unchecked until the valuer confirms it. Units are analysed on internal area; other
+ * property types on land area when it is known.
+ */
+export function enteredSale(
+  e: SaleEntry,
+  ctx: {
+    readonly id: string;
+    readonly assetId: string;
+    readonly propertyType: PropertyType;
+    readonly by: string;
+    readonly at: Instant;
+  },
+): SaleComparable {
+  const unit = ctx.propertyType === 'RESIDENTIAL_UNIT';
+  const analysisBasis =
+    unit && e.buildingAreaM2 !== undefined
+      ? 'building_rate'
+      : e.landAreaM2 !== undefined
+        ? 'land_rate'
+        : e.buildingAreaM2 !== undefined
+          ? 'building_rate'
+          : 'price';
+  return {
+    id: ctx.id,
+    assetId: ctx.assetId,
+    address: e.address.trim(),
+    contractDate: e.contractDate,
+    price: e.price,
+    interest: 'fee_simple_vacant_possession',
+    propertyType: ctx.propertyType,
+    ...(e.landAreaM2 !== undefined ? { landAreaM2: e.landAreaM2 } : {}),
+    ...(e.buildingAreaM2 !== undefined ? { buildingAreaM2: e.buildingAreaM2 } : {}),
+    provenance: {
+      origin: 'manual_entry',
+      sourceRef: e.source.trim(),
+      effectiveDate: e.contractDate,
+      verification: 'unverified',
+      capturedBy: ctx.by,
+      capturedAt: ctx.at,
+    },
+    comparability: e.comparability,
+    adjustments: [],
+    analysisBasis,
+  };
+}

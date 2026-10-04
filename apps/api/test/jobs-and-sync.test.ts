@@ -16,7 +16,7 @@ describe('selection changes, portfolios and offline sync', () => {
       newJobBody({
         selection: {
           jurisdiction: 'VIC',
-          purpose: 'CGT_RETROSPECTIVE',
+          purpose: 'CGT',
           propertyType: 'RESIDENTIAL',
           scope: 'FULL',
           mode: 'SINGLE',
@@ -66,7 +66,7 @@ describe('selection changes, portfolios and offline sync', () => {
       {
         selection: {
           jurisdiction: 'VIC',
-          purpose: 'CGT_RETROSPECTIVE',
+          purpose: 'CGT',
           propertyType: 'RESIDENTIAL',
           scope: 'FULL',
           mode: 'SINGLE',
@@ -281,6 +281,68 @@ describe('selection changes, portfolios and offline sync', () => {
       ],
     });
     expect(r.body.results[0]!.outcome).toBe('rejected');
+  });
+
+  it('fills system fields itself and keeps sketches as notes unless linked to the report', async () => {
+    const job = await t.call<{
+      id: string;
+      assets: { id: string }[];
+      requirements: { missingRequired: { fieldId: string }[] };
+    }>('allocator', 'POST', '/v1/jobs', newJobBody({ instructedOn: undefined }));
+    expect(job.status).toBe(200);
+    const missing = job.body.requirements.missingRequired.map((m) => m.fieldId);
+    expect(missing).not.toContain('dates.instruction');
+    expect(missing).not.toContain('instruction.responsibleValuer');
+    const typed = await t.call<{ error: { code: string } }>(
+      'valuer',
+      'PUT',
+      `/v1/jobs/${job.body.id}/fields`,
+      {
+        values: [{ fieldId: 'dates.instruction', assetId: null, value: '2026-01-01' }],
+      },
+    );
+    expect(typed.status).toBe(422);
+    expect(typed.body.error.code).toBe('SYSTEM_FIELD');
+
+    // Two overlapping shapes: not reportable, but only checked once linked to the report
+    const assetId = job.body.assets[0]!.id;
+    const sketch = (useForReport?: boolean) =>
+      t.call('valuer', 'POST', `/v1/jobs/${job.body.id}/assets/${assetId}/sketches`, {
+        units: 'metres',
+        basis: 'BUILDING_AREA',
+        conventionId: 'res-under-main-roof',
+        changeSummary: 'Site notes',
+        ...(useForReport === undefined ? {} : { useForReport }),
+        boundaries: ['A', 'B'].map((label) => ({
+          level: 'Ground',
+          label,
+          role: 'component',
+          componentType: 'living',
+          points: [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+            { x: 10, y: 10 },
+            { x: 0, y: 10 },
+          ],
+          closed: true,
+          dimensionSource: 'measured',
+        })),
+      });
+    const areaCodes = async () =>
+      (
+        await t.call<{ findings: { code: string }[] }>(
+          'valuer',
+          'POST',
+          `/v1/jobs/${job.body.id}/validate`,
+          { stage: 'submit' },
+        )
+      ).body.findings
+        .map((f) => f.code)
+        .filter((c) => c.startsWith('VAL-AREA'));
+    expect((await sketch()).status).toBe(200);
+    expect(await areaCodes()).toEqual([]);
+    expect((await sketch(true)).status).toBe(200);
+    expect(await areaCodes()).toContain('VAL-AREA-001');
   });
 });
 

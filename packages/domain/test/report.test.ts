@@ -185,7 +185,7 @@ describe('template governance', () => {
 });
 
 describe('report composition', () => {
-  it('renders required sections in order with field tables, evidence, areas and certification', () => {
+  it('renders required sections in order with field tables, evidence and certification', () => {
     const model = composeReport(reportData('final'), approvedTemplate());
     expect(model.problems).toEqual([]);
     const ids = model.sections.map((s) => s.sectionId);
@@ -193,7 +193,7 @@ describe('report composition', () => {
     expect(ids).toEqual(
       expect.arrayContaining([
         'sales_evidence',
-        'areas',
+        'improvements',
         'reconciliation',
         'certification',
         'photos',
@@ -206,13 +206,37 @@ describe('report composition', () => {
       kind: 'key_value',
       rows: expect.arrayContaining([['Date of valuation', '30 September 2026']]),
     });
-    const areas = model.sections.find((s) => s.sectionId === 'areas')!;
-    const table = areas.blocks.find((b) => b.kind === 'table');
-    expect(table).toMatchObject({
-      rows: expect.arrayContaining([expect.arrayContaining(['Total improvement area', '216 m²'])]),
+    // Residential reports state the building area; the sketch is working notes and is not reported
+    expect(ids).not.toContain('areas');
+    const improvements = model.sections.find((s) => s.sectionId === 'improvements')!;
+    expect(improvements.blocks[0]).toMatchObject({
+      rows: expect.arrayContaining([['Building area', '216 m²']]),
     });
+    expect(
+      model.sections
+        .flatMap((s) => s.blocks)
+        .some((b) => b.kind === 'image' && b.ref.type === 'sketch'),
+    ).toBe(false);
     expect(model.meta.watermark).toBe('FINAL v1 — issued 2 October 2026');
     expect(model.meta.footer).toContain('aaaaaaaaaaaa');
+  });
+
+  it('reports measured areas but never the sketch drawing where the rules need a schedule', () => {
+    const ins = { ...selection, purpose: 'INSURANCE_REPLACEMENT' as const };
+    const data = reportData('draft');
+    const model = composeReport(
+      {
+        ...data,
+        job: { ...data.job, selection: ins },
+        requirements: resolveRequirements(ins, AU_CORE_RULE_SET, data.values),
+      },
+      approvedTemplate(),
+    );
+    const areas = model.sections.find((s) => s.sectionId === 'areas')!;
+    expect(areas.blocks.find((b) => b.kind === 'table')).toMatchObject({
+      rows: expect.arrayContaining([expect.arrayContaining(['Total improvement area', '216 m²'])]),
+    });
+    expect(areas.blocks.some((b) => b.kind === 'image')).toBe(false);
   });
 
   it('never renders data retained from a previous selection', () => {

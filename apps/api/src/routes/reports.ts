@@ -14,6 +14,7 @@ import type { Db } from '../db/db.js';
 import { denied, HttpError, notFound } from '../http/errors.js';
 import type { Router } from '../http/route.js';
 import { authorizeJob, authorizeOrThrow, getJob, jobResource } from '../repo/jobs.js';
+import { certificationSignatures } from '../repo/profiles.js';
 import {
   jurisdictionToday,
   loadAggregate,
@@ -51,7 +52,10 @@ export interface IssueSnapshot {
   }[];
 }
 
-export function renderAssetsOf(agg: JobAggregate): RenderAssets {
+export function renderAssetsOf(
+  agg: JobAggregate,
+  signatures: NonNullable<RenderAssets['signatures']> = {},
+): RenderAssets {
   const sketches: Record<string, RenderAssets['sketches'][string]> = {};
   for (const v of agg.reportingSketches) {
     const schedule = agg.schedules.find((s) => s.sketchVersionId === v.id);
@@ -72,6 +76,7 @@ export function renderAssetsOf(agg: JobAggregate): RenderAssets {
     mapPoints: agg.assets
       .filter((a) => a.latitude !== null && a.longitude !== null)
       .map((a) => ({ label: a.label, lat: a.latitude as number, lng: a.longitude as number })),
+    signatures,
   };
 }
 
@@ -164,7 +169,7 @@ export function registerReportRoutes(r: Router): void {
       );
       const pdf = await renderReportPdf(
         composeReport(data, agg.template),
-        renderAssetsOf(agg),
+        renderAssetsOf(agg, await certificationSignatures(ctx.db, agg.certification)),
         ctx.clock.now(),
       );
       await ctx.db.transaction((tx) =>
@@ -265,7 +270,10 @@ export function registerReportRoutes(r: Router): void {
           throw new HttpError(409, 'REPORT_NOT_ISSUABLE', 'the report cannot be issued', {
             problems: model.problems,
           });
-        const renderAssets = roundTrip(renderAssetsOf(agg));
+        // The signature image travels in the snapshot, so reproduction never depends on profiles.
+        const renderAssets = roundTrip(
+          renderAssetsOf(agg, await certificationSignatures(tx, agg.certification)),
+        );
         const pdf = await renderReportPdf(model, renderAssets, issuedAt);
         const pdfSha = sha256Hex(pdf);
 

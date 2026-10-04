@@ -6,15 +6,21 @@ import {
   DEFAULT_CONVENTIONS,
   centroid,
   edgeLengths,
-  isEditable,
   polygonArea,
+  sketchAreaFieldFor,
   snapToGrid,
   type Boundary,
   type Point,
-  type SketchVersion,
 } from '@vp/domain';
-import { PEOPLE, can, makeBoundary, type Derived, type PreviewState } from '../model.js';
-import { Pill, Segmented, humanise, m2, shortHash, when, type Dispatch } from '../ui.js';
+import {
+  ASSET_ID,
+  fieldValue,
+  isLocked,
+  makeBoundary,
+  type Derived,
+  type PreviewState,
+} from '../model.js';
+import { Segmented, humanise, m2, type Dispatch } from '../ui.js';
 
 const GRID = 0.5;
 const CLOSE_TOLERANCE = 0.75;
@@ -97,52 +103,43 @@ function GridLines(props: { f: Frame }): JSX.Element {
 
 const pointsAttr = (pts: readonly Point[]): string => pts.map((p) => `${p.x},${p.y}`).join(' ');
 
-/** Read-only plan drawing (used in the report preview too). */
-export function PlanDrawing(props: {
-  sketch: SketchVersion;
-  included: ReadonlySet<string>;
-  title: string;
-}): JSX.Element {
-  const f = frameFor(props.sketch.boundaries);
-  return (
-    <svg class="plan" viewBox={`${f.x} ${f.y} ${f.w} ${f.h}`} role="img" aria-label={props.title}>
-      <GridLines f={f} />
-      {props.sketch.boundaries.map((b) => {
-        const c = centroid(b.points);
-        return (
-          <g key={b.id}>
-            <polygon
-              class={`shape ${props.included.has(b.id) ? '' : 'excluded'}`}
-              points={pointsAttr(b.points)}
-              style={{ fill: fillFor(b) }}
-            />
-            <text class="shape-label" x={c.x} y={c.y - 0.1}>
-              {b.label}
-            </text>
-            <text class="shape-area" x={c.x} y={c.y + 0.75}>
-              {polygonArea(b.points).toFixed(1)} m²
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
 type Drag =
   | { kind: 'vertex'; id: string; index: number }
   | { kind: 'move'; id: string; start: Point; original: readonly Point[] };
 
-export function SketchScreen(props: {
+function TypeOptions(): JSX.Element {
+  return (
+    <>
+      <optgroup label="Area">
+        {COMPONENT_TYPES.map((t) => (
+          <option key={t} value={t}>
+            {humanise(t)}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label="Cut-out">
+        {DEDUCTION_TYPES.map((t) => (
+          <option key={t} value={t}>
+            {humanise(t)}
+          </option>
+        ))}
+      </optgroup>
+    </>
+  );
+}
+
+/**
+ * The valuer's on-site sketch. It is working notes only and never appears in the report; its
+ * total can be copied into the Building area field.
+ */
+export function SketchNotes(props: {
   state: PreviewState;
   d: Derived;
   dispatch: Dispatch;
 }): JSX.Element {
   const { state, d, dispatch } = props;
   const sketch = state.sketch;
-  const me = PEOPLE[state.role];
-  const canEdit = can(state.role, 'sketch.edit') && isEditable(state.status);
-  const canApprove = can(state.role, 'measurement.approve') && isEditable(state.status);
+  const canEdit = !isLocked(state);
   const [mode, setMode] = useState<'select' | 'draw'>('select');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<readonly Boundary[] | null>(null);
@@ -159,14 +156,18 @@ export function SketchScreen(props: {
     (draft || drawPts.length > 0) && frameRef.current ? frameRef.current : frameFor(boundaries);
   frameRef.current = frame;
   const selected = boundaries.find((b) => b.id === selectedId);
-  const included = new Set(
+  const counted = new Set(
     d.schedule.rows.filter((r) => r.includedInTotal).map((r) => r.boundaryId),
   );
+  const total = d.schedule.totalIncludedM2;
+  const areaField = sketchAreaFieldFor(state.selection.propertyType);
+  const areaName = areaField === 'unit.internalArea' ? 'internal area' : 'building area';
+  const buildingArea = fieldValue(state, areaField, ASSET_ID);
+  const areaNeeded = d.requirements.fields.some((f) => f.fieldId === areaField);
 
   const toWorld = (e: PointerEvent): Point => {
-    const svg = svgRef.current;
-    const ctm = svg?.getScreenCTM();
-    if (!svg || !ctm) return { x: 0, y: 0 };
+    const ctm = svgRef.current?.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
     return { x: p.x, y: p.y };
   };
@@ -177,7 +178,7 @@ export function SketchScreen(props: {
 
   const finishShape = (pts: readonly Point[]) => {
     if (pts.length < 3) return;
-    const isDeduction = (DEDUCTION_TYPES as readonly string[]).includes(newType);
+    const isCutOut = (DEDUCTION_TYPES as readonly string[]).includes(newType);
     const n = boundaries.filter((b) => b.componentType === newType).length + 1;
     const id = `b-${Date.now().toString(36)}`;
     const b = makeBoundary(
@@ -185,11 +186,10 @@ export function SketchScreen(props: {
       `${humanise(newType)}${n > 1 ? ` ${n}` : ''}`,
       newType as Boundary['componentType'],
       pts,
-      me.userId,
       new Date().toISOString(),
-      isDeduction ? 'deduction' : 'component',
+      isCutOut ? 'deduction' : 'component',
     );
-    commit([...boundaries, b], `${b.label} added: ${polygonArea(pts).toFixed(1)} m²`);
+    commit([...boundaries, b], `${b.label} added: ${m2(polygonArea(pts))}`);
     setDrawPts([]);
     setHover(null);
     setMode('select');
@@ -263,285 +263,231 @@ export function SketchScreen(props: {
     if (changed) commit(draft);
   };
 
-  const updateSelected = (patch: Partial<Boundary>, message?: string) => {
+  const updateSelected = (patch: Partial<Boundary>) => {
     if (!selected) return;
-    commit(
-      sketch.boundaries.map((b) => (b.id === selected.id ? { ...b, ...patch } : b)),
-      message,
-    );
+    commit(sketch.boundaries.map((b) => (b.id === selected.id ? { ...b, ...patch } : b)));
   };
 
-  const approvedEarlier = state.approvals.find((a) => a.sketchVersionId !== sketch.id);
-  const blocking = d.schedule.issues.filter((i) => i.severity === 'blocking');
   const scale = Math.max(1, Math.round(frame.w / 6));
+  const overlaps = d.schedule.issues.filter((i) => i.code === 'GEO-OVERLAP');
 
   return (
-    <>
-      <section class="card">
-        <div class="card-head">
-          <h2>Sketch and areas</h2>
-          <span class="row">
-            <span class="mono muted">v{sketch.version}</span>
-            <Pill tone={sketch.status === 'working' ? 'plain' : 'ok'}>{sketch.status}</Pill>
-          </span>
+    <section class="card" aria-labelledby="sketch">
+      <div class="card-head">
+        <h3 id="sketch">Sketch</h3>
+        <span class="muted small">Your notes. Not included in the report.</span>
+      </div>
+      <div class="toolbar">
+        <Segmented
+          label="Tool"
+          value={mode}
+          disabled={!canEdit}
+          options={[
+            ['select', 'Move'],
+            ['draw', 'Draw'],
+          ]}
+          onChange={(m) => {
+            setMode(m);
+            setDrawPts([]);
+            setHover(null);
+          }}
+        />
+        {mode === 'draw' && (
+          <select
+            id="new-shape-type"
+            aria-label="What you are drawing"
+            value={newType}
+            onChange={(e) => {
+              setNewType(e.currentTarget.value);
+            }}
+          >
+            <TypeOptions />
+          </select>
+        )}
+      </div>
+      <div class="canvas-wrap">
+        <svg
+          ref={svgRef}
+          class="plan"
+          viewBox={`${frame.x} ${frame.y} ${frame.w} ${frame.h}`}
+          role="img"
+          aria-label="Floor plan sketch in metres"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          onPointerLeave={() => {
+            setHover(null);
+          }}
+        >
+          <rect x={frame.x} y={frame.y} width={frame.w} height={frame.h} fill="transparent" />
+          <GridLines f={frame} />
+          {boundaries.map((b) => {
+            const c = centroid(b.points);
+            return (
+              <g key={b.id}>
+                <polygon
+                  data-shape={b.id}
+                  class={`shape ${b.id === selectedId ? 'selected' : ''} ${counted.has(b.id) || b.role === 'deduction' ? '' : 'excluded'}`}
+                  points={pointsAttr(b.points)}
+                  style={{ fill: fillFor(b) }}
+                />
+                <text class="shape-label" x={c.x} y={c.y - 0.1}>
+                  {b.label}
+                </text>
+                <text class="shape-area" x={c.x} y={c.y + 0.75}>
+                  {polygonArea(b.points).toFixed(1)} m²
+                </text>
+              </g>
+            );
+          })}
+          {selected && (
+            <g>
+              {edgeLengths(selected.points).map((len, i) => {
+                const a = selected.points[i];
+                const b = selected.points[(i + 1) % selected.points.length];
+                if (!a || !b || len < 0.01) return null;
+                return (
+                  <text key={`e${i}`} class="edge-label" x={(a.x + b.x) / 2} y={(a.y + b.y) / 2}>
+                    {len.toFixed(1)} m
+                  </text>
+                );
+              })}
+              {canEdit &&
+                selected.points.map((p, i) => (
+                  <g key={`h${i}`}>
+                    <circle class="handle" cx={p.x} cy={p.y} r={0.38} />
+                    <circle class="handle-hit" data-vertex={String(i)} cx={p.x} cy={p.y} r={1.1} />
+                  </g>
+                ))}
+            </g>
+          )}
+          {mode === 'draw' && drawPts.length > 0 && (
+            <g>
+              <polyline
+                class="draft-line"
+                points={pointsAttr(hover ? [...drawPts, hover] : drawPts)}
+              />
+              {drawPts.map((p, i) => (
+                <circle key={i} class="draft-point" cx={p.x} cy={p.y} r={i === 0 ? 0.42 : 0.25} />
+              ))}
+            </g>
+          )}
+          {mode === 'draw' && hover && (
+            <circle class="draft-point" cx={hover.x} cy={hover.y} r={0.18} />
+          )}
+        </svg>
+        <div class="canvas-overlay" aria-hidden="true">
+          <svg
+            viewBox="-12 -12 24 24"
+            style={{ transform: `rotate(${sketch.northBearingDeg ?? 0}deg)` }}
+          >
+            <path d="M0 -10 L5 8 L0 4 L-5 8 Z" fill="currentColor" />
+          </svg>
+          N
         </div>
-        <div class="toolbar">
-          <Segmented
-            label="Tool"
-            value={mode}
-            options={[
-              ['select', 'Select & move'],
-              ['draw', 'Draw shape'],
-            ]}
-            onChange={(m) => {
-              setMode(m);
+        <div class="scale-bar" aria-hidden="true" style={{ width: `${(scale / frame.w) * 100}%` }}>
+          <span />
+          {scale} m
+        </div>
+      </div>
+      <p class="canvas-hint" aria-live="polite">
+        {mode === 'draw'
+          ? drawPts.length === 0
+            ? 'Tap each corner. Points snap to a 0.5 m grid.'
+            : drawPts.length < 3
+              ? 'Keep tapping corners.'
+              : 'Tap the first point to close the shape.'
+          : selected
+            ? canEdit
+              ? 'Drag a corner, or drag the shape to move it.'
+              : selected.label
+            : 'Tap a shape to see its measurements.'}
+      </p>
+      {mode === 'draw' && drawPts.length > 0 && (
+        <div class="row">
+          <button
+            type="button"
+            class="btn small"
+            disabled={drawPts.length < 3}
+            onClick={() => {
+              finishShape(drawPts);
+            }}
+          >
+            Close shape
+          </button>
+          <button
+            type="button"
+            class="btn small"
+            onClick={() => {
+              setDrawPts(drawPts.slice(0, -1));
+            }}
+          >
+            Undo point
+          </button>
+          <button
+            type="button"
+            class="link"
+            onClick={() => {
               setDrawPts([]);
-              setHover(null);
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+      {selected && mode === 'select' && canEdit && (
+        <div class="toolbar">
+          <input
+            key={`${selected.id}:${selected.label}`}
+            id="shape-label"
+            type="text"
+            aria-label="Name"
+            defaultValue={selected.label}
+            onChange={(e) => {
+              const label = e.currentTarget.value.trim();
+              if (label) updateSelected({ label });
             }}
           />
-          {mode === 'draw' && (
-            <select
-              id="new-shape-type"
-              aria-label="Type of new shape"
-              value={newType}
-              onChange={(e) => {
-                setNewType(e.currentTarget.value);
-              }}
-            >
-              <optgroup label="Component">
-                {COMPONENT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {humanise(t)}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Deduction">
-                {DEDUCTION_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {humanise(t)}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          )}
-        </div>
-        {!canEdit && (
-          <p class="muted" style={{ fontSize: '0.86rem' }}>
-            {isEditable(state.status)
-              ? `${me.roleLabel}s view sketches; valuers and inspectors draw them.`
-              : 'The sketch is locked while the job is in review or issued.'}
-          </p>
-        )}
-        <div class="canvas-wrap">
-          <svg
-            ref={svgRef}
-            class="plan"
-            viewBox={`${frame.x} ${frame.y} ${frame.w} ${frame.h}`}
-            role="img"
-            aria-label="Floor plan sketch in metres"
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            onPointerLeave={() => {
-              setHover(null);
+          <select
+            id="shape-type"
+            aria-label="Type"
+            value={selected.componentType}
+            onChange={(e) => {
+              const t = e.currentTarget.value;
+              updateSelected({
+                componentType: t as Boundary['componentType'],
+                role: (DEDUCTION_TYPES as readonly string[]).includes(t)
+                  ? 'deduction'
+                  : 'component',
+              });
             }}
           >
-            <rect x={frame.x} y={frame.y} width={frame.w} height={frame.h} fill="transparent" />
-            <GridLines f={frame} />
-            {boundaries.map((b) => {
-              const c = centroid(b.points);
-              return (
-                <g key={b.id}>
-                  <polygon
-                    data-shape={b.id}
-                    class={`shape ${b.id === selectedId ? 'selected' : ''} ${included.has(b.id) || b.role === 'deduction' ? '' : 'excluded'}`}
-                    points={pointsAttr(b.points)}
-                    style={{ fill: fillFor(b) }}
-                  />
-                  <text class="shape-label" x={c.x} y={c.y - 0.1}>
-                    {b.label}
-                  </text>
-                  <text class="shape-area" x={c.x} y={c.y + 0.75}>
-                    {polygonArea(b.points).toFixed(1)} m²
-                  </text>
-                </g>
+            <TypeOptions />
+          </select>
+          <button
+            type="button"
+            class="btn small"
+            onClick={() => {
+              commit(
+                sketch.boundaries.filter((b) => b.id !== selected.id),
+                `${selected.label} removed`,
               );
-            })}
-            {selected && (
-              <g>
-                {edgeLengths(selected.points).map((len, i) => {
-                  const a = selected.points[i];
-                  const b = selected.points[(i + 1) % selected.points.length];
-                  if (!a || !b || len < 0.01) return null;
-                  return (
-                    <text key={`e${i}`} class="edge-label" x={(a.x + b.x) / 2} y={(a.y + b.y) / 2}>
-                      {len.toFixed(1)} m
-                    </text>
-                  );
-                })}
-                {canEdit &&
-                  selected.points.map((p, i) => (
-                    <g key={`h${i}`}>
-                      <circle class="handle" cx={p.x} cy={p.y} r={0.38} />
-                      <circle
-                        class="handle-hit"
-                        data-vertex={String(i)}
-                        cx={p.x}
-                        cy={p.y}
-                        r={1.1}
-                      />
-                    </g>
-                  ))}
-              </g>
-            )}
-            {mode === 'draw' && drawPts.length > 0 && (
-              <g>
-                <polyline
-                  class="draft-line"
-                  points={pointsAttr(hover ? [...drawPts, hover] : drawPts)}
-                />
-                {drawPts.map((p, i) => (
-                  <circle key={i} class="draft-point" cx={p.x} cy={p.y} r={i === 0 ? 0.42 : 0.25} />
-                ))}
-              </g>
-            )}
-            {mode === 'draw' && hover && (
-              <circle class="draft-point" cx={hover.x} cy={hover.y} r={0.18} />
-            )}
-          </svg>
-          <div class="canvas-overlay" aria-hidden="true">
-            <svg
-              viewBox="-12 -12 24 24"
-              style={{ transform: `rotate(${sketch.northBearingDeg ?? 0}deg)` }}
-            >
-              <path d="M0 -10 L5 8 L0 4 L-5 8 Z" fill="currentColor" />
-            </svg>
-            N
-          </div>
-          <div
-            class="scale-bar"
-            aria-hidden="true"
-            style={{ width: `${(scale / frame.w) * 100}%` }}
+              setSelectedId(null);
+            }}
           >
-            <span />
-            {scale} m
-          </div>
+            Delete
+          </button>
         </div>
-        <p class="canvas-hint" aria-live="polite">
-          {mode === 'draw'
-            ? drawPts.length === 0
-              ? 'Tap corners on the 0.5 m grid'
-              : drawPts.length < 3
-                ? `${drawPts.length} point${drawPts.length === 1 ? '' : 's'}: keep going`
-                : 'Tap the first point to close'
-            : selected
-              ? canEdit
-                ? 'Drag corners or the shape'
-                : selected.label
-              : 'Tap a shape to see its dimensions'}
-        </p>
-        {mode === 'draw' && drawPts.length > 0 && (
-          <div class="row">
-            <button
-              type="button"
-              class="btn small"
-              disabled={drawPts.length < 3}
-              onClick={() => {
-                finishShape(drawPts);
-              }}
-            >
-              Close shape
-            </button>
-            <button
-              type="button"
-              class="btn small"
-              onClick={() => {
-                setDrawPts(drawPts.slice(0, -1));
-              }}
-            >
-              Undo point
-            </button>
-            <button
-              type="button"
-              class="link"
-              onClick={() => {
-                setDrawPts([]);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-        {selected && mode === 'select' && (
-          <div class="toolbar">
-            <input
-              key={`${selected.id}:${selected.label}`}
-              id="shape-label"
-              type="text"
-              aria-label="Shape name"
-              defaultValue={selected.label}
-              disabled={!canEdit}
-              onChange={(e) => {
-                const label = e.currentTarget.value.trim();
-                if (label) updateSelected({ label });
-              }}
-            />
-            <select
-              id="shape-type"
-              aria-label="Shape type"
-              value={selected.componentType}
-              disabled={!canEdit}
-              onChange={(e) => {
-                const t = e.currentTarget.value;
-                updateSelected({
-                  componentType: t as Boundary['componentType'],
-                  role: (DEDUCTION_TYPES as readonly string[]).includes(t)
-                    ? 'deduction'
-                    : 'component',
-                });
-              }}
-            >
-              <optgroup label="Component">
-                {COMPONENT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {humanise(t)}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Deduction">
-                {DEDUCTION_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {humanise(t)}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-            <button
-              type="button"
-              class="btn small"
-              disabled={!canEdit}
-              onClick={() => {
-                commit(
-                  sketch.boundaries.filter((b) => b.id !== selected.id),
-                  `${selected.label} removed`,
-                );
-                setSelectedId(null);
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        )}
-      </section>
-
-      <section class="card" aria-labelledby="schedule">
-        <div class="card-head">
-          <h2 id="schedule">Area schedule</h2>
-          <span class="muted">computed by the domain engine</span>
-        </div>
-        <label class="field-label">
-          Measurement convention
+      )}
+      {overlaps.length > 0 && (
+        <p class="notice warning">Two shapes overlap. The total counts the overlap once.</p>
+      )}
+      <div class="area-total">
+        <div class="stack">
+          <label class="field-label" for="convention">
+            Counting
+          </label>
           <select
             id="convention"
             value={sketch.conventionId}
@@ -550,128 +496,41 @@ export function SketchScreen(props: {
               dispatch({ type: 'setConvention', conventionId: e.currentTarget.value })
             }
           >
-            {DEFAULT_CONVENTIONS.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
+            {DEFAULT_CONVENTIONS.filter((c) => c.basis === 'BUILDING_AREA' || c.id === 'gfa').map(
+              (c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ),
+            )}
           </select>
-        </label>
-        <p class="muted" style={{ fontSize: '0.84rem' }}>
-          {d.convention.reference}. Counts:{' '}
-          {d.convention.includes.map(humanise).join(', ').toLowerCase()}.{' '}
-          <span class="mono">[REVIEW: {d.convention.review}]</span>
-        </p>
-        <div class="row" style={{ alignItems: 'baseline' }}>
-          <span class="big-number">{m2(d.schedule.totalIncludedM2)}</span>
-          <span class="muted">{humanise(d.schedule.basis).toLowerCase()} total</span>
+          <span class="muted small">
+            Counts {d.convention.includes.map(humanise).join(', ').toLowerCase()}. Dashed shapes are
+            not counted.
+          </span>
         </div>
-        <div class="table-scroll">
-          <table class="data">
-            <thead>
-              <tr>
-                <th>Component</th>
-                <th class="r">Area</th>
-                <th class="r">Counted</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.schedule.rows.map((r) => {
-                const b = sketch.boundaries.find((x) => x.id === r.boundaryId);
-                return (
-                  <tr key={r.boundaryId} class={r.includedInTotal ? '' : 'dim'}>
-                    <td>
-                      <button
-                        type="button"
-                        class="link"
-                        onClick={() => {
-                          setMode('select');
-                          setSelectedId(r.boundaryId);
-                        }}
-                      >
-                        <span class="swatch" style={{ background: b ? fillFor(b) : undefined }} />
-                        {r.label}
-                      </button>
-                      <span class="component-type">{humanise(r.componentType)}</span>
-                    </td>
-                    <td class="r">{m2(r.netAreaM2)}</td>
-                    <td class="r">{r.includedInTotal ? 'Yes' : 'No'}</td>
-                  </tr>
-                );
-              })}
-              <tr class="total">
-                <td>Total counted</td>
-                <td class="r">{m2(d.schedule.totalIncludedM2)}</td>
-                <td />
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        {(sketch.suppliedAreas ?? []).map((s) => (
-          <p key={s.label} class="muted" style={{ fontSize: '0.86rem' }}>
-            Compared with {s.label}: {m2(s.areaM2)} ({s.source}).
-          </p>
-        ))}
-        {d.schedule.issues.length > 0 ? (
-          <ul class="plain">
-            {d.schedule.issues.map((i) => (
-              <li key={i.code + i.message} class={`notice ${i.severity}`}>
-                <span class="mono">{i.code}</span> {i.message}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div class="notice ok">
-            No geometry issues: shapes are closed, valid and do not overlap.
-          </div>
-        )}
-      </section>
-
-      <section class="card" aria-labelledby="approval">
-        <h2 id="approval">Valuer approval</h2>
-        {d.approval ? (
-          <div class="notice ok">
-            Version {sketch.version} approved by {PEOPLE.valuer.displayName} on{' '}
-            {when(d.approval.approvedAt)}: {m2(d.approval.totalIncludedM2)}. The approval is bound
-            to schedule <span class="mono">{shortHash(d.approval.scheduleHash)}</span>, so any later
-            edit needs a new version and a new approval.
-          </div>
-        ) : (
-          <>
-            {approvedEarlier && (
-              <div class="notice warning">
-                Version {sketch.version - 1} was approved at {m2(approvedEarlier.totalIncludedM2)}.
-                You edited it, so this is version {sketch.version} and it needs approval.
-              </div>
-            )}
-            <p class="muted">
-              Reports can only use areas the responsible valuer has approved. Approval needs a
-              schedule with no blocking issues.
-            </p>
-            {blocking.length > 0 && (
-              <div class="notice blocking">Fix the blocking geometry issues above first.</div>
-            )}
-            <div class="row">
+        <div class="total-box">
+          <span class="big-number">{m2(total)}</span>
+          {areaNeeded &&
+            (buildingArea === total ? (
+              <span class="done small">Used as the {areaName}</span>
+            ) : (
               <button
                 type="button"
-                class="btn primary"
-                disabled={!canApprove || blocking.length > 0 || !d.schedule.reportable}
+                class="btn primary small"
+                disabled={!canEdit || total <= 0}
                 onClick={() =>
                   dispatch(
-                    { type: 'approveAreas' },
-                    `Areas approved: ${m2(d.schedule.totalIncludedM2)}`,
+                    { type: 'useSketchArea' },
+                    `${areaName === 'internal area' ? 'Internal area' : 'Building area'} set to ${m2(total)}`,
                   )
                 }
               >
-                Approve {m2(d.schedule.totalIncludedM2)}
+                Use as {areaName}
               </button>
-              {!can(state.role, 'measurement.approve') && (
-                <span class="muted">Only the valuer approves areas.</span>
-              )}
-            </div>
-          </>
-        )}
-      </section>
-    </>
+            ))}
+        </div>
+      </div>
+    </section>
   );
 }

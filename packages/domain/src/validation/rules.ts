@@ -8,6 +8,17 @@ import type { FairValueLevel } from '../calc/fair-value.js';
 import { deriveFairValueLevel } from '../calc/fair-value.js';
 import { detectOutliers, withinRange } from '../calc/statistics.js';
 import { findMissingFields } from '../requirements/resolve.js';
+import { retrospectiveStatus } from '../requirements/retrospective.js';
+import { VALUER_REGISTRATION_RULES } from '../workflow/valuer-profile.js';
+import { currentCommentary } from '../evidence/market.js';
+import {
+  COMMENTARY_FIELDS,
+  COMMENTARY_LEVELS,
+  commentaryLocalities,
+  commentaryTopics,
+  selectCommentary,
+} from '../evidence/commentary-library.js';
+import type { AreaSchedule } from '../geometry/area-schedule.js';
 import { photoReportEligibility } from '../photo/privacy.js';
 import type { RawFinding, ValidationContext, ValidationRule } from './types.js';
 
@@ -21,12 +32,24 @@ const today = (ctx: ValidationContext): LocalDate => localDateOf(ctx.now, ctx.ti
 const required = (ctx: ValidationContext, fieldId: string): boolean =>
   ctx.requirements.fields.some((f) => f.fieldId === fieldId && f.level === 'required');
 
-/** Retrospective work: CGT purpose, or a valuation date before the inspection/instruction date. */
-export function isRetrospective(ctx: ValidationContext): boolean {
-  if (ctx.selection.purpose === 'CGT_RETROSPECTIVE') return true;
-  const valuation = jobDate(ctx, 'dates.valuation');
-  const reference = jobDate(ctx, 'dates.inspection') ?? jobDate(ctx, 'dates.instruction');
-  return valuation !== undefined && reference !== undefined && isBefore(valuation, reference);
+/** Derived from the dates for any purpose (see `retrospectiveStatus`). */
+export const isRetrospective = (ctx: ValidationContext): boolean =>
+  retrospectiveStatus(ctx.values).retrospective;
+
+/**
+ * Area checks apply only where the report relies on a measured schedule: the rules require one, or
+ * the valuer linked the sketch to the report. A sketch kept as working notes is not checked.
+ */
+function reportedSchedules(ctx: ValidationContext): readonly AreaSchedule[] {
+  return ctx.areaSchedules.filter(
+    (s) =>
+      hasValue(ctx.values.assets[s.assetId]?.['improvements.areaSchedule']) ||
+      ctx.requirements.fields.some(
+        (f) =>
+          f.fieldId === 'improvements.areaSchedule' &&
+          (f.assetIds === null || f.assetIds.includes(s.assetId)),
+      ),
+  );
 }
 
 /** Information after this date may not be relied on for retrospective work. */
@@ -195,7 +218,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
       if (!isRetrospective(ctx)) return [];
       const cut = informationCutOff(ctx);
       if (!cut) return [];
-      return ctx.commentary
+      return currentCommentary(ctx.commentary)
         .filter((c) => isAfter(c.asAtDate, cut))
         .map((c) => ({
           path: `commentary:${c.id}`,
@@ -278,29 +301,6 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     },
   }),
   rule({
-    code: 'VAL-DATE-008',
-    title: 'Retrospective purpose with a current valuation date',
-    category: 'dates',
-    severity: 'warning',
-    stages: ALL,
-    acknowledgeable: true,
-    description:
-      'A CGT/retrospective job normally has a valuation date before the inspection date.',
-    evaluate: (ctx) => {
-      if (ctx.selection.purpose !== 'CGT_RETROSPECTIVE') return [];
-      const v = jobDate(ctx, 'dates.valuation');
-      const ref = jobDate(ctx, 'dates.inspection') ?? jobDate(ctx, 'dates.instruction');
-      return v && ref && !isBefore(v, ref)
-        ? [
-            {
-              path: 'job/field:dates.valuation',
-              message: 'valuation date is not before the inspection/instruction date',
-            },
-          ]
-        : [];
-    },
-  }),
-  rule({
     code: 'VAL-DATE-009',
     title: 'Inspection before instruction',
     category: 'dates',
@@ -368,6 +368,35 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
             ]
           : [];
       }),
+  }),
+  rule({
+    code: 'VAL-STALE-003',
+    title: 'Dated market commentary',
+    category: 'staleness',
+    severity: 'warning',
+    stages: ALL,
+    acknowledgeable: true,
+    description:
+      'National or state commentary (published monthly), or local commentary in a retrospective valuation, is dated more than the configured number of months before the valuation date. Local commentary in a current valuation is checked against the day the report is prepared (VAL-MKT-002).',
+    review: 'API_STANDARDS',
+    evaluate: (ctx) => {
+      const v = jobDate(ctx, 'dates.valuation');
+      if (!v) return [];
+      const retrospective = isRetrospective(ctx);
+      return currentCommentary(ctx.commentary).flatMap((c) => {
+        if (c.level === 'local' && !retrospective) return [];
+        const months = monthsBetween(c.asAtDate, v);
+        const limit = ctx.config.commentaryStaleMonths[c.level];
+        return months > limit
+          ? [
+              {
+                path: `commentary:${c.id}`,
+                message: `${c.level} commentary is as at ${c.asAtDate}, ${months} months before the valuation date (limit ${limit})`,
+              },
+            ]
+          : [];
+      });
+    },
   }),
   rule({
     code: 'VAL-PROV-001',
@@ -454,6 +483,99 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
   }),
 
   // ── Evidence and calculations ────────────────────────────────────────────
+  rule({
+    code: 'VAL-MKT-001',
+    title: 'Brief market commentary',
+    category: 'evidence',
+    severity: 'warning',
+    stages: ALL,
+    acknowledgeable: true,
+    description:
+      'National, state or local market commentary is shorter than the configured minimum; it should cover the topics for the property type and location.',
+    review: 'API_STANDARDS',
+    evaluate: (ctx) => {
+      const out: RawFinding[] = [];
+      for (const level of COMMENTARY_LEVELS) {
+        const fieldId = COMMENTARY_FIELDS[level];
+        const req = ctx.requirements.fields.find((f) => f.fieldId === fieldId);
+        if (!req) continue;
+        const targets = level === 'local' ? (req.assetIds ?? ctx.assetIds) : [null];
+        for (const assetId of targets) {
+          const v =
+            assetId === null ? ctx.values.job[fieldId] : ctx.values.assets[assetId]?.[fieldId];
+          // missing commentary is reported by the completeness rules
+          if (typeof v !== 'string' || !v.trim()) continue;
+          const n = v.trim().length;
+          if (n < ctx.config.commentaryMinChars)
+            out.push({
+              path: `${assetId ? `asset:${assetId}` : 'job'}/field:${fieldId}`,
+              message: `${level} commentary is brief (${n} characters); cover: ${commentaryTopics(level, ctx.selection.propertyType).join('; ')}`,
+            });
+        }
+      }
+      return out;
+    },
+  }),
+  rule({
+    code: 'VAL-MKT-002',
+    title: 'Local commentary not current',
+    category: 'staleness',
+    severity: 'warning',
+    // Not at issue: an approved report is locked, so a check that changes with the calendar must
+    // be settled when the valuer sends the job to QA (and when QA approves it).
+    stages: ['draft', 'submit'],
+    acknowledgeable: true,
+    description:
+      'In a current valuation, local commentary must be up to date when the report is prepared: dated within the configured number of months of today, with no newer approved local paragraph for the area in the library.',
+    review: 'API_STANDARDS',
+    evaluate: (ctx) => {
+      if (isRetrospective(ctx)) return [];
+      const v = jobDate(ctx, 'dates.valuation');
+      const now = today(ctx);
+      const limit = ctx.config.commentaryStaleMonths.local;
+      return currentCommentary(ctx.commentary)
+        .filter((c) => c.level === 'local')
+        .flatMap((c) => {
+          const path = `commentary:${c.id}`;
+          const months = monthsBetween(c.asAtDate, now);
+          if (months > limit)
+            return [
+              {
+                path,
+                message: `local commentary is as at ${c.asAtDate}, ${months} months before today (limit ${limit}); bring it up to date before the report goes out`,
+              },
+            ];
+          if (!ctx.commentaryLibrary || !v) return [];
+          const assetId = c.assetId ?? ctx.assetIds[0];
+          const address = assetId ? ctx.values.assets[assetId]?.['location.address'] : undefined;
+          const formatted =
+            typeof address === 'object' && address !== null
+              ? (address as { formatted?: unknown }).formatted
+              : address;
+          const council = assetId ? ctx.values.assets[assetId]?.['location.lga'] : undefined;
+          if (typeof formatted !== 'string') return [];
+          const local = selectCommentary(ctx.commentaryLibrary, {
+            propertyType: ctx.selection.propertyType,
+            jurisdiction: ctx.selection.jurisdiction,
+            localities: commentaryLocalities(
+              formatted,
+              typeof council === 'string' ? council : undefined,
+            ),
+            valuationDate: v,
+            localAsAt: now,
+          }).find((s) => s.level === 'local');
+          const newer = (local?.modules ?? []).filter((m) => isAfter(m.asAtDate, c.asAtDate));
+          return newer.length
+            ? [
+                {
+                  path,
+                  message: `newer local commentary has been approved (${newer.map((m) => `${m.title}, as at ${m.asAtDate}`).join('; ')}); use it before the report goes out`,
+                },
+              ]
+            : [];
+        });
+    },
+  }),
   rule({
     code: 'VAL-EVID-001',
     title: 'Inadequate evidence',
@@ -607,7 +729,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     description:
       'The improvement-area schedule has blocking geometry issues or an unconfirmed scale.',
     evaluate: (ctx) =>
-      ctx.areaSchedules
+      reportedSchedules(ctx)
         .filter((s) => !s.reportable)
         .map((s) => ({
           path: `asset:${s.assetId}/sketch:${s.sketchVersionId}`,
@@ -628,7 +750,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     description:
       'Reported areas must trace to a schedule approved by the valuer (matching schedule hash).',
     evaluate: (ctx) =>
-      ctx.areaSchedules
+      reportedSchedules(ctx)
         .filter(
           (s) =>
             !ctx.measurementApprovals.some(
@@ -650,7 +772,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     description:
       'Geometry warnings: implausible dimensions, deductions outside components, differences from supplied or online areas.',
     evaluate: (ctx) =>
-      ctx.areaSchedules.flatMap((s) =>
+      reportedSchedules(ctx).flatMap((s) =>
         s.issues
           .filter((i) => i.severity === 'warning')
           .map((i) => ({
@@ -668,7 +790,7 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     acknowledgeable: false,
     description: 'The ground-level building footprint exceeds the site area.',
     evaluate: (ctx) =>
-      ctx.areaSchedules.flatMap((s) => {
+      reportedSchedules(ctx).flatMap((s) => {
         const land = ctx.values.assets[s.assetId]?.['land.area'];
         const ground = s.levelTotals.find((l) => /^(ground|gf|level 0)/i.test(l.level));
         return typeof land === 'number' && land > 0 && ground && ground.grossM2 > land
@@ -1012,6 +1134,26 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
         });
       }
       return out;
+    },
+  }),
+  rule({
+    code: 'VAL-CERT-003',
+    title: 'State registration missing from the certification',
+    category: 'certification',
+    severity: 'blocking',
+    stages: ['submit', 'issue'],
+    acknowledgeable: false,
+    description:
+      'In Queensland and Western Australia the certifying valuer must state their state registration or licence number.',
+    review: 'API_STANDARDS',
+    evaluate: (ctx) => {
+      const c = ctx.certification;
+      const rule = VALUER_REGISTRATION_RULES[ctx.selection.jurisdiction];
+      if (!c || !rule) return [];
+      return c.valuer.registration?.jurisdiction === ctx.selection.jurisdiction &&
+        c.valuer.registration.number.trim()
+        ? []
+        : [{ path: 'job/certification', message: `the certification has no ${rule.label}` }];
     },
   }),
   rule({
