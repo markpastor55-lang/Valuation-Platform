@@ -75,7 +75,7 @@ in the docs with **`[REVIEW: <role>]`** where `<role>` is one of the specialist 
 | Section IDs           | `snake_case`                                                                       | `sales_evidence`, `fair_value`, `restricted_access`                   |
 | Requirement rule IDs  | `REQ-<AREA>-<NNN>`                                                                 | `REQ-PUR-MV-001`, `REQ-PT-IND-001`                                    |
 | Selection rule IDs    | `SEL-<NNN>`                                                                        | `SEL-001` (insurance + vacant land)                                   |
-| Validation rule codes | `VAL-<CATEGORY>-<NNN>`                                                             | `VAL-DATE-004`, `VAL-AREA-002`, `VAL-MKT-001`                         |
+| Validation rule codes | `VAL-<CATEGORY>-<NNN>`                                                             | `VAL-DATE-004`, `VAL-AREA-002`, `VAL-MKT-001`, `VAL-MKT-002`          |
 | Geometry issue codes  | `GEO-<NAME>`                                                                       | `GEO-OVERLAP`, `GEO-SCALE-UNVERIFIED`                                 |
 | Formula IDs           | `<domain>.<name>` + integer version                                                | `land.rate_per_m2@1`                                                  |
 | Audit actions         | `<entity>.<past_tense_verb>`                                                       | `job.created`, `certification.signed`, `report.issued`                |

@@ -13,16 +13,17 @@ invoicing and a tamper-evident audit trail.
 
 ## Status — iteration 1
 
-| Area                                                                                                                            | State                                                 |
-| ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Specification (sections 00–14, generated tables)                                                                                | Draft for review — [`docs/spec`](docs/spec/README.md) |
-| `@vp/domain` — rules, calculations, geometry, workflow, permissions, audit, validation, AI governance, sync, report composition | Implemented, 200+ unit tests                          |
-| `@vp/api` — Fastify service, PostgreSQL schema, auth, workflow endpoints, deterministic PDF/invoice issue, offline sync         | Implemented, end-to-end tests on embedded PostgreSQL  |
-| `@vp/preview` — clickable browser preview running `@vp/domain` on synthetic data (no server)                                    | Implemented, journey tests                            |
-| Market commentary library — national, state and local, by property type and suburb (D17)                                        | Implemented; demonstration text only                  |
-| Mobile app (iOS/Android, offline capture, sketch canvas)                                                                        | Planned — next iteration                              |
-| Web portal (allocation, QA, administration)                                                                                     | Planned                                               |
-| Live data integrations, e-signature, object storage, AI models                                                                  | Planned (interfaces and policies in place)            |
+| Area                                                                                                                                                            | State                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Specification (sections 00–14, generated tables)                                                                                                                | Draft for review — [`docs/spec`](docs/spec/README.md)                 |
+| `@vp/domain` — rules, calculations, geometry, workflow, permissions, audit, validation, AI governance, sync, report composition                                 | Implemented, 200+ unit tests                                          |
+| `@vp/api` — Fastify service, PostgreSQL schema, auth, workflow endpoints, deterministic PDF/invoice issue, offline sync                                         | Implemented, end-to-end tests on embedded PostgreSQL                  |
+| `@vp/preview` — clickable browser preview running `@vp/domain` on synthetic data (no server)                                                                    | Implemented, journey tests                                            |
+| Market commentary library — national, state and local, by property type and suburb; national and state monthly, local current when the report is prepared (D17) | Implemented; demonstration text only                                  |
+| Fair Market Valuations report template — firm name, website and email, draft standard clauses, logo and contact line on the cover (D18)                         | Implemented; clauses are drafts until approved; logo not yet supplied |
+| Mobile app (iOS/Android, offline capture, sketch canvas)                                                                                                        | Planned — next iteration                                              |
+| Web portal (allocation, QA, administration)                                                                                                                     | Planned                                                               |
+| Live data integrations, e-signature, object storage, AI models                                                                                                  | Planned (interfaces and policies in place)                            |
 
 See [`docs/spec/13-backlog.md`](docs/spec/13-backlog.md) for the release plan,
 [`docs/spec/01-assumptions-and-decisions.md`](docs/spec/01-assumptions-and-decisions.md) for the

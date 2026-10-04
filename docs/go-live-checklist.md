@@ -85,8 +85,8 @@ share your own password.
 
 - **Market commentary.** The app now offers national, state and local commentary matched to the
   property type and suburb, as at the valuation date. The valuer then tailors it. Decide:
-  - **who writes it and how often.** Suggested: national and state each quarter; local paragraphs
-    for your core suburbs and councils, updated as markets move.
+  - **who writes it.** Agreed cadence: national and state monthly; local paragraphs per area,
+    kept current so each report goes out with the latest local view (see "Answers so far").
   - **which suburbs and councils** to write local paragraphs for first.
   - **who approves it.** This is the standards owner; it can't be the author.
   - **which sources you may quote.** CoreLogic figures in a report need a licence that allows it;
