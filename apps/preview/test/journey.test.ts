@@ -1,4 +1,4 @@
-import { DEFAULT_QA_CHECKLIST, buildWip, verifyAuditChain } from '@vp/domain';
+import { DEFAULT_QA_CHECKLIST, buildWip, enteredSale, verifyAuditChain } from '@vp/domain';
 import { describe, expect, it } from 'vitest';
 import { DEMO_PROFILE, seedApp, wipJobs } from '../src/app-state.js';
 import {
@@ -238,5 +238,40 @@ describe('preview journey (runs the domain engine)', () => {
     expect(JSON.stringify(report.sections)).toContain(
       'Title. Unless this report says otherwise, we have not searched the title.',
     );
+  });
+
+  it('adds a sale the valuer types in, and removes a sale, both audited', () => {
+    let s = initialState(NOW);
+    const before = s.sales.length;
+    const typed = enteredSale(
+      {
+        address: '14 Sample Road, Exampleton VIC 3000',
+        contractDate: '2026-09-12',
+        price: 1_120_000,
+        landAreaM2: 640,
+        source: 'Selling agent',
+        comparability: 'comparable',
+      },
+      { id: 'typed-1', assetId: 'a1', propertyType: 'RESIDENTIAL', by: VALUER.userId, at: NOW },
+    );
+    s = run(s, { type: 'addSale', sale: typed });
+    expect(s.sales).toHaveLength(before + 1);
+    expect(s.values.assets['a1']?.['evidence.sales']).toContain('typed-1');
+    // unchecked until the valuer confirms it
+    const unverified = (st: PreviewState) =>
+      derive(st, NOW).validation.submit.findings.filter(
+        (f) => f.code === 'VAL-PROV-002' && f.path.includes('typed-1'),
+      );
+    expect(unverified(s)).toHaveLength(1);
+    s = run(s, { type: 'verifySale', saleId: 'typed-1' });
+    expect(unverified(s)).toHaveLength(0);
+
+    s = run(s, { type: 'removeSale', saleId: 'typed-1' });
+    expect(s.sales).toHaveLength(before);
+    expect(s.values.assets['a1']?.['evidence.sales']).not.toContain('typed-1');
+    expect(s.audit.map((e) => e.action)).toEqual(
+      expect.arrayContaining(['evidence.sale_added', 'evidence.sale_removed']),
+    );
+    expect(verifyAuditChain(s.audit)).toMatchObject({ valid: true });
   });
 });

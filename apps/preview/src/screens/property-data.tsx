@@ -8,8 +8,12 @@ import {
   distanceKm,
   effectiveValue,
   formatAustralianDate,
+  enteredSale,
+  saleEntryProblems,
   saleFromProvider,
   suggestFieldsFromAttributes,
+  type Comparability,
+  type SaleEntry,
   type AutomatedEstimate,
   type FieldSuggestion,
   type PropertyAttributes,
@@ -230,7 +234,199 @@ export function PropertyDataCard(props: { state: PreviewState; dispatch: Dispatc
   );
 }
 
-/** Sales evidence for the job, with check and remove controls. */
+const COMPARABILITY: readonly (readonly [Comparability, string])[] = [
+  ['superior', 'Superior'],
+  ['comparable', 'Comparable'],
+  ['inferior', 'Inferior'],
+];
+
+/** A sale the valuer knows of (agent, title search, own records), typed in by hand. */
+function AddSaleForm(props: { state: PreviewState; dispatch: Dispatch }): JSX.Element {
+  const { state, dispatch } = props;
+  const unit = state.selection.propertyType === 'RESIDENTIAL_UNIT';
+  const [open, setOpen] = useState(false);
+  const [address, setAddress] = useState('');
+  const [date, setDate] = useState('');
+  const [price, setPrice] = useState('');
+  const [land, setLand] = useState('');
+  const [building, setBuilding] = useState('');
+  const [source, setSource] = useState('');
+  const [comparability, setComparability] = useState<Comparability>('comparable');
+  const [problems, setProblems] = useState<string[]>([]);
+  const num = (v: string) => (v.trim() === '' ? undefined : Number(v.replace(/[$,\s]/g, '')));
+  if (!open)
+    return (
+      <div class="row">
+        <button
+          type="button"
+          class="btn small"
+          id="sale-add-open"
+          onClick={() => {
+            setOpen(true);
+          }}
+        >
+          + Add a sale
+        </button>
+      </div>
+    );
+  const submit = () => {
+    const landAreaM2 = num(land);
+    const buildingAreaM2 = num(building);
+    const entry: SaleEntry = {
+      address,
+      contractDate: date,
+      price: num(price) ?? 0,
+      ...(landAreaM2 !== undefined ? { landAreaM2 } : {}),
+      ...(buildingAreaM2 !== undefined ? { buildingAreaM2 } : {}),
+      source,
+      comparability,
+    };
+    const found = saleEntryProblems(entry, today());
+    setProblems(found);
+    if (found.length) return;
+    const sale = enteredSale(entry, {
+      id: `typed-${String(Date.now())}`,
+      assetId: ASSET_ID,
+      propertyType: state.selection.propertyType,
+      by: VALUER.userId,
+      at: new Date().toISOString(),
+    });
+    if (dispatch({ type: 'addSale', sale }, 'Sale added. Check it, then mark it checked.')) {
+      setOpen(false);
+      setAddress('');
+      setDate('');
+      setPrice('');
+      setLand('');
+      setBuilding('');
+      setSource('');
+      setProblems([]);
+    }
+  };
+  return (
+    <form
+      class="sale-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
+      <label class="field-label">
+        Address
+        <input
+          id="sale-address"
+          type="text"
+          value={address}
+          onInput={(e) => {
+            setAddress(e.currentTarget.value);
+          }}
+          placeholder="e.g. 14 Sample Road, Exampleton VIC 3000"
+        />
+      </label>
+      <div class="select-grid">
+        <label class="field-label">
+          Contract date
+          <input
+            id="sale-date"
+            type="date"
+            value={date}
+            onInput={(e) => {
+              setDate(e.currentTarget.value);
+            }}
+          />
+        </label>
+        <label class="field-label">
+          Price ($)
+          <input
+            id="sale-price"
+            type="text"
+            inputMode="numeric"
+            value={price}
+            onInput={(e) => {
+              setPrice(e.currentTarget.value);
+            }}
+          />
+        </label>
+        <label class="field-label">
+          {unit ? 'Site area (m², optional)' : 'Land area (m²)'}
+          <input
+            id="sale-land"
+            type="text"
+            inputMode="decimal"
+            value={land}
+            onInput={(e) => {
+              setLand(e.currentTarget.value);
+            }}
+          />
+        </label>
+        <label class="field-label">
+          {unit ? 'Internal area (m²)' : 'Building area (m², optional)'}
+          <input
+            id="sale-building"
+            type="text"
+            inputMode="decimal"
+            value={building}
+            onInput={(e) => {
+              setBuilding(e.currentTarget.value);
+            }}
+          />
+        </label>
+      </div>
+      <label class="field-label">
+        Where it came from
+        <input
+          id="sale-source"
+          type="text"
+          value={source}
+          onInput={(e) => {
+            setSource(e.currentTarget.value);
+          }}
+          placeholder="e.g. Selling agent, title search, own records"
+        />
+      </label>
+      <label class="field-label">
+        Compared with the subject
+        <select
+          id="sale-comparability"
+          value={comparability}
+          onChange={(e) => {
+            setComparability(e.currentTarget.value as Comparability);
+          }}
+        >
+          {COMPARABILITY.map(([v, label]) => (
+            <option key={v} value={v}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {problems.length > 0 && (
+        <ul class="plain">
+          {problems.map((p) => (
+            <li key={p} class="notice blocking">
+              {p}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div class="row">
+        <button type="submit" class="btn small primary" id="sale-add">
+          Add sale
+        </button>
+        <button
+          type="button"
+          class="link"
+          onClick={() => {
+            setOpen(false);
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Sales evidence for the job: add your own, check, and remove. */
 export function SalesCard(props: { state: PreviewState; dispatch: Dispatch }): JSX.Element {
   const { state, dispatch } = props;
   const locked = isLocked(state);
@@ -242,8 +438,9 @@ export function SalesCard(props: { state: PreviewState; dispatch: Dispatch }): J
         <span class="muted small">{state.sales.length} added</span>
       </div>
       {state.sales.length === 0 && (
-        <div class="notice">No sales yet. Find comparable sales below.</div>
+        <div class="notice">No sales yet. Add one you know of, or find comparable sales below.</div>
       )}
+      {!locked && <AddSaleForm state={state} dispatch={dispatch} />}
       {state.sales.map((s) => {
         const source = DATA_SOURCES.find((d) => d.id === s.provenance.sourceId);
         const sample = source && !source.licence.permitsReportReproduction;
@@ -264,7 +461,11 @@ export function SalesCard(props: { state: PreviewState; dispatch: Dispatch }): J
               {s.landAreaM2 !== undefined && <> · land {m2(s.landAreaM2)}</>}
               {rate && <> · {aud(Math.round(effectiveValue(rate)))}/m² land</>}
             </span>
-            <span class="muted small">{source?.name ?? 'Unknown source'}</span>
+            <span class="muted small">
+              {s.provenance.origin === 'manual_entry'
+                ? `Entered by you · ${s.provenance.sourceRef ?? 'source not stated'}`
+                : (source?.name ?? 'Unknown source')}
+            </span>
             {!locked && (
               <div class="row">
                 {!checked && (

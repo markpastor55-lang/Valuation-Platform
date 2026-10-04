@@ -282,6 +282,7 @@ a separate field inspector is optional (01 D12). Capture screens follow the inpu
 | S-109 | E-09 | As a valuer, I want national, state and local market commentary from the firm's approved, dated library, matched to the property type, state, suburb and council as at the valuation date, that I use with one tap and then tailor, so that every report has consistent commentary with its as-at date and sources (01 D17). | MVP | Must   | M    | S-014, S-021, S-026 · `[REVIEW: API_STANDARDS]`            | Done   |
 | S-113 | E-13 | As a standards owner, I want Fair Market Valuations' own report template, with the firm's name, website and email and draft standard clauses written for the firm in plain English, so that reports carry the firm's letterhead and wording while the final wording is reviewed (01 D18).                                    | MVP | Must   | M    | S-021, S-028 · `[REVIEW: LEGAL]` `[REVIEW: API_STANDARDS]` | Done   |
 | S-114 | E-09 | As a valuer, I want national and state commentary held to its monthly edition and local commentary kept current to the day the report is prepared, with a warning before QA when newer local commentary has been approved, so that every report goes out with up-to-date commentary (01 D17).                                | MVP | Must   | S    | S-109 · `[REVIEW: API_STANDARDS]`                          | Done   |
+| S-117 | E-08 | As a valuer, I want to type in a sale I know of (with its source) and remove a sale from the evidence, so that the evidence is complete and current; removals are audited.                                                                                                                                                   | MVP | Must   | S    | S-107                                                      | Done   |
 
 ### 3.2 MVP (To do)
 
@@ -381,7 +382,7 @@ a separate field inspector is optional (01 D12). Capture screens follow the inpu
 
 | Release           | Stories | Must | Should | Could | Done |
 | ----------------- | ------- | ---- | ------ | ----- | ---- |
-| MVP (Iteration 1) | 37      | 33   | 4      | 0     | 37   |
+| MVP (Iteration 1) | 38      | 34   | 4      | 0     | 38   |
 | MVP (remaining)   | 44      | 35   | 8      | 1     | 1    |
 | Pilot             | 23      | 8    | 11     | 4     | 0    |
 | Production        | 12      | 5    | 6      | 1     | 0    |

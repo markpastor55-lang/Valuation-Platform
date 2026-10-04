@@ -1184,10 +1184,14 @@ export function apply(
     }
     case 'removeSale': {
       requireEditable(state);
+      const removed = state.sales.find((x) => x.id === action.saleId);
+      if (!removed) return state;
       const sales = state.sales.filter((x) => x.id !== action.saleId);
-      return {
+      const { [action.saleId]: _gone, ...saleLocations } = state.saleLocations;
+      const next = {
         ...state,
         sales,
+        saleLocations,
         values: withField(
           state,
           'evidence.sales',
@@ -1195,6 +1199,11 @@ export function apply(
           sales.length ? sales.map((x) => x.id) : null,
         ),
       };
+      return audit(next, VALUER, now, 'evidence.sale_removed', 'sale', removed.id, {
+        address: removed.address,
+        price: removed.price,
+        contractDate: removed.contractDate,
+      });
     }
     case 'verifySale': {
       requireEditable(state);

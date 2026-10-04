@@ -608,7 +608,9 @@ As a valuer, I want to record comparable sales with provenance, comparability an
 3. Evidence warnings: outlier rates (Tukey fences): `VAL-CALC-001`; adopted value outside the adjusted indications: `VAL-CALC-002`; fewer comparables than the configured minimum: `VAL-EVID-001`; sale older than the configured window: `VAL-STALE-001`; unverified evidence: `VAL-PROV-002`. Incomplete provenance is blocking (`VAL-PROV-001`).
 4. For a retrospective valuation (any purpose; derived from the dates, 01 D8), a sale after the information cut-off (`dates.retrospectiveDataCutOff`, or the valuation date when none is recorded): without `postValuationDateUse` triggers `VAL-DATE-005` (blocking); with a stated check-only use triggers `VAL-DATE-006` (warning). `[REVIEW: TAX]` `[REVIEW: API_STANDARDS]`
 5. A licence that prohibits reproduction allows the sale in analysis only. It reaches the report only in the permitted form (`VAL-PROV-003`) `[REVIEW: DATA_LICENSING]`.
-6. _(planned)_ The comparables map has a table equivalent. Licensed import records attribution (S-075). Edit and soft-delete are audited (UX-20).
+6. A valuer can type in a sale they know of (agent, title search, own records). `enteredSale` records it as `manual_entry` naming its source, unchecked until the valuer marks it checked (`VAL-PROV-002` until then); units are analysed on internal area. `saleEntryProblems` refuses a missing address, price or source, a future contract date, or a zero area. The Sales & market tab has an **Add a sale** form (S-117).
+7. `DELETE /v1/jobs/{jobId}/sales/{saleId}` (`evidence.edit`; editable jobs only, else `409 RECORD_LOCKED`; `404` if the sale is not on the job) removes the sale and its analysed rates, takes it off `evidence.sales` (a `field.updated` event with reason) and records `evidence.sale_removed` with the removed sale (S-117).
+8. _(planned)_ The comparables map has a table equivalent. Licensed import records attribution (S-075). Editing a sale in place is audited (UX-20).
 
 **Data fields**
 
@@ -622,7 +624,7 @@ As a valuer, I want to record comparable sales with provenance, comparability an
 `evidence.edit` (VALUER only). `job.read` to view. FIELD_INSPECTOR is excluded (TC-ROLE-006).
 
 **Audit events**
-`evidence.sale_added`, `calculation.run`, and `datasource.used` _(planned)_ for licensed import.
+`evidence.sale_added`, `evidence.sale_removed`, `calculation.run`, and `datasource.used` _(planned)_ for licensed import.
 
 **Offline behaviour**
 Full on tablet (W-04), with the sync operation type planned. Web is online only.
@@ -635,7 +637,9 @@ Common errors, plus `422 UNKNOWN_ASSET`, `422 INVALID_ARGUMENT` / `INVALID_UNIT`
 - `packages/domain/test/calculations.test.ts` › "produces traced land, building and adjusted rates"; "flags outlier rates with Tukey fences"; "summarises rates and checks the adopted figure against indications".
 - `packages/domain/test/validation.test.ts` › "warns on too few comparables and outlier rates"; "warns when the adopted value is outside adjusted price indications"; "blocks hindsight sales unless used as a stated check"; "passes with contemporaneous evidence"; "warns on dated sales".
 - `apps/api/test/lifecycle.test.ts` › "records sales evidence with traced rates".
-- TC-CALC-001, TC-CALC-002, TC-DATE-001, TC-VAL-002. **Gap:** licensed-import attribution; edit and soft-delete audit; W-04 E2E.
+- `apps/api/test/sales.test.ts` › removing a sale with its rates and evidence-list entry (audited); a typed-in unit sale; only the assigned valuer, only while editable.
+- `packages/domain/test/sale-entry.test.ts` › typed-in sale checks, provenance and analysis basis. `apps/preview/test/journey.test.ts` › "adds a sale the valuer types in, and removes a sale, both audited".
+- TC-CALC-001, TC-CALC-002, TC-DATE-001, TC-VAL-002. **Gap:** licensed-import attribution; editing a sale in place; W-04 E2E.
 
 ### F-12 — Rental evidence
 

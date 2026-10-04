@@ -196,6 +196,8 @@ Actions emitted by the iteration-1 API (see `06-data-model-and-audit.md` for whe
 
 `job.created`, `job.selection_changed`, `job.assigned`, `job.engagement_accepted`, `job.submitted`,
 `job.cancelled`, `job.amendment_opened`, `asset.created`, `field.updated`, `evidence.sale_added`,
+`evidence.sale_removed` (a sale taken out of the evidence while the job is editable; the event keeps
+the removed sale),
 `evidence.rental_added`, `evidence.commentary_added`, `risk.flag_recorded`, `calculation.run`,
 `calculation.overridden`, `sketch.version_created`, `calibration.created`, `calibration.confirmed`,
 `measurement.approved`, `photo.captured`, `photo.privacy_flagged`, `photo.redacted`,
