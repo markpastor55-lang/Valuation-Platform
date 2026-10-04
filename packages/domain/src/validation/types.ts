@@ -7,7 +7,7 @@ import type { CalculationRecord } from '../calc/calculation.js';
 import type { AiSuggestion } from '../ai/suggestions.js';
 import type { RentalComparable, SaleAnalysis, SaleComparable } from '../evidence/comparables.js';
 import type { MarketCommentary, RiskFlag } from '../evidence/market.js';
-import type { CommentaryLevel } from '../evidence/commentary-library.js';
+import type { CommentaryLevel, CommentaryModule } from '../evidence/commentary-library.js';
 import { COMMENTARY_MIN_CHARS, COMMENTARY_STALE_MONTHS } from '../evidence/commentary-library.js';
 import type { AreaSchedule, MeasurementApproval } from '../geometry/area-schedule.js';
 import type { PhotoRecord } from '../photo/privacy.js';
@@ -92,6 +92,8 @@ export interface ValidationContext {
   readonly rentals: readonly RentalComparable[];
   readonly calculations: readonly CalculationRecord[];
   readonly commentary: readonly MarketCommentary[];
+  /** The firm's approved commentary library, to tell whether newer local commentary exists. */
+  readonly commentaryLibrary?: readonly CommentaryModule[];
   readonly areaSchedules: readonly AreaSchedule[];
   readonly measurementApprovals: readonly MeasurementApproval[];
   readonly photos: readonly PhotoRecord[];

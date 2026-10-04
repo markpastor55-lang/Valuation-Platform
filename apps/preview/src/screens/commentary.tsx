@@ -41,6 +41,7 @@ export function CommentaryCard(props: {
   const inUse = (s: CommentarySuggestion) => s.modules.length > 0 && current(s) === s.text;
   const unused = levels.filter((s) => s.modules.length > 0 && !inUse(s));
   const valuationDate = state.values.job['dates.valuation'];
+  const localDue = levels.find((s) => s.level === 'local')?.dueAsAt;
   const use = (picked: readonly CommentarySuggestion[]) =>
     dispatch(
       { type: 'useCommentary', levels: picked.map((s) => s.level) },
@@ -67,10 +68,13 @@ export function CommentaryCard(props: {
       <p class="muted small">
         The firm’s approved commentary for{' '}
         {PROPERTY_TYPE_LABELS[state.selection.propertyType].toLowerCase()} in{' '}
-        {JURISDICTION_LABELS[state.selection.jurisdiction]}
-        {typeof valuationDate === 'string'
-          ? `, as at the valuation date (${formatAustralianDate(valuationDate)})`
-          : ''}
+        {JURISDICTION_LABELS[state.selection.jurisdiction]}. National and state: the latest monthly
+        edition at the valuation date
+        {typeof valuationDate === 'string' ? ` (${formatAustralianDate(valuationDate)})` : ''}.
+        Local:{' '}
+        {localDue && localDue !== valuationDate
+          ? `the latest for the area today (${formatAustralianDate(localDue)}), so the report goes out current`
+          : 'as at the valuation date'}
         . Use it, then tailor it to this property in the boxes below.
       </p>
       {levels.map((s) => {

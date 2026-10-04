@@ -33,6 +33,7 @@ export * from './photo/privacy.js';
 export * from './sync/sync.js';
 export * from './report/template.js';
 export * from './report/default-template.js';
+export * from './report/firm-template.js';
 export * from './report/compose.js';
 export * from './integration/connector.js';
 export * from './integration/planning.js';

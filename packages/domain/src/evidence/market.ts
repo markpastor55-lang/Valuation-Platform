@@ -25,10 +25,12 @@ export function currentCommentary(records: readonly MarketCommentary[]): MarketC
   for (const c of records) {
     const key = `${c.level}|${c.assetId ?? ''}`;
     const prev = latest.get(key);
+    // Latest record wins; records made in the same instant prefer the later as-at date.
     if (
       !prev ||
       c.authoredAt > prev.authoredAt ||
-      (c.authoredAt === prev.authoredAt && c.id > prev.id)
+      (c.authoredAt === prev.authoredAt &&
+        (c.asAtDate > prev.asAtDate || (c.asAtDate === prev.asAtDate && c.id > prev.id)))
     )
       latest.set(key, c);
   }

@@ -989,7 +989,23 @@ table.data tr.dim td {
   transform: rotate(-28deg);
   text-align: center;
 }
+.paper .doc-letterhead {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.paper .doc-logo {
+  max-height: 48px;
+  max-width: 140px;
+  object-fit: contain;
+}
+.paper .doc-contact {
+  display: block;
+  font-size: 0.72rem;
+  color: #55616f;
+}
 .paper .doc-firm {
+  display: block;
   font-family: var(--font-display);
   color: #1f3a5f;
   font-weight: 600;

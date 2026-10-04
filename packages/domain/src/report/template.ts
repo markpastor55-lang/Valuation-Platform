@@ -93,6 +93,12 @@ export interface TemplateVersion {
     readonly primaryColour: string;
     readonly footerText: string;
     readonly logoAssetId?: string;
+    /** The firm's logo as a PNG or JPEG data URL, versioned with the template. */
+    readonly logoDataUrl?: string;
+    readonly website?: string;
+    readonly email?: string;
+    readonly phone?: string;
+    readonly abn?: string;
   };
   readonly watermarks: { readonly draft: string; readonly final: string };
   readonly sections: readonly TemplateSection[];
@@ -104,6 +110,9 @@ export interface TemplateVersion {
   readonly approvedBy?: string;
   readonly approvedAt?: Instant;
 }
+
+/** Data-URL length allowed for a logo (about 300 KB of image). */
+const LOGO_MAX_CHARS = 400_000;
 
 const PLACEHOLDER_RE = /\{\{\s*([A-Za-z0-9_.]+)\s*\}\}/g;
 const SECTION_IDS = new Set<string>(REPORT_SECTIONS.map((s) => s.id));
@@ -135,6 +144,15 @@ export function lintTemplate(t: TemplateVersion): string[] {
   const seen = new Set<string>();
   if (!/^#[0-9a-fA-F]{6}$/.test(t.branding.primaryColour))
     problems.push('branding colour must be #RRGGBB');
+  const logo = t.branding.logoDataUrl;
+  if (logo !== undefined && !/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(logo))
+    problems.push('the logo must be a PNG or JPEG data URL');
+  if (logo !== undefined && logo.length > LOGO_MAX_CHARS)
+    problems.push('the logo is too large (keep it under about 300 KB)');
+  for (const c of t.clauses)
+    for (const p of placeholdersIn(c.text))
+      if (!isAllowedPlaceholder(p))
+        problems.push(`clause ${c.clauseId}: placeholder {{${p}}} not allowed`);
   for (const s of t.sections) {
     if (!SECTION_IDS.has(s.sectionId)) problems.push(`unknown section ${s.sectionId}`);
     if (seen.has(s.sectionId)) problems.push(`duplicate section ${s.sectionId}`);

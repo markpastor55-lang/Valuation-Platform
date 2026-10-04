@@ -66,12 +66,29 @@ export const COMMENTARY_LIBRARY_SOURCE: DataSource = {
   status: 'active',
 };
 
-/** Commentary dated more than this many months before the valuation date is flagged as dated. */
+/**
+ * National and state commentary is published monthly, so anything more than a month older than
+ * the valuation date is dated. Local commentary must be current when the report is prepared (see
+ * `localCommentaryDate`), so it is measured against that date instead. [REVIEW: API_STANDARDS]
+ */
 export const COMMENTARY_STALE_MONTHS: Readonly<Record<CommentaryLevel, number>> = {
-  national: 6,
-  state: 6,
-  local: 4,
+  national: 1,
+  state: 1,
+  local: 1,
 };
+
+/**
+ * The date local commentary must be current at: the day the report is prepared for a current
+ * valuation, so the report goes out with the latest local view; the valuation date for a
+ * retrospective one, so nothing later is relied on.
+ */
+export function localCommentaryDate(
+  valuationDate: LocalDate,
+  retrospective: boolean,
+  today: LocalDate,
+): LocalDate {
+  return retrospective || compareDates(today, valuationDate) < 0 ? valuationDate : today;
+}
 
 /** Shorter commentary is flagged for expansion (characters). [REVIEW: API_STANDARDS] */
 export const COMMENTARY_MIN_CHARS = 300;
@@ -171,9 +188,14 @@ export interface CommentaryQuery {
   readonly jurisdiction: Jurisdiction;
   /** Suburb first, then council (see `commentaryLocalities`). */
   readonly localities: readonly string[];
-  /** Paragraphs dated after this are never offered (no hindsight). */
+  /** National and state paragraphs dated after this are never offered (no hindsight). */
   readonly valuationDate: LocalDate;
+  /** Local paragraphs are as at this date (see `localCommentaryDate`); the valuation date if absent. */
+  readonly localAsAt?: LocalDate;
 }
+
+const asAtFor = (level: CommentaryLevel, q: CommentaryQuery): LocalDate =>
+  level === 'local' ? (q.localAsAt ?? q.valuationDate) : q.valuationDate;
 
 export interface CommentarySuggestion {
   readonly level: CommentaryLevel;
@@ -186,7 +208,9 @@ export interface CommentarySuggestion {
   readonly text: string;
   /** The oldest as-at date of the paragraphs used. */
   readonly asAtDate?: LocalDate;
-  /** Whole months between the commentary date and the valuation date. */
+  /** The date the commentary should be current at (`localAsAt` for local, else the valuation date). */
+  readonly dueAsAt: LocalDate;
+  /** Whole months between the commentary date and `dueAsAt`. */
   readonly ageMonths?: number;
   readonly stale: boolean;
   /** Whether a paragraph written for this property type was found. */
@@ -197,7 +221,7 @@ export interface CommentarySuggestion {
 
 function matches(m: CommentaryModule, level: CommentaryLevel, q: CommentaryQuery): boolean {
   if (m.status !== 'approved' || m.level !== level) return false;
-  if (compareDates(m.asAtDate, q.valuationDate) > 0) return false;
+  if (compareDates(m.asAtDate, asAtFor(level, q)) > 0) return false;
   if (m.propertyTypes && !m.propertyTypes.includes(q.propertyType)) return false;
   if (level === 'national') return true;
   if (m.jurisdiction !== q.jurisdiction) return false;
@@ -238,7 +262,9 @@ export function selectCommentary(
     const modules = latestVersions(library.filter((m) => matches(m, level, q))).sort(order);
     const heading = commentaryHeading(level, q.jurisdiction, q.localities[0]);
     const topics = commentaryTopics(level, q.propertyType);
-    const base = { level, fieldId: COMMENTARY_FIELDS[level], heading, topics };
+    const dueAsAt = asAtFor(level, q);
+    const due = dueAsAt === q.valuationDate ? 'the valuation date' : 'today';
+    const base = { level, fieldId: COMMENTARY_FIELDS[level], heading, topics, dueAsAt };
     const typeLabel = PROPERTY_TYPE_LABELS[q.propertyType].toLowerCase();
     if (!modules.length) {
       return {
@@ -248,18 +274,18 @@ export function selectCommentary(
         stale: false,
         coversPropertyType: false,
         notes: [
-          `The library has no approved ${level} commentary for this ${level === 'local' ? 'area' : 'job'} as at ${formatAustralianDate(q.valuationDate)}. Write it for the valuation date.`,
+          `The library has no approved ${level} commentary for this ${level === 'local' ? 'area' : 'job'} as at ${formatAustralianDate(dueAsAt)}. Write it as at ${due}.`,
         ],
       };
     }
     const asAtDate = modules.map((m) => m.asAtDate).sort(compareDates)[0] as LocalDate;
-    const ageMonths = monthsBetween(asAtDate, q.valuationDate);
+    const ageMonths = monthsBetween(asAtDate, dueAsAt);
     const stale = ageMonths > staleMonths[level];
     const coversPropertyType = modules.some((m) => m.propertyTypes !== undefined);
     const notes = [
       ...(stale
         ? [
-            `The latest approved ${level} commentary is as at ${formatAustralianDate(asAtDate)}, ${ageMonths} months before the valuation date. Bring it up to date.`,
+            `The latest approved ${level} commentary is as at ${formatAustralianDate(asAtDate)}, ${ageMonths} months before ${due}. Bring it up to date.`,
           ]
         : []),
       // a suburb paragraph already speaks to the local market for the property

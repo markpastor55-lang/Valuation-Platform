@@ -8,6 +8,7 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { FIRM_TEMPLATE } from '@vp/domain';
 import {
   ASSET_ID,
   approveConfiguration,
@@ -29,7 +30,8 @@ function must<T>(res: { status: number; body: T }, step: string): T {
 }
 
 try {
-  await approveConfiguration(t);
+  // Fair Market Valuations' template, with its draft standard clauses approved for the demo
+  await approveConfiguration(t, { template: FIRM_TEMPLATE });
   must(
     await t.call('allocator', 'POST', `/v1/admin/clients/${DEMO.clientId}/recipients`, {
       email: 'credit@lender.example',

@@ -229,5 +229,14 @@ describe('preview journey (runs the domain engine)', () => {
     expect(market?.blocks[0]).toEqual({ kind: 'heading', text: 'National market', level: 3 });
     expect(JSON.stringify(market)).toContain('Local market — Mockbury');
     expect(JSON.stringify(market)).toContain('Commentary as at 31 August 2026.');
+    // Fair Market Valuations' letterhead and draft standard clauses
+    const report = derive(issued, NOW).report;
+    expect(report.meta.firmName).toBe('Fair Market Valuations');
+    expect(report.meta.firmContact).toBe(
+      'fairmarketvaluations.com.au · info@fairmarketvaluations.com.au',
+    );
+    expect(JSON.stringify(report.sections)).toContain(
+      'Title. Unless this report says otherwise, we have not searched the title.',
+    );
   });
 });

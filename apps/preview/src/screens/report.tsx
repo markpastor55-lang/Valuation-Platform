@@ -85,6 +85,11 @@ export function ReportScreen(props: { d: Derived; profile: ValuerProfile }): JSX
             ? 'Issued from the QA-approved snapshot. The server renders this same report model to a PDF and stores its hash so the file can be re-rendered and checked later.'
             : 'Live draft built from the data you have entered. Only sections and fields this job requires are included. Missing required values show as [Not provided].'}
         </p>
+        <p class="muted small">
+          The clauses are Fair Market Valuations’ draft standard wording, treated as approved in
+          this demo only. Before real use, the standards owner approves each one after legal and
+          insurer review.
+        </p>
         {r.problems.length > 0 && (
           <ul class="plain">
             {r.problems.map((p) => (
@@ -99,7 +104,15 @@ export function ReportScreen(props: { d: Derived; profile: ValuerProfile }): JSX
         <div class="watermark" aria-hidden="true">
           {final ? '' : r.meta.watermark}
         </div>
-        <span class="doc-firm">{r.meta.firmName}</span>
+        <div class="doc-letterhead">
+          {r.meta.logoDataUrl && (
+            <img class="doc-logo" src={r.meta.logoDataUrl} alt={`${r.meta.firmName} logo`} />
+          )}
+          <div>
+            <span class="doc-firm">{r.meta.firmName}</span>
+            {r.meta.firmContact && <span class="doc-contact">{r.meta.firmContact}</span>}
+          </div>
+        </div>
         <h1>{r.meta.title}</h1>
         <p class="note">{r.meta.subtitle}</p>
         {final && <p class="note">{r.meta.watermark}</p>}

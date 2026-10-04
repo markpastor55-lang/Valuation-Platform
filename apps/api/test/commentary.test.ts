@@ -514,4 +514,51 @@ describe('library commentary for a job', () => {
     expect(locked.status).toBe(409);
     expect(locked.body.error.code).toBe('RECORD_LOCKED');
   });
+
+  // Last in this block: it adds a newer Exampleton paragraph to the library.
+  it('keeps local commentary current to the day the report is prepared', async () => {
+    const { jobId, assetId } = await job({}, EXAMPLETON);
+    const apply = () =>
+      t.call('valuer', 'POST', `/v1/jobs/${jobId}/commentary/apply`, {
+        assetId,
+        levels: ['local'],
+      });
+    const notCurrent = async () =>
+      validate(await loadAggregate(t.db, jobId), 'submit', t.ctx).findings.filter(
+        (f) => f.code === 'VAL-MKT-002',
+      );
+    expect((await apply()).status).toBe(200);
+    expect(await notCurrent()).toEqual([]);
+
+    // The firm approves an updated view of Exampleton after the valuation date (30 September).
+    const created = await t.call<Module>(
+      'standardsOwner',
+      'POST',
+      '/v1/commentary-library',
+      paragraph({
+        moduleId: 'local-exampleton',
+        localities: ['Exampleton', 'Example City Council'],
+        title: 'Exampleton (updated)',
+        asAtDate: '2026-10-01',
+        sources: [{ ...SOURCE, effectiveDate: '2026-10-01' }],
+      }),
+    );
+    expect(created.body).toMatchObject({ moduleId: 'local-exampleton', version: 2 });
+    expect(
+      (await t.call('legal', 'POST', `/v1/commentary-library/${created.body.id}/approve`)).status,
+    ).toBe(200);
+    expect((await notCurrent()).map((f) => f.message)).toEqual([
+      'newer local commentary has been approved (Exampleton (updated), as at 2026-10-01); use it before the report goes out',
+    ]);
+
+    // A current valuation is offered it for local commentary (as at today, 2 October), while
+    // national and state stay at the valuation date.
+    const s = (await suggestionsOf(jobId, assetId)).body as Suggestions & { localAsAt: string };
+    expect(s.localAsAt).toBe('2026-10-02');
+    expect(ids(s, 'local')).toEqual(['local-exampleton@2']);
+    expect(ids(s, 'national')).toEqual(['au-overview@2', 'au-houses@2']);
+    t.clock.advance(60_000);
+    expect((await apply()).status).toBe(200);
+    expect(await notCurrent()).toEqual([]);
+  });
 });

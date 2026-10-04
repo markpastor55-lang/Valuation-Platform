@@ -8,6 +8,8 @@ import {
   commentaryModuleProblems,
   commentaryRecord,
   composeReport,
+  currentCommentary,
+  localCommentaryDate,
   resolveRequirements,
   runValidation,
   selectCommentary,
@@ -182,13 +184,19 @@ describe('market commentary requirements and checks', () => {
       (f) => f.fieldId === fieldId,
     )?.level;
 
-  it('requires national, state and local commentary for value reports', () => {
-    for (const purpose of ['MARKET_VALUE', 'CGT', 'FAMILY_LAW'] as const)
+  it('requires national, state and local commentary for every value or rent report', () => {
+    const purposes = [
+      'MARKET_VALUE',
+      'CGT',
+      'FAMILY_LAW',
+      'FINANCIAL_REPORTING',
+      'RENTAL_ASSESSMENT',
+    ] as const;
+    for (const purpose of purposes)
       for (const f of ['market.national', 'market.state', 'market.local'])
         expect(levelOf(purpose, f), `${purpose} ${f}`).toBe('required');
-    for (const purpose of ['FINANCIAL_REPORTING', 'RENTAL_ASSESSMENT'] as const)
-      expect(levelOf(purpose, 'market.state')).toBe('recommended');
-    expect(levelOf('INSURANCE_REPLACEMENT', 'market.national')).toBeUndefined();
+    // a replacement cost estimate is not a market value: commentary is offered, not required
+    expect(levelOf('INSURANCE_REPLACEMENT', 'market.local')).toBe('recommended');
   });
 
   it('asks for brief commentary to be expanded, naming the topics for the property type', () => {
@@ -212,11 +220,12 @@ describe('market commentary requirements and checks', () => {
     sources: [],
   });
 
-  it('flags dated commentary and ignores superseded records', () => {
+  it('expects monthly national and state commentary and ignores superseded records', () => {
+    // valuation date 30 September 2026: August's edition is current, July's is dated
     expect(codes(cleanContext({ commentary: [record('c1', '2026-08-31')] }))).not.toContain(
       'VAL-STALE-003',
     );
-    expect(codes(cleanContext({ commentary: [record('c1', '2025-12-31')] }))).toContain(
+    expect(codes(cleanContext({ commentary: [record('c1', '2026-07-31')] }))).toContain(
       'VAL-STALE-003',
     );
     // a later record replaces the dated one
@@ -230,6 +239,16 @@ describe('market commentary requirements and checks', () => {
         }),
       ),
     ).not.toContain('VAL-STALE-003');
+    // records made in the same instant: the later as-at date is the current one, whatever the ids
+    for (const ids of [
+      ['a', 'b'],
+      ['b', 'a'],
+    ] as const)
+      expect(
+        currentCommentary([record(ids[0], '2026-09-30'), record(ids[1], '2026-08-31')]).map(
+          (c) => c.asAtDate,
+        ),
+      ).toEqual(['2026-09-30']);
   });
 });
 
@@ -314,5 +333,76 @@ describe('market commentary in the report', () => {
     expect(final.problems.map((p) => p.message)).toContain(
       'State market — Victoria commentary is required',
     );
+  });
+});
+
+describe('local commentary is current when the report is prepared', () => {
+  const local = (asAtDate: string, library = [{ moduleId: 'local-exampleton', version: 1 }]) =>
+    ({
+      id: 'l1',
+      level: 'local',
+      assetId: 'a1',
+      asAtDate,
+      text: 'x',
+      authoredBy: 'valuer1',
+      authoredAt: NOW,
+      sources: [],
+      library,
+    }) satisfies MarketCommentary;
+  const exampleton = SAMPLE_COMMENTARY_LIBRARY.find((m) => m.moduleId === 'local-exampleton')!;
+  const updated: CommentaryModule = { ...exampleton, version: 2, asAtDate: '2026-10-01' };
+  const findings = (ctx: ReturnType<typeof cleanContext>) =>
+    runValidation(ctx).findings.filter((f) => f.code === 'VAL-MKT-002');
+
+  it('dates local commentary to today for a current valuation, the valuation date otherwise', () => {
+    expect(localCommentaryDate('2026-09-30', false, '2026-10-02')).toBe('2026-10-02');
+    expect(localCommentaryDate('2026-09-30', true, '2026-10-02')).toBe('2026-09-30');
+    // a valuation dated ahead of today is never given commentary from before it is due
+    expect(localCommentaryDate('2026-10-09', false, '2026-10-02')).toBe('2026-10-09');
+  });
+
+  it('offers the newest local paragraph up to today, but national and state only to the valuation date', () => {
+    const library = [...SAMPLE_COMMENTARY_LIBRARY, updated];
+    const [national, , suburb] = selectCommentary(
+      library,
+      query({ valuationDate: '2026-09-30', localAsAt: '2026-10-02' }),
+    );
+    expect(suburb?.modules.map((m) => `${m.moduleId}@${m.version}`)).toEqual([
+      'local-exampleton@2',
+    ]);
+    expect(suburb?.dueAsAt).toBe('2026-10-02');
+    expect(national?.dueAsAt).toBe('2026-09-30');
+    expect(national?.modules.every((m) => m.asAtDate <= '2026-09-30')).toBe(true);
+  });
+
+  it('asks for newer approved local commentary before the job goes to QA, never at issue', () => {
+    const library = [...SAMPLE_COMMENTARY_LIBRARY, updated];
+    const ctx = cleanContext({ commentary: [local('2026-08-31')], commentaryLibrary: library });
+    expect(findings(ctx).map((f) => f.message)).toEqual([
+      'newer local commentary has been approved (Exampleton (demonstration suburb), as at 2026-10-01); use it before the report goes out',
+    ]);
+    expect(findings({ ...ctx, stage: 'issue' })).toEqual([]);
+    // the up-to-date paragraph clears it
+    expect(
+      findings(cleanContext({ commentary: [local('2026-10-01')], commentaryLibrary: library })),
+    ).toEqual([]);
+  });
+
+  it('flags local commentary more than a month old at the time the report is prepared', () => {
+    const ctx = cleanContext({ commentary: [local('2026-07-15')] });
+    expect(findings(ctx)[0]?.message).toMatch(/2 months before today \(limit 1\)/);
+    // the valuation-date rule leaves current local commentary to VAL-MKT-002
+    expect(codes(ctx)).not.toContain('VAL-STALE-003');
+  });
+
+  it('judges local commentary in a retrospective valuation against the valuation date', () => {
+    const values = marketValueValues();
+    const retro = {
+      ...values,
+      job: { ...values.job, 'dates.valuation': '2026-06-30', 'retro.evidenceBasis': 'Sales' },
+    };
+    const ctx = cleanContext({ values: retro, commentary: [local('2026-03-31')] });
+    expect(findings(ctx)).toEqual([]);
+    expect(codes(ctx)).toContain('VAL-STALE-003');
   });
 });

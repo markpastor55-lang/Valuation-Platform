@@ -9,7 +9,9 @@ import {
   commentaryProvenance,
   commentaryRecord,
   isLocalDate,
+  localCommentaryDate,
   localDateOf,
+  retrospectiveStatus,
   selectCommentary,
   type CommentaryModule,
   type CommentarySuggestion,
@@ -65,6 +67,7 @@ async function suggestionsFor(
 ): Promise<{
   assetId: string;
   valuationDate: LocalDate;
+  localAsAt: LocalDate;
   localities: string[];
   suggestions: CommentarySuggestion[];
 }> {
@@ -78,7 +81,17 @@ async function suggestionsFor(
   const fields = await db.query<{ field_id: string; value: unknown }>(
     `SELECT field_id, value FROM field_value
       WHERE job_id = $1 AND coalesce(asset_id = $2, true) AND field_id = ANY($3::text[])`,
-    [job.id, asset.id, ['dates.valuation', 'dates.inspection', 'location.address', 'location.lga']],
+    [
+      job.id,
+      asset.id,
+      [
+        'dates.valuation',
+        'dates.inspection',
+        'dates.instruction',
+        'location.address',
+        'location.lga',
+      ],
+    ],
   );
   const value = (id: string) => fields.rows.find((f) => f.field_id === id)?.value;
   const address = (value('location.address') ?? asset.address) as { formatted?: unknown } | null;
@@ -87,10 +100,16 @@ async function suggestionsFor(
     typeof address?.formatted === 'string' ? address.formatted : asset.label,
     typeof council === 'string' ? council : undefined,
   );
+  const today = localDateOf(ctx.clock.now(), JURISDICTION_TIME_ZONES[job.jurisdiction]);
   const valuationDate =
-    dateValue(value('dates.valuation')) ??
-    dateValue(value('dates.inspection')) ??
-    localDateOf(ctx.clock.now(), JURISDICTION_TIME_ZONES[job.jurisdiction]);
+    dateValue(value('dates.valuation')) ?? dateValue(value('dates.inspection')) ?? today;
+  // Local commentary must be current on the day the report is prepared, unless the valuation is
+  // retrospective (01 D17).
+  const dates = Object.fromEntries(
+    ['dates.valuation', 'dates.inspection', 'dates.instruction'].map((id) => [id, value(id)]),
+  );
+  const { retrospective } = retrospectiveStatus({ job: dates, assets: {} });
+  const localAsAt = localCommentaryDate(valuationDate, retrospective, today);
   const library = await db.query<{ data: CommentaryModule }>(
     "SELECT data FROM commentary_module WHERE org_id = $1 AND status = 'approved' ORDER BY module_id, version",
     [job.org_id],
@@ -98,6 +117,7 @@ async function suggestionsFor(
   return {
     assetId: asset.id,
     valuationDate,
+    localAsAt,
     localities,
     suggestions: selectCommentary(
       library.rows.map((r) => r.data),
@@ -106,6 +126,7 @@ async function suggestionsFor(
         jurisdiction: job.jurisdiction,
         localities,
         valuationDate,
+        localAsAt,
       },
     ),
   };

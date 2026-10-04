@@ -94,7 +94,10 @@ const VALUATION_CORE = [
   'valuation.adoptedValue',
 ] as const;
 
-/** National, state and local commentary, offered from the firm's library by property type and location. */
+/**
+ * National, state and local commentary, offered from the firm's library by property type and
+ * location. Required for every report that states a value or rent (01 D17).
+ */
 const MARKET_COMMENTARY = ['market.national', 'market.state', 'market.local'] as const;
 
 /**
@@ -340,8 +343,9 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'fr.fairValueHierarchyLevel',
         'fr.sensitivityAnalysis',
         'fr.disclosureSchedule',
+        ...MARKET_COMMENTARY,
       ],
-      recommend: [...MARKET_COMMENTARY, 'evidence.sales'],
+      recommend: ['evidence.sales'],
       sections: ['fair_value', 'market', 'hbu', 'valuation_approach', 'reconciliation'],
       specialistReview: ['ACCOUNTING', 'API_STANDARDS'],
       formulas: ['fv.sensitivity'],
@@ -365,8 +369,8 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'rent.ratePerM2',
         'rent.adoptedMarketRent',
         'evidence.rentals',
+        ...MARKET_COMMENTARY,
       ],
-      recommend: [...MARKET_COMMENTARY],
       sections: ['market', 'rental_evidence', 'rental_determination'],
       specialistReview: ['API_STANDARDS'],
       formulas: ['income.effective_rent', 'income.rent_rate_per_m2'],
@@ -393,7 +397,9 @@ export const AU_CORE_RULE_SET: RuleSetVersion = {
         'ins.exclusions',
         'ins.sumInsured',
       ],
-      sections: ['improvements', 'areas', 'cost_approach', 'insurance'],
+      // A cost estimate, not a market value: market commentary is offered but optional.
+      recommend: [...MARKET_COMMENTARY],
+      sections: ['improvements', 'areas', 'market', 'cost_approach', 'insurance'],
       specialistReview: ['QUANTITY_SURVEYOR'],
       formulas: ['cost.replacement'],
       warnings: [

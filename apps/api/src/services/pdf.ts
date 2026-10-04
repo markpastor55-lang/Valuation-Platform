@@ -12,7 +12,7 @@ import {
 } from 'pdf-lib';
 
 /** Bumped whenever rendering output changes; stored in issue snapshots. */
-export const RENDERER_VERSION = 'pdf-renderer@3';
+export const RENDERER_VERSION = 'pdf-renderer@4';
 
 export interface SketchDrawing {
   readonly boundaries: readonly {
@@ -38,7 +38,7 @@ export interface RenderAssets {
   /**
    * The certifying valuer's signature, keyed by its fingerprint (`signatureSha256`): a PNG data
    * URL for drawn signatures, the typed name otherwise. Absent in snapshots issued before
-   * pdf-renderer@3.
+   * pdf-renderer@3. (pdf-renderer@4 adds the template logo and firm contact line to the cover.)
    */
   readonly signatures?: Readonly<
     Record<string, { readonly kind: 'drawn' | 'typed'; readonly value: string }>
@@ -56,6 +56,19 @@ export function decodePngDataUrl(value: string): Uint8Array | null {
   const bytes = new Uint8Array(Buffer.from(b64, 'base64'));
   return PNG_MAGIC.every((b, i) => bytes[i] === b) ? bytes : null;
 }
+
+/** The template's logo: a PNG or JPEG data URL (checked when the template is linted). */
+function decodeLogoDataUrl(value: string): { kind: 'png' | 'jpeg'; bytes: Uint8Array } | null {
+  const m = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+  if (!m?.[1] || !m[2]) return null;
+  return {
+    kind: m[1] === 'png' ? 'png' : 'jpeg',
+    bytes: new Uint8Array(Buffer.from(m[2], 'base64')),
+  };
+}
+
+/** Largest size the logo is drawn at on the cover (points). */
+const LOGO_BOX = { width: 160, height: 64 } as const;
 
 /** True when the PNG decodes and can be embedded in a PDF (checked before a signature is saved). */
 export async function isEmbeddablePng(bytes: Uint8Array): Promise<boolean> {
@@ -654,9 +667,36 @@ export async function renderReportPdf(
   }
   const layout = new Layout(doc, fonts, makeSanitiser(fonts.regular), accent);
 
-  // Cover
-  layout.y -= 120;
-  layout.text(model.meta.firmName, { font: fonts.bold, size: 13, color: accent, gapAfter: 30 });
+  // Cover: logo (from pdf-renderer@4), firm name and contact details, then the report details
+  const logo = model.meta.logoDataUrl ? decodeLogoDataUrl(model.meta.logoDataUrl) : null;
+  let logoImage: PDFImage | null = null;
+  if (logo) {
+    try {
+      logoImage =
+        logo.kind === 'png' ? await doc.embedPng(logo.bytes) : await doc.embedJpg(logo.bytes);
+    } catch {
+      // An unreadable logo is left out rather than failing the report.
+    }
+  }
+  if (logoImage) {
+    const scale = Math.min(LOGO_BOX.width / logoImage.width, LOGO_BOX.height / logoImage.height, 1);
+    const h = logoImage.height * scale;
+    layout.page.drawImage(logoImage, {
+      x: MARGIN,
+      y: layout.y - h,
+      width: logoImage.width * scale,
+      height: h,
+    });
+    layout.y -= LOGO_BOX.height + 56;
+  } else layout.y -= 120;
+  layout.text(model.meta.firmName, {
+    font: fonts.bold,
+    size: 13,
+    color: accent,
+    gapAfter: model.meta.firmContact ? 4 : 30,
+  });
+  if (model.meta.firmContact)
+    layout.text(model.meta.firmContact, { size: 9, color: GREY, gapAfter: 26 });
   layout.text(model.meta.title, { font: fonts.bold, size: 24, gapAfter: 10 });
   layout.text(model.meta.subtitle, { size: 12, color: GREY, gapAfter: 30 });
   layout.keyValue([

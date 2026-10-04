@@ -134,6 +134,9 @@ export interface ReportModel {
     readonly watermark: string;
     readonly footer: string;
     readonly firmName: string;
+    /** Website, email, phone and ABN as one line under the firm name (when the template has them). */
+    readonly firmContact?: string;
+    readonly logoDataUrl?: string;
     readonly primaryColour: string;
     readonly templateId: string;
     readonly templateVersion: number;
@@ -334,13 +337,16 @@ export function composeReport(
           return [];
         if (c.status !== 'approved')
           problem('TPL-UNAPPROVED-CLAUSE', `clause ${c.clauseId}@${c.version} is ${c.status}`);
-        return [
-          {
+        // A clause may hold several paragraphs, separated by a blank line.
+        return c.text
+          .split(/\n\s*\n/)
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .map((t): RenderBlock => ({
             kind: 'paragraph',
-            text: resolvePlaceholders(c.text, data),
+            text: resolvePlaceholders(t, data),
             style: c.status === 'approved' ? 'normal' : 'placeholder',
-          },
-        ];
+          }));
       }
       case 'sales_table': {
         if (!data.sales.length)
@@ -675,6 +681,10 @@ export function composeReport(
         problem('TPL-MISSING-REQUIRED', `calculation ${v} referenced by ${fieldId} is missing`);
   }
 
+  const b = template.branding;
+  const firmContact = [b.website, b.email, b.phone, b.abn ? `ABN ${b.abn}` : undefined]
+    .filter(Boolean)
+    .join(' · ');
   const sel = data.job.selection;
   const watermark = final
     ? resolvePlaceholders(template.watermarks.final, data)
@@ -688,6 +698,8 @@ export function composeReport(
       watermark,
       footer: `${template.branding.footerText} · ${data.job.reference} · ${data.report.id} v${data.report.version}${data.snapshotHash ? ` · ${data.snapshotHash.slice(0, 12)}` : ''}`,
       firmName: template.branding.firmName,
+      ...(firmContact ? { firmContact } : {}),
+      ...(template.branding.logoDataUrl ? { logoDataUrl: template.branding.logoDataUrl } : {}),
       primaryColour: template.branding.primaryColour,
       templateId: template.templateId,
       templateVersion: template.version,

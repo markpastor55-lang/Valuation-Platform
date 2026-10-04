@@ -5,6 +5,7 @@ import {
   CORELOGIC_SOURCE,
   DEFAULT_TEMPLATE,
   DEMO_RESEARCH_SOURCE,
+  FIRM_DETAILS,
   PUBLIC_RELEASES_SOURCE,
   SAMPLE_AVM_SOURCE,
   SAMPLE_COMMENTARY_LIBRARY,
@@ -162,7 +163,8 @@ async function seedDemoValuerProfiles(db: Db): Promise<void> {
 }
 
 export async function seedDemo(db: Db): Promise<typeof DEMO> {
-  await seedOrganisation(db, DEMO, 'Example Valuers Pty Ltd', '00 000 000 001');
+  // The ABN is a placeholder: the firm has not registered one yet.
+  await seedOrganisation(db, DEMO, FIRM_DETAILS.name, '00 000 000 001');
   const u = DEMO.users;
   const people: [string, string, string, Role[], string[]?][] = [
     [u.admin, 'admin@example.com', 'Avery Admin', ['ADMINISTRATOR']],

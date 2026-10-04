@@ -147,6 +147,29 @@ describe('deterministic documents', () => {
     expect(doc.getPageCount()).toBeGreaterThan(3);
     expect(doc.getProducer()).toBe(RENDERER_VERSION);
     expect(doc.getCreationDate()?.toISOString()).toBe('2026-10-02T00:00:00.000Z');
+
+    // pdf-renderer@4: the firm's logo and contact line on the cover, still deterministic
+    const branded = {
+      ...model,
+      meta: {
+        ...model.meta,
+        firmContact: 'fairmarketvaluations.com.au · info@fairmarketvaluations.com.au',
+        logoDataUrl:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      },
+    };
+    const c = await renderReportPdf(branded, assets, '2026-10-02T00:00:00.000Z');
+    const d = await renderReportPdf(branded, assets, '2026-10-02T00:00:00.000Z');
+    expect(Buffer.from(c).equals(Buffer.from(d))).toBe(true);
+    expect(Buffer.from(c).equals(Buffer.from(a))).toBe(false);
+    // an unreadable logo is left out rather than failing the report
+    const broken = {
+      ...branded,
+      meta: { ...branded.meta, logoDataUrl: 'data:image/png;base64,AAAA' },
+    };
+    expect(
+      (await renderReportPdf(broken, assets, '2026-10-02T00:00:00.000Z')).length,
+    ).toBeGreaterThan(0);
   });
 
   it('calculates GST to the cent and renders the invoice deterministically', async () => {

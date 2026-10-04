@@ -14,7 +14,9 @@ import { currentCommentary } from '../evidence/market.js';
 import {
   COMMENTARY_FIELDS,
   COMMENTARY_LEVELS,
+  commentaryLocalities,
   commentaryTopics,
+  selectCommentary,
 } from '../evidence/commentary-library.js';
 import type { AreaSchedule } from '../geometry/area-schedule.js';
 import { photoReportEligibility } from '../photo/privacy.js';
@@ -375,12 +377,14 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
     stages: ALL,
     acknowledgeable: true,
     description:
-      'The market commentary relied on is dated more than the configured number of months before the valuation date.',
+      'National or state commentary (published monthly), or local commentary in a retrospective valuation, is dated more than the configured number of months before the valuation date. Local commentary in a current valuation is checked against the day the report is prepared (VAL-MKT-002).',
     review: 'API_STANDARDS',
     evaluate: (ctx) => {
       const v = jobDate(ctx, 'dates.valuation');
       if (!v) return [];
+      const retrospective = isRetrospective(ctx);
       return currentCommentary(ctx.commentary).flatMap((c) => {
+        if (c.level === 'local' && !retrospective) return [];
         const months = monthsBetween(c.asAtDate, v);
         const limit = ctx.config.commentaryStaleMonths[c.level];
         return months > limit
@@ -510,6 +514,66 @@ export const VALIDATION_RULES: readonly ValidationRule[] = [
         }
       }
       return out;
+    },
+  }),
+  rule({
+    code: 'VAL-MKT-002',
+    title: 'Local commentary not current',
+    category: 'staleness',
+    severity: 'warning',
+    // Not at issue: an approved report is locked, so a check that changes with the calendar must
+    // be settled when the valuer sends the job to QA (and when QA approves it).
+    stages: ['draft', 'submit'],
+    acknowledgeable: true,
+    description:
+      'In a current valuation, local commentary must be up to date when the report is prepared: dated within the configured number of months of today, with no newer approved local paragraph for the area in the library.',
+    review: 'API_STANDARDS',
+    evaluate: (ctx) => {
+      if (isRetrospective(ctx)) return [];
+      const v = jobDate(ctx, 'dates.valuation');
+      const now = today(ctx);
+      const limit = ctx.config.commentaryStaleMonths.local;
+      return currentCommentary(ctx.commentary)
+        .filter((c) => c.level === 'local')
+        .flatMap((c) => {
+          const path = `commentary:${c.id}`;
+          const months = monthsBetween(c.asAtDate, now);
+          if (months > limit)
+            return [
+              {
+                path,
+                message: `local commentary is as at ${c.asAtDate}, ${months} months before today (limit ${limit}); bring it up to date before the report goes out`,
+              },
+            ];
+          if (!ctx.commentaryLibrary || !v) return [];
+          const assetId = c.assetId ?? ctx.assetIds[0];
+          const address = assetId ? ctx.values.assets[assetId]?.['location.address'] : undefined;
+          const formatted =
+            typeof address === 'object' && address !== null
+              ? (address as { formatted?: unknown }).formatted
+              : address;
+          const council = assetId ? ctx.values.assets[assetId]?.['location.lga'] : undefined;
+          if (typeof formatted !== 'string') return [];
+          const local = selectCommentary(ctx.commentaryLibrary, {
+            propertyType: ctx.selection.propertyType,
+            jurisdiction: ctx.selection.jurisdiction,
+            localities: commentaryLocalities(
+              formatted,
+              typeof council === 'string' ? council : undefined,
+            ),
+            valuationDate: v,
+            localAsAt: now,
+          }).find((s) => s.level === 'local');
+          const newer = (local?.modules ?? []).filter((m) => isAfter(m.asAtDate, c.asAtDate));
+          return newer.length
+            ? [
+                {
+                  path,
+                  message: `newer local commentary has been approved (${newer.map((m) => `${m.title}, as at ${m.asAtDate}`).join('; ')}); use it before the report goes out`,
+                },
+              ]
+            : [];
+        });
     },
   }),
   rule({

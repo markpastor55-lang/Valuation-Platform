@@ -1,3 +1,4 @@
+import type { TemplateVersion } from '@vp/domain';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { loadConfig, type AppConfig } from '../src/config.js';
@@ -86,13 +87,21 @@ export async function createTestApp(
 }
 
 /** Approves the seed rule set and publishes an approved template with firm-authored clause wording. */
-export async function approveConfiguration(t: TestApp): Promise<void> {
+/**
+ * Approves the rule set and a template so reports can be issued. Without a template, the generic
+ * seed template is approved with stand-in clause wording; with one (e.g. the firm's template), its
+ * own draft clauses are approved as written.
+ */
+export async function approveConfiguration(
+  t: TestApp,
+  opts: { template?: TemplateVersion } = {},
+): Promise<void> {
   const rs = await t.call('legal', 'POST', '/v1/admin/rulesets/au-core/versions/2026.1/approve', {
     notes: 'Reviewed against current firm methodology',
   });
   if (rs.status !== 200) throw new Error(`rule set approval failed: ${JSON.stringify(rs.body)}`);
   const { DEFAULT_TEMPLATE } = await import('@vp/domain');
-  const template = {
+  const template = opts.template ?? {
     ...DEFAULT_TEMPLATE,
     clauses: DEFAULT_TEMPLATE.clauses.map((c) => ({
       ...c,
@@ -109,16 +118,17 @@ export async function approveConfiguration(t: TestApp): Promise<void> {
   if (created.status !== 200)
     throw new Error(`template create failed: ${JSON.stringify(created.body)}`);
   const v = created.body.version;
+  const id = template.templateId;
   for (const reviewer of ['API_STANDARDS', 'LEGAL']) {
     const rev = await t.call(
       'standardsOwner',
       'POST',
-      `/v1/admin/templates/au-generic/versions/${v}/reviews`,
+      `/v1/admin/templates/${id}/versions/${v}/reviews`,
       { reviewer, outcome: 'approved', notes: 'Wording reviewed and accepted' },
     );
     if (rev.status !== 200) throw new Error(`review failed: ${JSON.stringify(rev.body)}`);
   }
-  const ap = await t.call('legal', 'POST', `/v1/admin/templates/au-generic/versions/${v}/approve`);
+  const ap = await t.call('legal', 'POST', `/v1/admin/templates/${id}/versions/${v}/approve`);
   if (ap.status !== 200) throw new Error(`template approval failed: ${JSON.stringify(ap.body)}`);
 }
 

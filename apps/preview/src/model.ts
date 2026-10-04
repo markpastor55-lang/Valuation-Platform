@@ -11,7 +11,8 @@ import {
   AU_CORE_RULE_SET,
   COMMENTARY_LIBRARY_SOURCE,
   DEFAULT_CONVENTIONS,
-  DEFAULT_TEMPLATE,
+  FIRM_DETAILS,
+  FIRM_TEMPLATE,
   DEFAULT_VALIDATION_CONFIG,
   DomainError,
   SAMPLE_AVM_SOURCE,
@@ -23,6 +24,8 @@ import {
   commentaryProvenance,
   commentaryRecord,
   isLocalDate,
+  localCommentaryDate,
+  localDateOf,
   selectCommentary,
   signingProblems,
   sketchAreaFieldFor,
@@ -128,7 +131,7 @@ export const USER_NAMES: Readonly<Record<string, string>> = {
 };
 
 export const ASSET_ID = 'a1';
-export const FIRM_NAME = 'Example Valuers Pty Ltd';
+export const FIRM_NAME = FIRM_DETAILS.name;
 
 /** The parts of a job that identify it (set when the job is created). */
 export interface JobMeta {
@@ -257,14 +260,14 @@ export const analysesOf = (sales: readonly SaleComparable[]): SaleAnalysis[] =>
   );
 
 /** Demo template: the seed template with stand-in clause wording, treated as approved. */
+/**
+ * The firm's template with its draft standard clauses, treated as approved so the demo can issue
+ * reports. In the real app each clause needs the standards owner's approval first.
+ */
 export const DEMO_TEMPLATE: TemplateVersion = {
-  ...DEFAULT_TEMPLATE,
+  ...FIRM_TEMPLATE,
   status: 'approved',
-  clauses: DEFAULT_TEMPLATE.clauses.map((c) => ({
-    ...c,
-    status: 'approved',
-    text: `${c.title}: stand-in wording for this preview. Each firm authors and approves its own clause text.`,
-  })),
+  clauses: FIRM_TEMPLATE.clauses.map((c) => ({ ...c, status: 'approved' })),
 };
 
 const rect = (x: number, y: number, w: number, h: number): Point[] => [
@@ -576,12 +579,20 @@ export function snapshotHashOf(state: PreviewState): string {
 export function commentaryFor(state: PreviewState, now: string): CommentarySuggestion[] {
   const job = state.values.job;
   const lga = state.values.assets[ASSET_ID]?.['location.lga'];
-  const date = [job['dates.valuation'], job['dates.inspection']].find(isLocalDate);
+  const today = localDateOf(now, JURISDICTION_TIME_ZONES[state.selection.jurisdiction]);
+  const valuationDate =
+    [job['dates.valuation'], job['dates.inspection']].find(isLocalDate) ?? today;
   return selectCommentary(SAMPLE_COMMENTARY_LIBRARY, {
     propertyType: state.selection.propertyType,
     jurisdiction: state.selection.jurisdiction,
     localities: commentaryLocalities(state.job.address, typeof lga === 'string' ? lga : undefined),
-    valuationDate: date ?? todayOf(now),
+    valuationDate,
+    // local commentary must be current on the day the report is prepared (01 D17)
+    localAsAt: localCommentaryDate(
+      valuationDate,
+      retrospectiveStatus(state.values).retrospective,
+      today,
+    ),
   });
 }
 
@@ -618,6 +629,7 @@ export function validationContext(
     rentals: [],
     calculations: [],
     commentary: state.commentary ?? [],
+    commentaryLibrary: SAMPLE_COMMENTARY_LIBRARY,
     // The sketch is working notes: the engine checks it only if the report relies on it.
     areaSchedules: [schedule],
     measurementApprovals: [],

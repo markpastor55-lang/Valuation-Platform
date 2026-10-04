@@ -2,7 +2,14 @@ import { render, type JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { INPUT_TABS } from '@vp/domain';
 import { applyToJob, createJob, seedApp, updateProfile, type AppState } from './app-state.js';
-import { derive, describeError, qaVisible, statusLabel, type PreviewAction } from './model.js';
+import {
+  FIRM_NAME,
+  derive,
+  describeError,
+  qaVisible,
+  statusLabel,
+  type PreviewAction,
+} from './model.js';
 import { NewJobScreen } from './screens/new-job.js';
 import { ProfileScreen } from './screens/profile.js';
 import { QaScreen } from './screens/qa.js';
@@ -191,7 +198,7 @@ function App(): JSX.Element {
         ) : (
           <div class="appbar-top">
             <div>
-              <div class="ref">Example Valuers Pty Ltd</div>
+              <div class="ref">{FIRM_NAME}</div>
               <div class="addr">Valuation workspace</div>
             </div>
             <button
